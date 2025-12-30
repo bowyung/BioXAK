@@ -1,0 +1,376 @@
+﻿<Page x:Class="BioSAK.FlowCytometryAnalyzer"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      Title="Flow Cytometry Analyzer"
+      d:DesignHeight="720" d:DesignWidth="1400"
+      Background="#F0F0F0" 
+      Loaded="Window_Loaded" 
+      KeyDown="Window_KeyDown">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Toolbar -->
+        <ToolBarTray Grid.Row="0" Background="#F5F5F5">
+            <ToolBar Band="0" BandIndex="0" Background="#F5F5F5">
+                <Button x:Name="btnLoadFile" Content="📂 Load FCS" Click="BtnLoadFile_Click" Padding="8,4"/>
+                <Button x:Name="btnLoadDemo" Content="🧪 Demo Data" Click="BtnLoadDemo_Click" Padding="8,4"/>
+                <Separator/>
+                <TextBlock Text="File:" VerticalAlignment="Center" Margin="5,0"/>
+                <ComboBox x:Name="cboFiles" Width="180" SelectionChanged="CboFiles_SelectionChanged"/>
+                <Separator/>
+                <CheckBox x:Name="chkOverlay" Content="Overlay" VerticalAlignment="Center" Margin="5,0"
+                          Checked="ChkOverlay_Changed" Unchecked="ChkOverlay_Changed"/>
+                <ComboBox x:Name="cboOverlay" Width="150" SelectionChanged="CboOverlay_SelectionChanged" 
+                          Visibility="Collapsed"/>
+                <Separator/>
+                <Button x:Name="btnAddAnalysis" Content="➕ Add Panel" Click="BtnAddAnalysis_Click" 
+                        Padding="8,4" Background="#DFF0D8"/>
+                <Button x:Name="btnRemoveAnalysis" Content="➖ Remove Panel" Click="BtnRemoveAnalysis_Click" 
+                        Padding="8,4" Background="#F2DEDE"/>
+            </ToolBar>
+        </ToolBarTray>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" MinWidth="200"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Control Panel -->
+            <Border Grid.Column="0" Background="White" BorderBrush="#CCCCCC" BorderThickness="1" Margin="0,0,5,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        <!-- File Info -->
+                        <TextBlock x:Name="txtFileInfo" Text="No file loaded" Foreground="#666666" 
+                                   Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                        <!-- View Type -->
+                        <GroupBox Header="View Type" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <RadioButton x:Name="rbScatter" Content="2D Scatter Plot" GroupName="ViewType"
+                                             IsChecked="True" Checked="ViewType_Changed" Margin="0,0,0,5"/>
+                                <RadioButton x:Name="rbHistogram" Content="Histogram" GroupName="ViewType"
+                                             Checked="ViewType_Changed"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Scatter Plot Controls -->
+                        <StackPanel x:Name="pnlScatterControls">
+                            <GroupBox Header="Axis Settings" Margin="0,0,0,10">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="X Axis Parameter:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboXParam" Margin="0,0,0,8" SelectionChanged="Param_Changed"/>
+
+                                    <TextBlock Text="Y Axis Parameter:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboYParam" Margin="0,0,0,8" SelectionChanged="Param_Changed"/>
+
+                                    <Grid Margin="0,0,0,5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="X Scale:" Margin="0,0,0,3"/>
+                                            <ComboBox x:Name="cboXScale" SelectionChanged="Scale_Changed">
+                                                <ComboBoxItem Content="Linear"/>
+                                                <ComboBoxItem Content="Log" IsSelected="True"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Y Scale:" Margin="0,0,0,3"/>
+                                            <ComboBox x:Name="cboYScale" SelectionChanged="Scale_Changed">
+                                                <ComboBoxItem Content="Linear"/>
+                                                <ComboBoxItem Content="Log" IsSelected="True"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Axis Range (empty = auto)" Margin="0,0,0,10">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="X Range:" Margin="0,0,0,3"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="txtXMin" TextChanged="AxisRange_Changed" Tag="xmin"/>
+                                        <TextBlock Text="~" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="txtXMax" Grid.Column="2" TextChanged="AxisRange_Changed" Tag="xmax"/>
+                                    </Grid>
+
+                                    <TextBlock Text="Y Range:" Margin="0,0,0,3"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="txtYMin" TextChanged="AxisRange_Changed" Tag="ymin"/>
+                                        <TextBlock Text="~" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="txtYMax" Grid.Column="2" TextChanged="AxisRange_Changed" Tag="ymax"/>
+                                    </Grid>
+                                    <Button Content="Reset Range" Click="BtnResetRange_Click" Padding="8,4"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Plot Type &amp; Colors" Margin="0,0,0,10">
+                                <StackPanel Margin="5">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <RadioButton x:Name="rbDotPlot" Content="Dot Plot" GroupName="PlotType"
+                                                     IsChecked="True" Checked="PlotType_Changed" Margin="0,0,15,0"/>
+                                        <RadioButton x:Name="rbContourPlot" Content="Contour Plot" GroupName="PlotType"
+                                                     Checked="PlotType_Changed"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Dot Colormap:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboDotColormap" Margin="0,0,0,8" SelectionChanged="Colormap_Changed">
+                                        <ComboBoxItem Content="Blue"/>
+                                        <ComboBoxItem Content="Turbo" IsSelected="True"/>
+                                        <ComboBoxItem Content="Viridis"/>
+                                        <ComboBoxItem Content="Plasma"/>
+                                        <ComboBoxItem Content="Inferno"/>
+                                        <ComboBoxItem Content="Grayscale"/>
+                                    </ComboBox>
+
+                                    <TextBlock Text="Contour Colormap:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboContourColormap" Margin="0,0,0,5" SelectionChanged="Colormap_Changed">
+                                        <ComboBoxItem Content="YlOrRd" IsSelected="True"/>
+                                        <ComboBoxItem Content="RdYlBu"/>
+                                        <ComboBoxItem Content="Spectral"/>
+                                        <ComboBoxItem Content="Hot"/>
+                                        <ComboBoxItem Content="Cool"/>
+                                        <ComboBoxItem Content="Grayscale"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="Gating" Margin="0,0,0,10">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="Mode:" Margin="0,0,0,3"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <RadioButton x:Name="rbModeView" Content="View" GroupName="GatingMode"
+                                                     IsChecked="True" Checked="GatingMode_Changed" Margin="0,0,10,0"/>
+                                        <RadioButton x:Name="rbModePolygon" Content="Polygon" GroupName="GatingMode"
+                                                     Checked="GatingMode_Changed" Margin="0,0,10,0"/>
+                                        <RadioButton x:Name="rbModeQuadrant" Content="Quadrant" GroupName="GatingMode"
+                                                     Checked="GatingMode_Changed"/>
+                                    </StackPanel>
+
+                                    <Border x:Name="pnlPolygonTip" Background="#FFF3CD" BorderBrush="#FFEEBA" 
+                                            BorderThickness="1" Padding="8" Margin="0,0,0,8" Visibility="Collapsed">
+                                        <TextBlock Text="💡 Click to add vertices, double-click to complete polygon (min 3 points)" 
+                                                   Foreground="#856404" FontSize="11" TextWrapping="Wrap"/>
+                                    </Border>
+
+                                    <!-- Parent Gate Selection -->
+                                    <TextBlock Text="Parent Gate (filter events):" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboParentGate" Margin="0,0,0,8" SelectionChanged="ParentGate_Changed">
+                                        <ComboBoxItem Content="All Events" IsSelected="True"/>
+                                    </ComboBox>
+
+                                    <Border x:Name="pnlGateInfo" Background="#D4EDDA" BorderBrush="#C3E6CB"
+                                            BorderThickness="1" Padding="8" Margin="0,0,0,8" Visibility="Collapsed">
+                                        <TextBlock x:Name="txtGateInfo" Foreground="#155724" FontSize="11" TextWrapping="Wrap"/>
+                                    </Border>
+
+                                    <TextBlock Text="Gate List:" Margin="0,0,0,5"/>
+                                    <ListBox x:Name="lstGates" MaxHeight="100" Margin="0,0,0,8">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"/>
+                                                    <Button Grid.Column="1" Content="✕" Padding="4,2"
+                                                            Background="#F2DEDE" Foreground="#A94442"
+                                                            Click="BtnRemoveGate_Click" Tag="{Binding}"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+
+                                    <!-- Gate Inheritance Section -->
+                                    <Border Background="#E7F3FF" BorderBrush="#B8DAFF" BorderThickness="1" 
+                                            Padding="8" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <TextBlock Text="🔄 Gate Inheritance" FontWeight="SemiBold" 
+                                                       Foreground="#004085" Margin="0,0,0,5"/>
+                                            <TextBlock Text="Apply gate regions to current sample:" 
+                                                       Foreground="#004085" FontSize="11" Margin="0,0,0,5"/>
+                                            <CheckBox x:Name="chkAutoApplyGates" Content="Auto-apply on file switch"
+                                                      Margin="0,0,0,5" Checked="ChkAutoApplyGates_Changed" 
+                                                      Unchecked="ChkAutoApplyGates_Changed"/>
+                                            <Button x:Name="btnApplyGates" Content="📋 Apply All Gates to Current Sample" 
+                                                    Click="BtnApplyGates_Click" Padding="6,4" Background="#CCE5FF"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+
+                        <!-- Histogram Controls -->
+                        <StackPanel x:Name="pnlHistogramControls" Visibility="Collapsed">
+                            <GroupBox Header="Histogram Settings" Margin="0,0,0,10">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="Parameter:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboHistParam" Margin="0,0,0,8" SelectionChanged="HistParam_Changed"/>
+
+                                    <TextBlock Text="Scale:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboHistScale" Margin="0,0,0,8" SelectionChanged="HistScale_Changed">
+                                        <ComboBoxItem Content="Linear"/>
+                                        <ComboBoxItem Content="Log" IsSelected="True"/>
+                                    </ComboBox>
+
+                                    <TextBlock Text="Color:" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboHistColor" Margin="0,0,0,8" SelectionChanged="Colormap_Changed">
+                                        <ComboBoxItem Content="Blue" IsSelected="True"/>
+                                        <ComboBoxItem Content="Red"/>
+                                        <ComboBoxItem Content="Green"/>
+                                        <ComboBoxItem Content="Orange"/>
+                                        <ComboBoxItem Content="Purple"/>
+                                        <ComboBoxItem Content="Gray"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- Histogram Gating -->
+                            <GroupBox Header="Histogram Gating" Margin="0,0,0,10">
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="Mode:" Margin="0,0,0,3"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <RadioButton x:Name="rbHistModeView" Content="View" GroupName="HistGatingMode"
+                                                     IsChecked="True" Checked="HistGatingMode_Changed" Margin="0,0,10,0"/>
+                                        <RadioButton x:Name="rbHistModeThreshold" Content="Threshold" GroupName="HistGatingMode"
+                                                     Checked="HistGatingMode_Changed" Margin="0,0,10,0"/>
+                                        <RadioButton x:Name="rbHistModeRange" Content="Range Gate" GroupName="HistGatingMode"
+                                                     Checked="HistGatingMode_Changed"/>
+                                    </StackPanel>
+
+                                    <Border x:Name="pnlHistGateTip" Background="#FFF3CD" BorderBrush="#FFEEBA" 
+                                            BorderThickness="1" Padding="8" Margin="0,0,0,8" Visibility="Collapsed">
+                                        <TextBlock x:Name="txtHistGateTip" Text="💡 Click to show above/below percentages" 
+                                                   Foreground="#856404" FontSize="11" TextWrapping="Wrap"/>
+                                    </Border>
+
+                                    <!-- Parent Gate Selection for Histogram -->
+                                    <TextBlock Text="Parent Gate (filter events):" Margin="0,0,0,3"/>
+                                    <ComboBox x:Name="cboHistParentGate" Margin="0,0,0,8" SelectionChanged="HistParentGate_Changed">
+                                        <ComboBoxItem Content="All Events" IsSelected="True"/>
+                                    </ComboBox>
+
+                                    <Border x:Name="pnlHistGateInfo" Background="#D4EDDA" BorderBrush="#C3E6CB"
+                                            BorderThickness="1" Padding="8" Margin="0,0,0,8" Visibility="Collapsed">
+                                        <TextBlock x:Name="txtHistGateInfo" Foreground="#155724" FontSize="11" TextWrapping="Wrap"/>
+                                    </Border>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+
+                        <Button x:Name="btnClearAll" Content="🗑️ Clear All Gates" Click="BtnClearAll_Click" 
+                                Padding="8,6" Background="#F2DEDE" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" 
+                          VerticalAlignment="Stretch" Background="#E0E0E0"/>
+
+            <!-- Right: Multi-Analysis Panels -->
+            <TabControl x:Name="tabAnalysis" Grid.Column="2">
+                <TabItem x:Name="tabItem1" Header="Panel 1">
+                    <Grid Background="White">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Canvas x:Name="plotCanvas" Background="White" ClipToBounds="True"
+                                MouseLeftButtonDown="PlotCanvas_MouseLeftButtonDown"
+                                MouseLeftButtonUp="PlotCanvas_MouseLeftButtonUp"
+                                MouseMove="PlotCanvas_MouseMove"/>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+                            <Button x:Name="btnPrevSample" Content="◀ Prev (Ctrl+P)" Click="BtnPrevSample_Click" 
+                                    Padding="10,5" Background="#E8E8E8" Margin="0,0,8,0" ToolTip="Previous sample"/>
+                            <Button x:Name="btnNextSample" Content="Next ▶ (Ctrl+N)" Click="BtnNextSample_Click" 
+                                    Padding="10,5" Background="#E8E8E8" Margin="0,0,8,0" ToolTip="Next sample"/>
+                            <Separator Margin="8,0"/>
+                            <Button x:Name="btnExportDot" Content="📷 Export Dot Plot" Click="BtnExportDot_Click" 
+                                    Padding="10,5" Background="#DFF0D8" Margin="0,0,8,0"/>
+                            <Button x:Name="btnExportContour" Content="📷 Export Contour Plot" Click="BtnExportContour_Click" 
+                                    Padding="10,5" Background="#DFF0D8" Margin="0,0,8,0"/>
+                            <Button x:Name="btnExportHistogram" Content="📷 Export Histogram" Click="BtnExportHistogram_Click" 
+                                    Padding="10,5" Background="#DFF0D8" Visibility="Collapsed"/>
+                            <Separator Margin="8,0"/>
+                            <Button x:Name="btnRecordStats" Content="📊 Record (Ctrl+M)" Click="BtnRecordStats_Click" 
+                                    Padding="10,5" Background="#FCF8E3" ToolTip="Record current gating statistics to table"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+
+        <!-- Statistics Record Panel (auto-expands on record) -->
+        <Border x:Name="pnlStats" Grid.Row="2" Margin="5,5,5,0" Background="White" 
+                BorderBrush="#CCCCCC" BorderThickness="1" Visibility="Collapsed">
+            <Grid Height="180">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <DataGrid x:Name="dgStats" Grid.Row="0" AutoGenerateColumns="False" 
+                          CanUserAddRows="False" IsReadOnly="True"
+                          GridLinesVisibility="All" AlternatingRowBackground="#F9F9F9"
+                          HeadersVisibility="Column" FontSize="11">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Sample" Binding="{Binding SampleName}" Width="120"/>
+                        <DataGridTextColumn Header="View" Binding="{Binding ViewType}" Width="70"/>
+                        <DataGridTextColumn Header="Parameter(s)" Binding="{Binding Parameters}" Width="140"/>
+                        <DataGridTextColumn Header="Gate/Region" Binding="{Binding GateRegion}" Width="100"/>
+                        <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="70"/>
+                        <DataGridTextColumn Header="%" Binding="{Binding Percentage}" Width="60"/>
+                        <DataGridTextColumn Header="Parent" Binding="{Binding ParentGate}" Width="80"/>
+                        <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+                    <Button x:Name="btnClearStats" Content="🗑️ Clear All" Click="BtnClearStats_Click" 
+                            Padding="8,4" Background="#F2DEDE" Margin="0,0,8,0"/>
+                    <Button x:Name="btnExportStats" Content="📋 Export to CSV" Click="BtnExportStats_Click" 
+                            Padding="8,4" Background="#DFF0D8" Margin="0,0,8,0"/>
+                    <Button x:Name="btnCopyStats" Content="📄 Copy to Clipboard" Click="BtnCopyStats_Click" 
+                            Padding="8,4" Background="#D9EDF7" Margin="0,0,8,0"/>
+                    <Button x:Name="btnHideStats" Content="✕ Hide" Click="BtnHideStats_Click" 
+                            Padding="8,4" Background="#E8E8E8"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock x:Name="txtStatus" Text="Ready. Load an FCS file or demo data to begin."/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Page>

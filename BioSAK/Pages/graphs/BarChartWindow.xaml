@@ -1,0 +1,121 @@
+<Window x:Class="BioSAK.BarChartWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Bar Chart" 
+        Height="750" Width="1000"
+        MinHeight="500" MinWidth="700"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5"
+        KeyDown="Window_KeyDown"
+        Focusable="True">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Main Toolbar -->
+        <Border Grid.Row="0" Background="White" CornerRadius="5" Padding="10" Margin="0,0,0,5">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="💾 Save PNG" Padding="8,5" Margin="0,0,5,0"
+                        Background="#4CAF50" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="SaveAsPng_Click"/>
+                <Button Content="💾 Save SVG" Padding="8,5" Margin="0,0,10,0"
+                        Background="#2196F3" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="SaveAsSvg_Click"/>
+                <Separator Margin="5,0"/>
+                <Button Content="📋 Copy" Padding="8,5" Margin="5,0"
+                        Background="#9C27B0" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="CopyToClipboard_Click" ToolTip="Ctrl+C"/>
+                <Separator Margin="5,0"/>
+                <Button Content="📊 Statistics" Padding="8,5" Margin="5,0"
+                        Background="#FF5722" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="OpenStatistics_Click"/>
+                <Separator Margin="5,0"/>
+                <Button Content="🎨 Edit Bars" Padding="8,5" Margin="5,0"
+                        Background="#795548" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="EditBars_Click" ToolTip="Edit bar colors and patterns"/>
+                <Separator Margin="5,0"/>
+                <TextBlock Text="Size:" VerticalAlignment="Center" Margin="5,0,5,0" FontWeight="SemiBold"/>
+                <ComboBox x:Name="SizePresetCombo" Width="100" Margin="0,0,5,0" 
+                          SelectionChanged="SizePreset_Changed" ToolTip="Preset sizes">
+                    <ComboBoxItem Content="Auto Fit" Tag="0,0"/>
+                    <ComboBoxItem Content="800×500" Tag="800,500" IsSelected="True"/>
+                    <ComboBoxItem Content="1024×768" Tag="1024,768"/>
+                    <ComboBoxItem Content="1280×720" Tag="1280,720"/>
+                    <ComboBoxItem Content="1920×1080" Tag="1920,1080"/>
+                    <ComboBoxItem Content="Custom..." Tag="custom"/>
+                </ComboBox>
+                <TextBox x:Name="ChartWidthBox" Width="50" Text="800" VerticalAlignment="Center" 
+                         TextAlignment="Center" ToolTip="Chart width (px)" Visibility="Collapsed"/>
+                <TextBlock x:Name="SizeXLabel" Text="×" VerticalAlignment="Center" Margin="3,0" Visibility="Collapsed"/>
+                <TextBox x:Name="ChartHeightBox" Width="50" Text="500" VerticalAlignment="Center" 
+                         TextAlignment="Center" ToolTip="Chart height (px)" Visibility="Collapsed"/>
+                <Button x:Name="ApplySizeBtn" Content="Apply" Padding="5,3" Margin="5,0" Click="ApplyChartSize_Click"
+                        Background="#607D8B" Foreground="White" BorderThickness="0" Cursor="Hand" Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Annotation Toolbar -->
+        <Border Grid.Row="1" Background="White" CornerRadius="5" Padding="10" Margin="0,0,0,5">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Add:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                
+                <Button Content="📝 Text" Padding="8,5" Margin="0,0,5,0"
+                        Background="#FF9800" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="AddTextBox_Click"/>
+                
+                <Button Content="Ω Symbol" Padding="8,5" Margin="0,0,5,0"
+                        Background="#9C27B0" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="OpenSymbolPicker_Click"/>
+                
+                <Separator Margin="10,0"/>
+                <TextBlock Text="Lines:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                
+                <Button Content="─" Padding="10,5" Margin="0,0,3,0"
+                        Background="#607D8B" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="AddLine_Click" Tag="Line"/>
+                <Button Content="┌┐" Padding="10,5" Margin="0,0,3,0"
+                        Background="#607D8B" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="AddLine_Click" Tag="UShape"/>
+                <Button Content="→" Padding="10,5" Margin="0,0,3,0"
+                        Background="#607D8B" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="AddLine_Click" Tag="Arrow"/>
+                <Button Content="╠╣" Padding="10,5" Margin="0,0,3,0"
+                        Background="#607D8B" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="AddLine_Click" Tag="HShape"/>
+                
+                <Separator Margin="10,0"/>
+                <Button Content="🗑 Delete" Padding="8,5"
+                        Background="#EF5350" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="DeleteSelected_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Chart Area with ScrollViewer for resizable chart -->
+        <Border Grid.Row="2" Background="#E0E0E0" CornerRadius="5" ClipToBounds="True">
+            <ScrollViewer x:Name="ChartScrollViewer" 
+                          HorizontalScrollBarVisibility="Auto" 
+                          VerticalScrollBarVisibility="Auto"
+                          Background="#E0E0E0">
+                <Grid x:Name="ChartContainer">
+                    <Canvas x:Name="ChartCanvas" Background="White" 
+                            MouseLeftButtonDown="ChartCanvas_MouseLeftButtonDown"
+                            MouseMove="ChartCanvas_MouseMove"
+                            MouseLeftButtonUp="ChartCanvas_MouseLeftButtonUp"
+                            SizeChanged="ChartCanvas_SizeChanged"/>
+                    <Rectangle x:Name="SelectionRect" Stroke="#2196F3" StrokeThickness="1" 
+                               StrokeDashArray="4 2" Fill="#202196F3" Visibility="Collapsed"/>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Legend (hidden, now drawn on canvas) -->
+        <Border Grid.Row="3" Background="Transparent" Padding="5" Margin="0,5,0,0" Visibility="Collapsed">
+            <WrapPanel x:Name="LegendPanel" HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

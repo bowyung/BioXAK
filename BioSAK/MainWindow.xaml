@@ -1,0 +1,218 @@
+<Window x:Class="BioSAK.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BioSAK"
+        mc:Ignorable="d"
+        Title="BioXAK - Research, Simplified" 
+        Height="700" Width="1200" 
+        Background="#F5F5F5"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Fig/ICON.png">
+
+    <Window.Resources>
+        <!-- 分類標題樣式 -->
+        <Style x:Key="CategoryHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#888888"/>
+            <Setter Property="Margin" Value="10,15,10,5"/>
+        </Style>
+
+        <!-- 導航按鈕樣式 -->
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E8E8E8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 圖標樣式 -->
+        <Style x:Key="IconStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Width" Value="25"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左側導航欄 -->
+        <Border Grid.Column="0" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Logo -->
+                <Border Grid.Row="0" Padding="15" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Icon -->
+                        <Image Source="/Fig/ICON.png" Width="32" Height="32" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <!-- App Name -->
+                        <TextBlock Text="BioSAK" FontSize="22" FontWeight="Bold" Foreground="#333" 
+                   VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 導航按鈕 -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Flow Cytometry (移到最前面) -->
+                        <TextBlock Text="FLOW CYTOMETRY" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="Flow_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📈" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="Flow Cytometry Analyzer" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Graphs (新增分類) -->
+                        <TextBlock Text="GRAPHS" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="GraphsGenerator_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="Graphs Generator" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- DNA Tools -->
+                        <TextBlock Text="DNA TOOLS" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="NucleotideComplementary_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔄" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="Nucleotide Complementary" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="PrimerTmSelfComplementaryCalculator_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🌡️" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="Primer Tm Calculator" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="DSNucleotideGenerator_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📐" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="DS Nucleotide Generator" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="PlasmidDesign_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⭕" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="Plasmid Design" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- CRISPR / Gene Editing -->
+                        <TextBlock Text="CRISPR / GENE EDITING" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="sgRNADesigner_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✂️" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="sgRNA Designer" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Restriction Enzyme -->
+                        <TextBlock Text="RESTRICTION ENZYME" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="RestrictionEnzymePattern_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="RE Pattern Predictor" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="RestrictionEnzymePredictor_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔍" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="RE Predictor" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Protein -->
+                        <TextBlock Text="PROTEIN" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="ProteinConcentrationCalculator_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📏" Style="{StaticResource IconStyle}"/>
+                                <TextBlock VerticalAlignment="Center"><Run Text="BCA Conc"/><Run Language="zh-tw" Text=". Calculator"/></TextBlock>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Chemical -->
+                        <TextBlock Text="CHEMICAL" Style="{StaticResource CategoryHeaderStyle}"/>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="MWCalculator_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚖️" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="M.W. Calculator" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Click="Concalculator_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🧪" Style="{StaticResource IconStyle}"/>
+                                <TextBlock Text="Concentration Calculator" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 底部 About -->
+                <Border Grid.Row="2" Padding="10" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
+                    <Button Style="{StaticResource NavButtonStyle}" Click="About_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="ℹ️" Style="{StaticResource IconStyle}"/>
+                            <TextBlock Text="About" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 右側內容區 -->
+        <Frame x:Name="MainFrame" 
+               Grid.Column="1"
+               NavigationUIVisibility="Hidden"
+               Navigated="MainFrame_Navigated"/>
+        <Image x:Name="Welcome" Margin="92,-7,-128,10" Source="/Fig/NAME.png" Stretch="Fill" Grid.ColumnSpan="2"/>
+    </Grid>
+</Window>

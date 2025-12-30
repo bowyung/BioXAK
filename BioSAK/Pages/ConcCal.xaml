@@ -1,0 +1,199 @@
+﻿<Page x:Class="BioSAK.ConcCal"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:BioSAK"
+      mc:Ignorable="d" 
+      d:DesignHeight="700" d:DesignWidth="980"
+      Title="Molecular Weight Calculator"
+      Background="#F5F5F5">
+
+    <Page.Resources>
+        <!-- Element Button Style -->
+        <Style x:Key="ElementButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.1" ScaleY="1.1"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Empty Cell Style -->
+        <Style x:Key="EmptyCellStyle" TargetType="Border">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- Category Colors -->
+        <SolidColorBrush x:Key="AlkaliColor" Color="#FF6B6B"/>
+        <SolidColorBrush x:Key="AlkalineColor" Color="#FFA502"/>
+        <SolidColorBrush x:Key="TransitionColor" Color="#FFD93D"/>
+        <SolidColorBrush x:Key="PostTransitionColor" Color="#6BCB77"/>
+        <SolidColorBrush x:Key="MetalloidColor" Color="#4D96FF"/>
+        <SolidColorBrush x:Key="NonmetalColor" Color="#A66CFF"/>
+        <SolidColorBrush x:Key="HalogenColor" Color="#00D4FF"/>
+        <SolidColorBrush x:Key="NobleColor" Color="#FF6B9D"/>
+        <SolidColorBrush x:Key="LanthanideColor" Color="#81D4FA"/>
+        <SolidColorBrush x:Key="ActinideColor" Color="#FFAB91"/>
+    </Page.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Text="⚖️ Molecular Weight Calculator" 
+                   FontSize="24" FontWeight="Bold" Foreground="#333"
+                   Margin="0,0,0,15"/>
+
+        <!-- Input Section -->
+        <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="20" Margin="0,0,0,15">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Formula Input -->
+                <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,15">
+                    <TextBlock Text="Chemical Formula" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,5"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FormulaInput" Grid.Column="0"
+                                 FontSize="20" FontFamily="Consolas"
+                                 Padding="10" BorderThickness="1" BorderBrush="#DDD"
+                                 VerticalContentAlignment="Center"
+                                 KeyDown="FormulaInput_KeyDown"/>
+                        <Button Grid.Column="1" Content="Calculate" 
+                                Padding="20,10" Margin="10,0,0,0"
+                                Background="#4FC3F7" Foreground="White" FontWeight="SemiBold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="Calculate_Click"/>
+                        <Button Grid.Column="2" Content="Clear" 
+                                Padding="20,10" Margin="10,0,0,0"
+                                Background="#EF5350" Foreground="White" FontWeight="SemiBold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="Clear_Click"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Element Breakdown -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                    <TextBlock Text="Element Breakdown" FontWeight="SemiBold" Foreground="#4FC3F7" Margin="0,0,0,5"/>
+                    <Border Background="#F8F9FA" CornerRadius="5" Padding="10" MinHeight="80">
+                        <TextBlock x:Name="ElementBreakdown" Text="-" 
+                                   FontFamily="Consolas" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Total Weight -->
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                    <TextBlock Text="Molecular Weight" FontWeight="SemiBold" Foreground="#4FC3F7" Margin="0,0,0,5"/>
+                    <Border Background="#F8F9FA" CornerRadius="5" Padding="10" MinHeight="80">
+                        <TextBlock x:Name="TotalWeight" Text="-" 
+                                   FontSize="24" FontWeight="Bold" Foreground="#4CAF50"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Legend -->
+        <WrapPanel Grid.Row="2" Margin="0,0,0,10" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource AlkaliColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Alkali" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource AlkalineColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Alkaline Earth" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource TransitionColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Transition" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource PostTransitionColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Post-transition" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource MetalloidColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Metalloid" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource NonmetalColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Nonmetal" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource HalogenColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Halogen" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource NobleColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Noble Gas" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource LanthanideColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Lanthanide" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5,2">
+                <Border Width="16" Height="16" Background="{StaticResource ActinideColor}" CornerRadius="2" Margin="0,0,5,0"/>
+                <TextBlock Text="Actinide" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+        </WrapPanel>
+
+        <!-- Periodic Table -->
+        <Border Grid.Row="3" Background="White" CornerRadius="10" Padding="15">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
+            </Border.Effect>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="PeriodicTablePanel" HorizontalAlignment="Center"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Page>

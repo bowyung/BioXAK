@@ -1,0 +1,72 @@
+<Window x:Class="BioSAK.ErrorBarDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select Error Bar Type" 
+        Height="450" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F5F5">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Select Error Bar Type" FontSize="16" FontWeight="SemiBold" 
+                   Foreground="#333" Margin="0,0,0,15"/>
+
+        <!-- Error Bar Type -->
+        <GroupBox Grid.Row="1" Header="Error Type" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <RadioButton x:Name="NoErrorBar" GroupName="ErrorType" Content="None" 
+                             Margin="0,3" FontSize="12" IsChecked="True"/>
+                <RadioButton x:Name="SDErrorBar" GroupName="ErrorType" Margin="0,3" FontSize="12">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Standard Deviation (SD)" FontWeight="SemiBold"/>
+                        <TextBlock Text=" - data spread" Foreground="#666"/>
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="SEMErrorBar" GroupName="ErrorType" Margin="0,3" FontSize="12">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Standard Error of Mean (SEM)" FontWeight="SemiBold"/>
+                        <TextBlock Text=" - precision" Foreground="#666"/>
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="CI95ErrorBar" GroupName="ErrorType" Margin="0,3" FontSize="12">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="95% Confidence Interval (95% CI)" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </RadioButton>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Error Bar Direction -->
+        <GroupBox Grid.Row="2" Header="Error Bar Direction" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <RadioButton x:Name="DirectionBoth" GroupName="Direction" Content="Both" 
+                             Margin="0,3" FontSize="12" IsChecked="True"/>
+                <RadioButton x:Name="DirectionUp" GroupName="Direction" Content="Upper only" 
+                             Margin="0,3" FontSize="12"/>
+                <RadioButton x:Name="DirectionDown" GroupName="Direction" Content="Lower only" 
+                             Margin="0,3" FontSize="12"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Note -->
+        <TextBlock Grid.Row="3" Text="Tip: You can change direction for individual bars by right-clicking on them." 
+                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,5"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Cancel" Width="80" Padding="5,8" Margin="0,0,10,0"
+                    Background="#9E9E9E" Foreground="White" BorderThickness="0"
+                    Cursor="Hand" Click="Cancel_Click"/>
+            <Button Content="OK" Width="80" Padding="5,8"
+                    Background="#4CAF50" Foreground="White" BorderThickness="0"
+                    Cursor="Hand" Click="OK_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

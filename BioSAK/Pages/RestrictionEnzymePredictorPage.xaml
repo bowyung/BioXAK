@@ -1,0 +1,291 @@
+<Page x:Class="BioSAK.Pages.RestrictionEnzymePredictorPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:BioSAK.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="600" d:DesignWidth="900"
+      Title="Restriction Enzyme Predictor"
+      Background="WhiteSmoke">
+
+    <Page.Resources>
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        
+        <Style x:Key="InputBorderStyle" TargetType="Border">
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        
+        <Style x:Key="FilterButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,5,5"/>
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="#4CAF50"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   Text="Restriction Enzyme Predictor" 
+                   FontSize="20" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,15"/>
+
+        <!-- Input Section -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sequence Input -->
+            <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                <TextBlock Text="DNA Sequence:" Style="{StaticResource HeaderStyle}"/>
+                <Border Style="{StaticResource InputBorderStyle}" Margin="0,0,0,10">
+                    <TextBox x:Name="SequenceTextBox" 
+                             Height="100" 
+                             TextWrapping="Wrap" 
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             FontFamily="Consolas"
+                             BorderThickness="0"
+                             Padding="5"
+                             TextChanged="SequenceTextBox_TextChanged"/>
+                </Border>
+                
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Length: "/>
+                    <TextBlock x:Name="SequenceLengthText" Text="0 bp" FontWeight="SemiBold"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Options -->
+            <StackPanel Grid.Column="1">
+                <!-- Topology -->
+                <TextBlock Text="Topology:" Style="{StaticResource HeaderStyle}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                    <RadioButton x:Name="LinearRadio" 
+                                 Content="Linear" 
+                                 IsChecked="True" 
+                                 Margin="0,0,20,0"/>
+                    <RadioButton x:Name="CircularRadio" 
+                                 Content="Circular"/>
+                </StackPanel>
+
+                <!-- Enzyme Filter -->
+                <TextBlock Text="Enzyme Filter:" Style="{StaticResource HeaderStyle}"/>
+                <WrapPanel Margin="0,0,0,10">
+                    <ToggleButton x:Name="Filter4Cutter" 
+                                  Content="4-cutter" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                    <ToggleButton x:Name="Filter6Cutter" 
+                                  Content="6-cutter" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                    <ToggleButton x:Name="Filter8Cutter" 
+                                  Content="8-cutter" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                    <ToggleButton x:Name="FilterOther" 
+                                  Content="Other" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                </WrapPanel>
+
+                <!-- Overhang Filter -->
+                <TextBlock Text="End Type Filter:" Style="{StaticResource HeaderStyle}"/>
+                <WrapPanel Margin="0,0,0,10">
+                    <ToggleButton x:Name="Filter5Prime" 
+                                  Content="5' overhang" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                    <ToggleButton x:Name="Filter3Prime" 
+                                  Content="3' overhang" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                    <ToggleButton x:Name="FilterBlunt" 
+                                  Content="Blunt" 
+                                  Style="{StaticResource FilterButtonStyle}"
+                                  IsChecked="True"/>
+                </WrapPanel>
+
+                <!-- Cut Count Filter -->
+                <TextBlock Text="Show enzymes with:" Style="{StaticResource HeaderStyle}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                    <CheckBox x:Name="ShowNoCutters" 
+                              Content="No cuts (0)" 
+                              IsChecked="False"
+                              Margin="0,0,15,0"/>
+                    <CheckBox x:Name="ShowSingleCutters" 
+                              Content="Single cut (1)" 
+                              IsChecked="True"
+                              Margin="0,0,15,0"/>
+                    <CheckBox x:Name="ShowMultiCutters" 
+                              Content="Multiple cuts (2+)" 
+                              IsChecked="True"/>
+                </StackPanel>
+
+                <!-- Analyze Button -->
+                <Button x:Name="AnalyzeButton" 
+                        Content="Analyze All Enzymes" 
+                        Height="35" 
+                        FontSize="14"
+                        Background="#2196F3"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="AnalyzeButton_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Results Section -->
+        <Grid Grid.Row="2" Margin="0,15,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Summary -->
+            <Border Grid.Row="0" 
+                    Background="#E3F2FD" 
+                    CornerRadius="5" 
+                    Padding="10" 
+                    Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Results: " FontWeight="SemiBold"/>
+                    <TextBlock x:Name="ResultsSummaryText" Text="Enter a sequence and click Analyze"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Results Table -->
+            <Border Grid.Row="1" Style="{StaticResource InputBorderStyle}">
+                <DataGrid x:Name="ResultsDataGrid"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          BorderThickness="0"
+                          CanUserResizeRows="False"
+                          CanUserSortColumns="True"
+                          SelectionMode="Single"
+                          SelectionChanged="ResultsDataGrid_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Enzyme" 
+                                            Binding="{Binding Enzyme.Name}" 
+                                            Width="100"
+                                            SortMemberPath="Enzyme.Name"/>
+                        <DataGridTextColumn Header="Recognition" 
+                                            Binding="{Binding Enzyme.RecognitionSequence}" 
+                                            Width="120">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontFamily" Value="Consolas"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Length" 
+                                            Binding="{Binding Enzyme.RecognitionSequence.Length}" 
+                                            Width="60"/>
+                        <DataGridTextColumn Header="Cuts" 
+                                            Binding="{Binding CutCount}" 
+                                            Width="50"
+                                            SortMemberPath="CutCount">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CutCount}" Value="0">
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CutCount}" Value="1">
+                                            <Setter Property="Foreground" Value="Green"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Cut Positions" 
+                                            Binding="{Binding PositionsString}" 
+                                            Width="*"/>
+                        <DataGridTextColumn Header="End Type" 
+                                            Binding="{Binding OverhangDescription}" 
+                                            Width="100"/>
+                        <DataGridTemplateColumn Header="Palindromic" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Enzyme.IsPalindromic}" 
+                                               HorizontalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Enzyme.IsPalindromic}" Value="True">
+                                                        <Setter Property="Text" Value="✓"/>
+                                                        <Setter Property="Foreground" Value="Green"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Enzyme.IsPalindromic}" Value="False">
+                                                        <Setter Property="Text" Value="✗"/>
+                                                        <Setter Property="Foreground" Value="Gray"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </Grid>
+
+        <!-- Detail Panel (Popup) -->
+        <Popup x:Name="DetailPopup" 
+               PlacementTarget="{Binding ElementName=ResultsDataGrid}"
+               Placement="Right"
+               StaysOpen="False">
+            <Border Background="White" 
+                    BorderBrush="#CCCCCC" 
+                    BorderThickness="1" 
+                    CornerRadius="5"
+                    Padding="15"
+                    MaxWidth="400">
+                <StackPanel x:Name="DetailPanel">
+                    <TextBlock x:Name="DetailEnzymeName" 
+                               FontSize="18" 
+                               FontWeight="Bold" 
+                               Foreground="#2196F3"/>
+                    <TextBlock x:Name="DetailRecognition" 
+                               FontFamily="Consolas" 
+                               FontSize="14"
+                               Margin="0,5,0,10"/>
+                    <TextBlock x:Name="DetailCutInfo" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="DetailPositions" 
+                               TextWrapping="Wrap" 
+                               Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</Page>

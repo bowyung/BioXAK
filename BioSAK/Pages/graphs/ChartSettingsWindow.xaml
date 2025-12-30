@@ -1,0 +1,131 @@
+﻿<Window x:Class="BioSAK.ChartSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Chart Settings" 
+        Height="550" Width="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F5F5">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Settings -->
+        <GroupBox Grid.Row="0" Header="Titles" Margin="0,0,0,15" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Main Title:" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ChartTitleBox" Margin="0,5"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Subtitle:" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ChartSubtitleBox" Margin="0,5"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="(Use | in Main Title for two lines)" 
+                           FontSize="10" Foreground="#888" VerticalAlignment="Bottom" 
+                           HorizontalAlignment="Right" Margin="0,0,0,-2"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="X Axis Title:" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="2" Grid.Column="1" x:Name="XAxisTitleBox" Margin="0,5"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Y Axis Title:" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="3" Grid.Column="1" x:Name="YAxisTitleBox" Margin="0,5"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Chart Type -->
+        <GroupBox Grid.Row="1" Header="Chart Type" Margin="0,0,0,15" Padding="10">
+            <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="LineTypeRadio" Content="Line" Margin="0,0,20,0"/>
+                <RadioButton x:Name="ScatterTypeRadio" Content="Scatter" Margin="0,0,20,0"/>
+                <RadioButton x:Name="VolcanoTypeRadio" Content="Volcano"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Series Settings -->
+        <GroupBox Grid.Row="2" Header="Series Settings" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <ComboBox Grid.Row="0" x:Name="SeriesSelector" Margin="0,0,0,10"
+                          SelectionChanged="SeriesSelector_SelectionChanged"/>
+
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Color -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Color:" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
+                        <Border x:Name="ColorPreview" Width="30" Height="25" BorderBrush="#CCC" 
+                                BorderThickness="1" CornerRadius="3" Margin="0,0,10,0"/>
+                        <Button Content="Choose..." Padding="10,3" Click="ChooseColor_Click"/>
+                    </StackPanel>
+
+                    <!-- Line Thickness -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Line Width:" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
+                        <Slider x:Name="LineThicknessSlider" Width="150" Minimum="1" Maximum="10" 
+                                Value="2" TickFrequency="1" IsSnapToTickEnabled="True"
+                                ValueChanged="LineThickness_Changed"/>
+                        <TextBlock x:Name="LineThicknessLabel" Text="2" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Marker Size -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Marker Size:" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
+                        <Slider x:Name="MarkerSizeSlider" Width="150" Minimum="4" Maximum="20" 
+                                Value="8" TickFrequency="2" IsSnapToTickEnabled="True"
+                                ValueChanged="MarkerSize_Changed"/>
+                        <TextBlock x:Name="MarkerSizeLabel" Text="8" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Marker Shape -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Marker Shape:" VerticalAlignment="Center"/>
+                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="MarkerShapeCombo" Margin="0,5"
+                              SelectionChanged="MarkerShape_Changed">
+                        <ComboBoxItem Content="Circle" IsSelected="True"/>
+                        <ComboBoxItem Content="Square"/>
+                        <ComboBoxItem Content="Triangle"/>
+                        <ComboBoxItem Content="Diamond"/>
+                    </ComboBox>
+                </Grid>
+            </Grid>
+        </GroupBox>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Cancel" Width="80" Padding="5,8" Margin="0,0,10,0"
+                    Background="#EEE" BorderThickness="0" Cursor="Hand"
+                    Click="Cancel_Click"/>
+            <Button Content="Apply" Width="80" Padding="5,8"
+                    Background="#4FC3F7" Foreground="White" BorderThickness="0" Cursor="Hand"
+                    Click="Apply_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

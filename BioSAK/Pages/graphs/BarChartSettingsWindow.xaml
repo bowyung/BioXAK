@@ -1,0 +1,102 @@
+<Window x:Class="BioSAK.BarChartSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Chart Settings" 
+        Height="480" Width="450"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F5F5">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Chart Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+        <!-- Title Settings -->
+        <GroupBox Grid.Row="1" Header="Titles" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Chart Title:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ChartTitleBox" Margin="0,5" Padding="5,3"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="X Axis Title:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="XAxisTitleBox" Margin="0,5" Padding="5,3"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Y Axis Title:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="2" Grid.Column="1" x:Name="YAxisTitleBox" Margin="0,5" Padding="5,3"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Error Bar Settings -->
+        <GroupBox Grid.Row="2" Header="Error Bars" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Line Thickness:" 
+                           VerticalAlignment="Center" Margin="0,0,15,0"/>
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                    <Slider x:Name="ErrorBarThicknessSlider" Width="180" Minimum="0.5" Maximum="5" Value="1.5" 
+                            TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                            ValueChanged="ThicknessSlider_ValueChanged"/>
+                    <TextBlock x:Name="ErrorBarThicknessLabel" Text="1.5" Width="35" 
+                               VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <!-- Data Points Settings -->
+        <GroupBox Grid.Row="3" Header="Data Points" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <CheckBox x:Name="ShowDataPointsCheck" Content="Show individual data points on bars" 
+                          Margin="0,0,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Text="Point Size:" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Slider x:Name="DataPointSizeSlider" Width="180" Minimum="2" Maximum="12" Value="5" 
+                                TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                                ValueChanged="PointSizeSlider_ValueChanged"/>
+                        <TextBlock x:Name="DataPointSizeLabel" Text="5" Width="35" 
+                                   VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Cancel" Width="80" Padding="5,10" Margin="0,0,10,0"
+                    Background="#9E9E9E" Foreground="White" BorderThickness="0"
+                    Cursor="Hand" Click="Cancel_Click"/>
+            <Button Content="OK" Width="80" Padding="5,10"
+                    Background="#4CAF50" Foreground="White" BorderThickness="0"
+                    Cursor="Hand" Click="OK_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

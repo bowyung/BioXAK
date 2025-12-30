@@ -1,0 +1,192 @@
+<Page x:Class="BioSAK.GraphGen"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#F5F5F5">
+
+    <Page.Resources>
+        <Style x:Key="DataGridStyle" TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="GridLinesVisibility" Value="All"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E0E0E0"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#E0E0E0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#FAFAFA"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+            <Setter Property="SelectionUnit" Value="Cell"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+            <TextBlock Text="📊 Graph Generator" FontSize="24" FontWeight="Bold" Foreground="#333"/>
+            <Button Content="← Back to Selection" Margin="20,0,0,0" Padding="10,5"
+                    Background="Transparent" BorderThickness="0" Foreground="#4FC3F7"
+                    Cursor="Hand" Click="BackToSelection_Click"/>
+        </StackPanel>
+
+        <!-- Settings Panel -->
+        <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="15" Margin="0,0,0,15">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- X Column Settings -->
+                <StackPanel Grid.Column="0" Margin="0,0,30,0">
+                    <TextBlock Text="X Column" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="XNoRepeat" Content="Single" IsChecked="True" Margin="0,0,10,0"
+                                     Checked="XRepeatChanged"/>
+                        <RadioButton x:Name="XHasRepeat" Content="Replicates:" Margin="0,0,5,0"
+                                     Checked="XRepeatChanged"/>
+                        <TextBox x:Name="XRepeatCount" Text="3" Width="40" IsEnabled="False"
+                                 VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Y Column Settings -->
+                <StackPanel Grid.Column="1" Margin="0,0,30,0">
+                    <TextBlock Text="Y Columns" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Number:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox x:Name="YColumnCount" Text="3" Width="40" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Y Data Mode -->
+                <StackPanel Grid.Column="2" Margin="0,0,30,0">
+                    <TextBlock Text="Y Data Mode" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox x:Name="YDataMode" Width="150" SelectedIndex="0" SelectionChanged="YDataModeChanged">
+                            <ComboBoxItem Content="Single Value"/>
+                            <ComboBoxItem Content="Enter Replicates"/>
+                            <ComboBoxItem Content="Mean/SD/N"/>
+                        </ComboBox>
+                        <TextBox x:Name="YRepeatCount" Text="3" Width="40" Margin="5,0,0,0" 
+                                 IsEnabled="False" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Apply Button -->
+                <Button Grid.Column="3" Content="Apply Settings" HorizontalAlignment="Left"
+                        Padding="15,8" Background="#4CAF50" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="ApplySettings_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Data Grid Section -->
+        <Border Grid.Row="2" Background="White" CornerRadius="10" Padding="10">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Column Headers -->
+                <ScrollViewer Grid.Row="0" x:Name="HeaderScrollViewer" 
+                              HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="ColumnHeadersPanel" Orientation="Horizontal" Margin="0,0,0,5"/>
+                </ScrollViewer>
+
+                <!-- Data Grid -->
+                <DataGrid Grid.Row="1" x:Name="DataGridMain" Style="{StaticResource DataGridStyle}"
+                          SelectionUnit="Cell" SelectionMode="Extended"
+                          PreviewKeyDown="DataGrid_PreviewKeyDown"
+                          ScrollViewer.ScrollChanged="DataGrid_ScrollChanged"
+                          ClipboardCopyMode="IncludeHeader">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Copy" Click="ContextCopy_Click" InputGestureText="Ctrl+C">
+                                <MenuItem.Icon>
+                                    <TextBlock Text="📋" FontSize="14"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Paste" Click="ContextPaste_Click" InputGestureText="Ctrl+V">
+                                <MenuItem.Icon>
+                                    <TextBlock Text="📄" FontSize="14"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Paste Transposed" Click="ContextPasteTransposed_Click">
+                                <MenuItem.Icon>
+                                    <TextBlock Text="🔄" FontSize="14"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Header="Delete" Click="ContextDelete_Click" InputGestureText="Del">
+                                <MenuItem.Icon>
+                                    <TextBlock Text="🗑" FontSize="14"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Header="Select All" Click="ContextSelectAll_Click" InputGestureText="Ctrl+A"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <!-- Bottom Buttons -->
+        <Border Grid.Row="3" Margin="0,15,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Content="🗑 Clear All" Padding="12,10" Margin="0,0,5,0"
+                            Background="#F44336" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="ClearAll_Click"/>
+                    <Button Content="↑ Sort Asc" Padding="12,10" Margin="0,0,5,0"
+                            Background="#9E9E9E" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="SortXAscending_Click"/>
+                    <Button Content="↓ Sort Desc" Padding="12,10" Margin="0,0,5,0"
+                            Background="#757575" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="SortXDescending_Click"/>
+                    <Button Content="📋 Import Clipboard" Padding="12,10" Margin="0,0,5,0"
+                            Background="#FF9800" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="ImportClipboard_Click"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="📈 Line" Padding="12,10" Margin="0,0,5,0"
+                            Background="#4CAF50" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="GenerateLineChart_Click" ToolTip="Line Chart"/>
+                    <Button Content="⚬ Scatter" Padding="12,10" Margin="0,0,5,0"
+                            Background="#2196F3" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="GenerateScatterPlot_Click" ToolTip="Scatter Plot"/>
+                    <Button Content="🌋 Volcano" Padding="12,10" Margin="0,0,5,0"
+                            Background="#9C27B0" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="GenerateVolcanoPlot_Click" ToolTip="Volcano Plot"/>
+                    <Button Content="📊 Column" Padding="12,10" Margin="0,0,5,0"
+                            Background="#FF5722" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="GenerateColumnChart_Click" ToolTip="Column Chart"/>
+                    <Button Content="📊 Multi Factors" Padding="12,10"
+                            Background="#795548" Foreground="White" BorderThickness="0"
+                            Cursor="Hand" Click="GenerateMultiGroupChart_Click" ToolTip="Multi Factors Bar Chart"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

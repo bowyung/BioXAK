@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Fig\ICON.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Data\common_enzymes.txt" />
+    <None Remove="Fig\ICON.png" />
+    <None Remove="Fig\NAME.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Fig\ICON.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Data\common_enzymes.txt" />
+    <Resource Include="Fig\NAME.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Fig\ICON.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+</Project>

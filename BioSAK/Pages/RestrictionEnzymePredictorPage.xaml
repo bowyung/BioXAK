@@ -47,7 +47,7 @@
 
         <!-- Title -->
         <TextBlock Grid.Row="0" 
-                   Text="Restriction Enzyme Predictor" 
+                   Text="RE Cutting Site Detcetor" 
                    FontSize="20" 
                    FontWeight="Bold" 
                    Margin="0,0,0,15"/>

@@ -1,0 +1,169 @@
+﻿<Window x:Class="BioSAK.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About BioXAK" 
+        Height="620" Width="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F8FAFC">
+
+    <Window.Resources>
+        <Style x:Key="CategoryStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#90CAF9"/>
+            <Setter Property="Margin" Value="0,14,0,6"/>
+        </Style>
+        <Style x:Key="FeatureItemStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#546E7A"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header with Gradient -->
+        <Border Grid.Row="0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#1565C0" Offset="0"/>
+                    <GradientStop Color="#0288D1" Offset="0.6"/>
+                    <GradientStop Color="#00ACC1" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel HorizontalAlignment="Center" Margin="30,28,30,24">
+                <Image Source="/Fig/ICON.png" Width="96" Height="96"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       HorizontalAlignment="Center"/>
+                <TextBlock Text="BioXAK" FontSize="30" FontWeight="Bold"
+                           Foreground="White" HorizontalAlignment="Center" Margin="0,14,0,4"/>
+                <TextBlock Text="Biology X Analysis Kit" FontSize="14"
+                           Foreground="#B3E5FC" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="VersionText" Text="Version 1.0.0" FontSize="12"
+                           Foreground="#80DEEA" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="28,20,28,10">
+
+                <!-- Description -->
+                <TextBlock TextWrapping="Wrap" Foreground="#455A64" FontSize="13" LineHeight="22">
+                    <Run Text="BioXAK is a comprehensive bioinformatics toolkit for life science researchers — an all-in-one desktop platform covering cancer genomics, CRISPR design, flow cytometry, sequence analysis, and laboratory calculations."/>
+                </TextBlock>
+
+                <!-- Separator -->
+                <Border Height="1" Background="#E0E7EF" Margin="0,18,0,0"/>
+
+                <!-- Features by Category -->
+                <TextBlock Text="🧬  TCGA DATABASE" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="📊  TCGA Analysis  —  Box plots, heatmaps, scatter plots, Kaplan-Meier survival, volcano plots" Style="{StaticResource FeatureItemStyle}"/>
+                <TextBlock Text="🔄  Gene ID Converter  —  Cross-database identifier mapping" Style="{StaticResource FeatureItemStyle}"/>
+
+                <TextBlock Text="💉  FLOW CYTOMETRY" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="📈  Flow Cytometry Analyzer  —  Gating, ArcSinh scaling, high-performance dot plot rendering" Style="{StaticResource FeatureItemStyle}"/>
+
+                <TextBlock Text="📊  GRAPHS &amp; STATISTICS" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="📉  Graphs Generator  —  Bar charts, line charts with full statistical analysis" Style="{StaticResource FeatureItemStyle}"/>
+
+                <TextBlock Text="✂️  CRISPR / GENE EDITING" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="🔬  sgRNA Designer  —  Guide RNA design with gene structure visualization and frameshift analysis" Style="{StaticResource FeatureItemStyle}"/>
+
+                <TextBlock Text="🧫  RESTRICTION ENZYME" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="🔍  RE Pattern Predictor  —  Restriction site detection and pattern analysis" Style="{StaticResource FeatureItemStyle}"/>
+                <TextBlock Text="🗺️  RE Predictor  —  Enzyme-based digestion prediction" Style="{StaticResource FeatureItemStyle}"/>
+
+                <TextBlock Text="🔤  DNA TOOLS" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="🔁  Nucleotide Complementary  —  Complement and reverse complement sequences" Style="{StaticResource FeatureItemStyle}"/>
+
+                <TextBlock Text="🧪  PROTEIN &amp; CHEMISTRY" Style="{StaticResource CategoryStyle}"/>
+                <TextBlock Text="📐  BCA Concentration Calculator  —  Standard curve-based protein quantification" Style="{StaticResource FeatureItemStyle}"/>
+                <TextBlock Text="⚖️  Molecular Weight Calculator  —  Peptide and compound MW computation" Style="{StaticResource FeatureItemStyle}"/>
+                <TextBlock Text="🧫  Concentration Calculator  —  Molar concentration and dilution tools" Style="{StaticResource FeatureItemStyle}"/>
+
+                <!-- Separator -->
+                <Border Height="1" Background="#E0E7EF" Margin="0,18,0,0"/>
+
+                <!-- Ongoing Projects -->
+                <TextBlock Text="🚧  ONGOING PROJECTS" Style="{StaticResource CategoryStyle}"/>
+                <StackPanel Margin="0,0,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                        <Border Background="#FFF3E0" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                            <TextBlock Text="In Development" Foreground="#E65100" FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock Foreground="#546E7A" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                   TextWrapping="Wrap">
+                            <Run FontWeight="SemiBold" Text="Vector Design"/>
+                            <Run Text="  —  Gene/molecular biology vector drawing and annotation tool"/>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Separator -->
+                <Border Height="1" Background="#E0E7EF" Margin="0,18,0,0"/>
+                <TextBlock Text="📬  CONTACT" Style="{StaticResource CategoryStyle}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                    <TextBlock Text="Email:" Foreground="#78909C" FontSize="13" Width="52"/>
+                    <TextBlock x:Name="EmailLink" Text="bowtobyd@gmail.com"
+                               Foreground="#0288D1" FontSize="13"
+                               Cursor="Hand" TextDecorations="Underline"
+                               MouseLeftButtonUp="EmailLink_Click"
+                               ToolTip="Click to copy email address"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="GitHub:" Foreground="#78909C" FontSize="13" Width="52"/>
+                    <TextBlock x:Name="GithubLink" Text="github.com/bowyung/BioXAK"
+                               Foreground="#0288D1" FontSize="13"
+                               Cursor="Hand" TextDecorations="Underline"
+                               MouseLeftButtonUp="GithubLink_Click"
+                               ToolTip="Open GitHub repository in browser"/>
+                </StackPanel>
+
+                <!-- Copyright -->
+                <TextBlock Text="© 2025 BioXAK. All rights reserved."
+                           Foreground="#B0BEC5" FontSize="11"
+                           HorizontalAlignment="Center" Margin="0,24,0,8"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Close Button -->
+        <Border Grid.Row="2" Padding="20,14" Background="#F0F4F8"
+                BorderBrush="#DDE3EA" BorderThickness="0,1,0,0">
+            <Button Content="Close" Width="110" Height="36"
+                    BorderThickness="0" Cursor="Hand"
+                    FontSize="13" FontWeight="SemiBold"
+                    Click="Close_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="6" Padding="16,8">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#1E88E5" Offset="0"/>
+                                    <GradientStop Color="#1565C0" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="White"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1976D2"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Border>
+    </Grid>
+</Window>

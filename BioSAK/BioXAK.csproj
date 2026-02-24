@@ -1,0 +1,436 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Fig\ICON.ico</ApplicationIcon>
+    <AssemblyName>BioXAK</AssemblyName>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Data\common_enzymes.txt" />
+    <None Remove="Data\GeneDB\human_genes.json" />
+    <None Remove="Data\GeneDB\mouse_genes.json" />
+    <None Remove="Data\GeneDB\rat_genes.json" />
+    <None Remove="Data\TCGA\projects_index.json" />
+    <None Remove="Data\TCGA\TCGA-BLCA_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-BLCA_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-BLCA_meta.json" />
+    <None Remove="Data\TCGA\TCGA-BLCA_samples.json" />
+    <None Remove="Data\TCGA\TCGA-BLCA_summary.json" />
+    <None Remove="Data\TCGA\TCGA-BRCA_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-BRCA_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-BRCA_meta.json" />
+    <None Remove="Data\TCGA\TCGA-BRCA_samples.json" />
+    <None Remove="Data\TCGA\TCGA-BRCA_summary.json" />
+    <None Remove="Data\TCGA\TCGA-CESC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-CESC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-CESC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-CESC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-CESC_summary.json" />
+    <None Remove="Data\TCGA\TCGA-CHOL_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-CHOL_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-CHOL_meta.json" />
+    <None Remove="Data\TCGA\TCGA-CHOL_samples.json" />
+    <None Remove="Data\TCGA\TCGA-CHOL_summary.json" />
+    <None Remove="Data\TCGA\TCGA-COAD_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-COAD_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-COAD_meta.json" />
+    <None Remove="Data\TCGA\TCGA-COAD_samples.json" />
+    <None Remove="Data\TCGA\TCGA-COAD_summary.json" />
+    <None Remove="Data\TCGA\TCGA-ESCA_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-ESCA_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-ESCA_meta.json" />
+    <None Remove="Data\TCGA\TCGA-ESCA_samples.json" />
+    <None Remove="Data\TCGA\TCGA-ESCA_summary.json" />
+    <None Remove="Data\TCGA\TCGA-GBM_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-GBM_meta.json" />
+    <None Remove="Data\TCGA\TCGA-HNSC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-HNSC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-HNSC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-HNSC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-HNSC_summary.json" />
+    <None Remove="Data\TCGA\TCGA-KICH_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-KICH_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-KICH_meta.json" />
+    <None Remove="Data\TCGA\TCGA-KICH_samples.json" />
+    <None Remove="Data\TCGA\TCGA-KICH_summary.json" />
+    <None Remove="Data\TCGA\TCGA-KIRC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-KIRC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-KIRC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-KIRC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-KIRC_summary.json" />
+    <None Remove="Data\TCGA\TCGA-KIRP_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-KIRP_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-KIRP_meta.json" />
+    <None Remove="Data\TCGA\TCGA-KIRP_samples.json" />
+    <None Remove="Data\TCGA\TCGA-KIRP_summary.json" />
+    <None Remove="Data\TCGA\TCGA-LIHC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-LIHC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-LIHC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-LIHC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-LIHC_summary.json" />
+    <None Remove="Data\TCGA\TCGA-LUAD_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-LUAD_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-LUAD_meta.json" />
+    <None Remove="Data\TCGA\TCGA-LUAD_samples.json" />
+    <None Remove="Data\TCGA\TCGA-LUAD_summary.json" />
+    <None Remove="Data\TCGA\TCGA-LUSC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-LUSC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-LUSC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-LUSC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-LUSC_summary.json" />
+    <None Remove="Data\TCGA\TCGA-PAAD_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-PAAD_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-PAAD_meta.json" />
+    <None Remove="Data\TCGA\TCGA-PAAD_samples.json" />
+    <None Remove="Data\TCGA\TCGA-PAAD_summary.json" />
+    <None Remove="Data\TCGA\TCGA-PCPG_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-PCPG_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-PCPG_meta.json" />
+    <None Remove="Data\TCGA\TCGA-PCPG_samples.json" />
+    <None Remove="Data\TCGA\TCGA-PCPG_summary.json" />
+    <None Remove="Data\TCGA\TCGA-PRAD_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-PRAD_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-PRAD_meta.json" />
+    <None Remove="Data\TCGA\TCGA-PRAD_samples.json" />
+    <None Remove="Data\TCGA\TCGA-PRAD_summary.json" />
+    <None Remove="Data\TCGA\TCGA-READ_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-READ_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-READ_meta.json" />
+    <None Remove="Data\TCGA\TCGA-READ_samples.json" />
+    <None Remove="Data\TCGA\TCGA-READ_summary.json" />
+    <None Remove="Data\TCGA\TCGA-SARC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-SARC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-SARC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-SARC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-SARC_summary.json" />
+    <None Remove="Data\TCGA\TCGA-SKCM_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-SKCM_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-SKCM_meta.json" />
+    <None Remove="Data\TCGA\TCGA-SKCM_samples.json" />
+    <None Remove="Data\TCGA\TCGA-SKCM_summary.json" />
+    <None Remove="Data\TCGA\TCGA-STAD_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-STAD_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-STAD_meta.json" />
+    <None Remove="Data\TCGA\TCGA-STAD_samples.json" />
+    <None Remove="Data\TCGA\TCGA-STAD_summary.json" />
+    <None Remove="Data\TCGA\TCGA-THCA_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-THCA_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-THCA_meta.json" />
+    <None Remove="Data\TCGA\TCGA-THCA_samples.json" />
+    <None Remove="Data\TCGA\TCGA-THCA_summary.json" />
+    <None Remove="Data\TCGA\TCGA-THYM_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-THYM_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-THYM_meta.json" />
+    <None Remove="Data\TCGA\TCGA-THYM_samples.json" />
+    <None Remove="Data\TCGA\TCGA-THYM_summary.json" />
+    <None Remove="Data\TCGA\TCGA-UCEC_gene_stats.json" />
+    <None Remove="Data\TCGA\TCGA-UCEC_matrix.bin" />
+    <None Remove="Data\TCGA\TCGA-UCEC_meta.json" />
+    <None Remove="Data\TCGA\TCGA-UCEC_samples.json" />
+    <None Remove="Data\TCGA\TCGA-UCEC_summary.json" />
+    <None Remove="Data\Vectors\pBluescript_KS_.gb" />
+    <None Remove="Data\Vectors\pBluescript_SK.gb" />
+    <None Remove="Data\Vectors\pBluescript_SK_.gb" />
+    <None Remove="Data\Vectors\pBR322.gb" />
+    <None Remove="Data\Vectors\pCAGGS.gb" />
+    <None Remove="Data\Vectors\pcDNA3.1-Hygro.gb" />
+    <None Remove="Data\Vectors\pcDNA3.1_.gb" />
+    <None Remove="Data\Vectors\pcDNA3_1.gb" />
+    <None Remove="Data\Vectors\pCMV-Sport6.gb" />
+    <None Remove="Data\Vectors\pCR-Blunt_II-TOPO.gb" />
+    <None Remove="Data\Vectors\pCR2.1-TOPO.gb" />
+    <None Remove="Data\Vectors\pDONR221.gb" />
+    <None Remove="Data\Vectors\pEGFP-1.gb" />
+    <None Remove="Data\Vectors\pEGFP-C1.gb" />
+    <None Remove="Data\Vectors\pEGFP-C2.gb" />
+    <None Remove="Data\Vectors\pEGFP-C3.gb" />
+    <None Remove="Data\Vectors\pEGFP-N1.gb" />
+    <None Remove="Data\Vectors\pET-15b.gb" />
+    <None Remove="Data\Vectors\pET-21a.gb" />
+    <None Remove="Data\Vectors\pET-28a.gb" />
+    <None Remove="Data\Vectors\pGEM-3Zf_.gb" />
+    <None Remove="Data\Vectors\pGEM-4Z.gb" />
+    <None Remove="Data\Vectors\pGEM-5Zf_.gb" />
+    <None Remove="Data\Vectors\pGEM-7Zf_.gb" />
+    <None Remove="Data\Vectors\pGEM-T.gb" />
+    <None Remove="Data\Vectors\pGEM-T_Easy.gb" />
+    <None Remove="Data\Vectors\pGEX-4T-1.gb" />
+    <None Remove="Data\Vectors\pGEX-6P-1.gb" />
+    <None Remove="Data\Vectors\pGL3-Basic.gb" />
+    <None Remove="Data\Vectors\pGL3-Control.gb" />
+    <None Remove="Data\Vectors\pGL3-Enhancer.gb" />
+    <None Remove="Data\Vectors\pGL3-Promoter.gb" />
+    <None Remove="Data\Vectors\pGL4.10.gb" />
+    <None Remove="Data\Vectors\pIRES2-EGFP.gb" />
+    <None Remove="Data\Vectors\pJET1.2.gb" />
+    <None Remove="Data\Vectors\pLenti-CMV.gb" />
+    <None Remove="Data\Vectors\pLKO.1-puro.gb" />
+    <None Remove="Data\Vectors\pLKO.1-TRC.gb" />
+    <None Remove="Data\Vectors\pMAL-c5x.gb" />
+    <None Remove="Data\Vectors\pMD2.G.gb" />
+    <None Remove="Data\Vectors\pMSCV.gb" />
+    <None Remove="Data\Vectors\pNL1.1.gb" />
+    <None Remove="Data\Vectors\pRL-CMV.gb" />
+    <None Remove="Data\Vectors\pRL-SV40.gb" />
+    <None Remove="Data\Vectors\pRL-TK.gb" />
+    <None Remove="Data\Vectors\psPAX2.gb" />
+    <None Remove="Data\Vectors\pSV2-neo.gb" />
+    <None Remove="Data\Vectors\pUC18.gb" />
+    <None Remove="Data\Vectors\pUC19.gb" />
+    <None Remove="Fig\ICON.png" />
+    <None Remove="Fig\NAME.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Data\GeneDB\human_genes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\GeneDB\mouse_genes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\GeneDB\rat_genes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\projects_index.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-BLCA_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-BLCA_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-BRCA_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-BRCA_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-CESC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-CESC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-CHOL_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-CHOL_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-COAD_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-COAD_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-ESCA_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-ESCA_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-GBM_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-GBM_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-HNSC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-HNSC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-KICH_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-KICH_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-KIRC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-KIRC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-KIRP_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-KIRP_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-LIHC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-LIHC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-LUAD_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-LUAD_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-LUSC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-LUSC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-PAAD_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-PAAD_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-PCPG_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-PCPG_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-PRAD_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-PRAD_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-READ_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-READ_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-SARC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-SARC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-SKCM_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-SKCM_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-STAD_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-STAD_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-THCA_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-THCA_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-THYM_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-THYM_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-UCEC_matrix.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\TCGA\TCGA-UCEC_meta.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pBluescript_KS_.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pBluescript_SK_.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pBR322.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pEGFP-1.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pEGFP-C1.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pEGFP-C2.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pEGFP-C3.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pEGFP-N1.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGEM-3Zf_.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGEM-4Z.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGEM-5Zf_.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGEM-7Zf_.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGEX-4T-1.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGL3-Basic.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGL3-Control.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGL3-Enhancer.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pGL3-Promoter.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pRL-CMV.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pRL-SV40.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pRL-TK.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pSV2-neo.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pUC18.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Vectors\pUC19.gb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fig\ICON.ico" />
+  </ItemGroup>
+	<ItemGroup>
+		<Content Include="Data\GeneDB\*.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+  <ItemGroup>
+    <Resource Include="Data\common_enzymes.txt" />
+    <Resource Include="Fig\NAME.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Fig\ICON.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+</Project>

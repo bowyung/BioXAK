@@ -1,0 +1,242 @@
+[
+  {
+    "project_id": "TCGA-BRCA",
+    "n_genes": 56713,
+    "n_samples": 1231,
+    "n_tumor": 1118,
+    "n_normal": 113,
+    "n_survival_available": 1227,
+    "n_alive": 1029,
+    "n_dead": 201
+  },
+  {
+    "project_id": "TCGA-GBM",
+    "n_genes": 55828,
+    "n_samples": 391,
+    "n_tumor": 386,
+    "n_normal": 5,
+    "n_survival_available": 385,
+    "n_alive": 72,
+    "n_dead": 312
+  },
+  {
+    "project_id": "TCGA-THYM",
+    "n_genes": 45917,
+    "n_samples": 122,
+    "n_tumor": 120,
+    "n_normal": 2,
+    "n_survival_available": 121,
+    "n_alive": 113,
+    "n_dead": 9
+  },
+  {
+    "project_id": "TCGA-PCPG",
+    "n_genes": 46617,
+    "n_samples": 187,
+    "n_tumor": 184,
+    "n_normal": 3,
+    "n_survival_available": 187,
+    "n_alive": 179,
+    "n_dead": 8
+  },
+  {
+    "project_id": "TCGA-CHOL",
+    "n_genes": 38846,
+    "n_samples": 44,
+    "n_tumor": 35,
+    "n_normal": 9,
+    "n_survival_available": 44,
+    "n_alive": 21,
+    "n_dead": 23
+  },
+  {
+    "project_id": "TCGA-CESC",
+    "n_genes": 50300,
+    "n_samples": 309,
+    "n_tumor": 306,
+    "n_normal": 3,
+    "n_survival_available": 309,
+    "n_alive": 235,
+    "n_dead": 74
+  },
+  {
+    "project_id": "TCGA-ESCA",
+    "n_genes": 56483,
+    "n_samples": 198,
+    "n_tumor": 185,
+    "n_normal": 13,
+    "n_survival_available": 198,
+    "n_alive": 116,
+    "n_dead": 82
+  },
+  {
+    "project_id": "TCGA-KICH",
+    "n_genes": 43801,
+    "n_samples": 91,
+    "n_tumor": 66,
+    "n_normal": 25,
+    "n_survival_available": 89,
+    "n_alive": 77,
+    "n_dead": 14
+  },
+  {
+    "project_id": "TCGA-HNSC",
+    "n_genes": 54507,
+    "n_samples": 566,
+    "n_tumor": 522,
+    "n_normal": 44,
+    "n_survival_available": 565,
+    "n_alive": 311,
+    "n_dead": 255
+  },
+  {
+    "project_id": "TCGA-READ",
+    "n_genes": 45025,
+    "n_samples": 177,
+    "n_tumor": 167,
+    "n_normal": 10,
+    "n_survival_available": 176,
+    "n_alive": 145,
+    "n_dead": 31
+  },
+  {
+    "project_id": "TCGA-COAD",
+    "n_genes": 54338,
+    "n_samples": 524,
+    "n_tumor": 483,
+    "n_normal": 41,
+    "n_survival_available": 521,
+    "n_alive": 406,
+    "n_dead": 116
+  },
+  {
+    "project_id": "TCGA-BLCA",
+    "n_genes": 53471,
+    "n_samples": 431,
+    "n_tumor": 412,
+    "n_normal": 19,
+    "n_survival_available": 428,
+    "n_alive": 237,
+    "n_dead": 194
+  },
+  {
+    "project_id": "TCGA-LIHC",
+    "n_genes": 49319,
+    "n_samples": 424,
+    "n_tumor": 374,
+    "n_normal": 50,
+    "n_survival_available": 423,
+    "n_alive": 260,
+    "n_dead": 164
+  },
+  {
+    "project_id": "TCGA-KIRP",
+    "n_genes": 52400,
+    "n_samples": 323,
+    "n_tumor": 291,
+    "n_normal": 32,
+    "n_survival_available": 322,
+    "n_alive": 272,
+    "n_dead": 51
+  },
+  {
+    "project_id": "TCGA-SKCM",
+    "n_genes": 52833,
+    "n_samples": 473,
+    "n_tumor": 472,
+    "n_normal": 1,
+    "n_survival_available": 465,
+    "n_alive": 249,
+    "n_dead": 224
+  },
+  {
+    "project_id": "TCGA-SARC",
+    "n_genes": 50904,
+    "n_samples": 265,
+    "n_tumor": 263,
+    "n_normal": 2,
+    "n_survival_available": 265,
+    "n_alive": 166,
+    "n_dead": 99
+  },
+  {
+    "project_id": "TCGA-LUAD",
+    "n_genes": 54731,
+    "n_samples": 601,
+    "n_tumor": 542,
+    "n_normal": 59,
+    "n_survival_available": 592,
+    "n_alive": 382,
+    "n_dead": 219
+  },
+  {
+    "project_id": "TCGA-PRAD",
+    "n_genes": 53628,
+    "n_samples": 554,
+    "n_tumor": 502,
+    "n_normal": 52,
+    "n_survival_available": 554,
+    "n_alive": 544,
+    "n_dead": 10
+  },
+  {
+    "project_id": "TCGA-LUSC",
+    "n_genes": 55299,
+    "n_samples": 562,
+    "n_tumor": 511,
+    "n_normal": 51,
+    "n_survival_available": 557,
+    "n_alive": 306,
+    "n_dead": 256
+  },
+  {
+    "project_id": "TCGA-PAAD",
+    "n_genes": 47763,
+    "n_samples": 183,
+    "n_tumor": 179,
+    "n_normal": 4,
+    "n_survival_available": 183,
+    "n_alive": 88,
+    "n_dead": 95
+  },
+  {
+    "project_id": "TCGA-KIRC",
+    "n_genes": 56263,
+    "n_samples": 614,
+    "n_tumor": 542,
+    "n_normal": 72,
+    "n_survival_available": 614,
+    "n_alive": 412,
+    "n_dead": 202
+  },
+  {
+    "project_id": "TCGA-THCA",
+    "n_genes": 52512,
+    "n_samples": 572,
+    "n_tumor": 513,
+    "n_normal": 59,
+    "n_survival_available": 572,
+    "n_alive": 552,
+    "n_dead": 20
+  },
+  {
+    "project_id": "TCGA-UCEC",
+    "n_genes": 55586,
+    "n_samples": 589,
+    "n_tumor": 554,
+    "n_normal": 35,
+    "n_survival_available": 576,
+    "n_alive": 480,
+    "n_dead": 97
+  },
+  {
+    "project_id": "TCGA-STAD",
+    "n_genes": 57546,
+    "n_samples": 448,
+    "n_tumor": 412,
+    "n_normal": 36,
+    "n_survival_available": 445,
+    "n_alive": 274,
+    "n_dead": 174
+  }
+]

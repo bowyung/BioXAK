@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace BioSAK
@@ -2127,7 +2128,122 @@ namespace BioSAK
         #endregion
 
         #region Copy Results
+        private void ResultsGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // 處理 Ctrl+C 複製選中的儲存格
+            if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                CopySelectedCells();
+                e.Handled = true;
+            }
+        }
 
+        private void CopySelectedCells()
+        {
+            if (ResultsGrid.SelectedCells.Count == 0)
+            {
+                // 如果沒有選中的儲存格，複製整個表格
+                CopyResults_Click(null, null);
+                return;
+            }
+
+            var sb = new StringBuilder();
+
+            // 獲取所有選中的儲存格，按行和列排序
+            var selectedCells = ResultsGrid.SelectedCells
+                .Select(cell => new
+                {
+                    RowIndex = ResultsGrid.Items.IndexOf(cell.Item),
+                    ColumnIndex = cell.Column.DisplayIndex,
+                    Cell = cell
+                })
+                .OrderBy(x => x.RowIndex)
+                .ThenBy(x => x.ColumnIndex)
+                .ToList();
+
+            if (selectedCells.Count == 0) return;
+
+            // 檢查是否只選中了單一儲存格
+            if (selectedCells.Count == 1)
+            {
+                var cell = selectedCells[0].Cell;
+                var cellContent = GetCellValue(cell);
+                Clipboard.SetText(cellContent);
+                return;
+            }
+
+            // 多個儲存格：按行組織
+            int currentRow = -1;
+            int lastColumnIndex = -1;
+
+            foreach (var item in selectedCells)
+            {
+                if (currentRow != item.RowIndex)
+                {
+                    // 新的一行
+                    if (currentRow >= 0)
+                    {
+                        sb.AppendLine();
+                    }
+                    currentRow = item.RowIndex;
+                    lastColumnIndex = item.ColumnIndex;
+                }
+                else
+                {
+                    // 同一行，添加分隔符
+                    // 填充跳過的列
+                    while (lastColumnIndex < item.ColumnIndex - 1)
+                    {
+                        sb.Append("\t");
+                        lastColumnIndex++;
+                    }
+                    sb.Append("\t");
+                    lastColumnIndex = item.ColumnIndex;
+                }
+
+                var cellValue = GetCellValue(item.Cell);
+                sb.Append(cellValue);
+            }
+
+            Clipboard.SetText(sb.ToString());
+        }
+
+        private string GetCellValue(DataGridCellInfo cellInfo)
+        {
+            if (cellInfo.Column == null || cellInfo.Item == null)
+                return "";
+
+            // 獲取綁定的屬性值
+            var binding = (cellInfo.Column as DataGridBoundColumn)?.Binding as Binding;
+            if (binding != null && cellInfo.Item is System.Data.DataRowView rowView)
+            {
+                var columnName = binding.Path.Path;
+                if (rowView.Row.Table.Columns.Contains(columnName))
+                {
+                    var value = rowView[columnName];
+                    return value?.ToString() ?? "";
+                }
+            }
+
+            // 備用方法：嘗試直接從列名獲取
+            if (cellInfo.Item is System.Data.DataRowView drv)
+            {
+                try
+                {
+                    var columnHeader = cellInfo.Column.Header?.ToString();
+                    if (!string.IsNullOrEmpty(columnHeader) && drv.Row.Table.Columns.Contains(columnHeader))
+                    {
+                        return drv[columnHeader]?.ToString() ?? "";
+                    }
+                }
+                catch
+                {
+                    // 忽略錯誤
+                }
+            }
+
+            return "";
+        }
         private void CopyResults_Click(object sender, RoutedEventArgs e)
         {
             if (ResultsGrid.ItemsSource is DataView dv && dv.Table != null)
@@ -2146,6 +2262,12 @@ namespace BioSAK
                 MessageBox.Show("Results copied to clipboard!", "Copied", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
+       
+
+        
+
+        
+
 
         #endregion
     }

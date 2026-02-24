@@ -80,7 +80,10 @@ namespace BioSAK
 
         private DateTime lastClickTime = DateTime.MinValue;
         private FrameworkElement? lastClickedElement = null;
-
+        private bool isTextAddMode = false;
+        private bool isResizing = false;              // 是否正在調整大小
+        private string currentResizeHandle = "";      // 當前拖拽的 handle 名稱
+        private Canvas? currentLineCanvas = null;     // 當前正在調整的線條 Canvas
         private readonly Color[] defaultColors = new Color[]
         {
             Color.FromRgb(66, 133, 244), Color.FromRgb(234, 67, 53),
@@ -181,7 +184,19 @@ namespace BioSAK
             var pos = e.GetPosition(ChartCanvas);
             var now = DateTime.Now;
 
+            // === 新增: 處理文字添加模式 ===
+            if (isTextAddMode)
+            {
+                isTextAddMode = false;
+                ChartCanvas.Cursor = Cursors.Arrow;
+
+                // 恢復按鈕顏色
+               
+                CreateEditableTextAtPosition(pos);
+                return;
+            }
             // Check if clicked on annotation
+
             var hitElement = FindAnnotationAt(pos);
             if (hitElement != null)
             {
@@ -239,7 +254,128 @@ namespace BioSAK
             lastClickTime = now;
             lastClickedElement = null;
         }
+        private void CreateEditableTextAtPosition(Point position)
+        {
+            // 創建可編輯的 TextBox
+            var textBox = new TextBox
+            {
+                Text = "",
+                FontSize = 12,
+                MinWidth = 60,
+                MinHeight = 24,
+                Background = new SolidColorBrush(Color.FromArgb(250, 255, 255, 255)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(33, 150, 243)),
+                BorderThickness = new Thickness(2),
+                Padding = new Thickness(4, 2, 4, 2),
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.NoWrap
+            };
 
+            Canvas.SetLeft(textBox, position.X);
+            Canvas.SetTop(textBox, position.Y);
+            ChartCanvas.Children.Add(textBox);
+
+            // 設置焦點讓用戶可以立即輸入
+            textBox.Loaded += (s, args) =>
+            {
+                textBox.Focus();
+                Keyboard.Focus(textBox);
+            };
+
+            // 處理完成編輯
+            textBox.LostFocus += (s, args) => FinalizeTextInput(textBox);
+
+            textBox.PreviewKeyDown += (s, args) =>
+            {
+                if (args.Key == Key.Enter && Keyboard.Modifiers != ModifierKeys.Shift)
+                {
+                    // Enter 完成編輯（Shift+Enter 換行）
+                    FinalizeTextInput(textBox);
+                    args.Handled = true;
+                }
+                else if (args.Key == Key.Escape)
+                {
+                    // Escape 取消
+                    ChartCanvas.Children.Remove(textBox);
+                    args.Handled = true;
+                }
+            };
+        }
+        private void FinalizeTextInput(TextBox textBox)
+        {
+            // 防止重複執行
+            if (!ChartCanvas.Children.Contains(textBox))
+                return;
+
+            string text = textBox.Text.Trim();
+            double left = Canvas.GetLeft(textBox);
+            double top = Canvas.GetTop(textBox);
+
+            // 移除 TextBox
+            ChartCanvas.Children.Remove(textBox);
+
+            // 如果文字為空，不創建 annotation
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            // 創建 TextBlock annotation
+            var tb = new TextBlock
+            {
+                Text = text,
+                FontSize = 12,
+                Padding = new Thickness(5),
+                Foreground = Brushes.Black
+            };
+
+            var border = new Border
+            {
+                Child = tb,
+                Background = Brushes.Transparent,
+                Cursor = Cursors.SizeAll
+            };
+
+            Canvas.SetLeft(border, left);
+            Canvas.SetTop(border, top);
+            ChartCanvas.Children.Add(border);
+            annotations.Add(border);
+        }
+        private void ConvertTextBoxToAnnotation(TextBox textBox)
+        {
+            // 檢查 TextBox 是否還在畫布上
+            if (!ChartCanvas.Children.Contains(textBox))
+                return;
+
+            string text = textBox.Text.Trim();
+            double left = Canvas.GetLeft(textBox);
+            double top = Canvas.GetTop(textBox);
+
+            // 移除 TextBox
+            ChartCanvas.Children.Remove(textBox);
+
+            // 如果文字為空，不創建 annotation
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            // 創建 TextBlock annotation
+            var tb = new TextBlock
+            {
+                Text = text,
+                FontSize = 12,
+                Padding = new Thickness(5)
+            };
+
+            var border = new Border
+            {
+                Child = tb,
+                Background = Brushes.Transparent,
+                Cursor = Cursors.SizeAll
+            };
+
+            Canvas.SetLeft(border, left);
+            Canvas.SetTop(border, top);
+            ChartCanvas.Children.Add(border);
+            annotations.Add(border);
+        }
         private void ChartCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             var pos = e.GetPosition(ChartCanvas);
@@ -1397,7 +1533,286 @@ namespace BioSAK
                 HighlightAnnotation(ann, true);
             }
         }
+        private void AddResizeHandles(Canvas container, string lineType)
+        {
+            var handleColor = new SolidColorBrush(Color.FromRgb(33, 150, 243)); // 藍色
 
+            switch (lineType)
+            {
+                case "Line":
+                case "Arrow":
+                    // 線條兩端都可以拖拽
+                    AddHandle(container, "Start", handleColor, Cursors.Cross);
+                    AddHandle(container, "End", handleColor, Cursors.Cross);
+                    break;
+
+                case "UShape":
+                    // ㄇ 形狀：左下、右下（調整垂直高度）、右上（調整寬度）
+                    AddHandle(container, "LeftBottom", handleColor, Cursors.SizeNS);
+                    AddHandle(container, "RightBottom", handleColor, Cursors.SizeNS);
+                    AddHandle(container, "TopRight", handleColor, Cursors.SizeWE);
+                    break;
+
+                case "HShape":
+                    // H 形狀：左上、左下、右上、右下（調整垂直高度）、右中（調整寬度）
+                    AddHandle(container, "LeftTop", handleColor, Cursors.SizeNS);
+                    AddHandle(container, "LeftBottom", handleColor, Cursors.SizeNS);
+                    AddHandle(container, "RightTop", handleColor, Cursors.SizeNS);
+                    AddHandle(container, "RightBottom", handleColor, Cursors.SizeNS);
+                    AddHandle(container, "RightMid", handleColor, Cursors.SizeWE);
+                    break;
+            }
+
+            UpdateHandlePositions(container);
+        }
+
+        private void UpdateHandlePositions(Canvas container)
+        {
+            if (container.Tag is not LineShapeInfo info) return;
+
+            foreach (var child in container.Children.OfType<Ellipse>())
+            {
+                if (child.Tag?.ToString() != "Handle") continue;
+
+                string name = child.GetValue(FrameworkElement.NameProperty) as string ?? "";
+
+                switch (name)
+                {
+                    // Line/Arrow 的端點
+                    case "Start":
+                        Canvas.SetLeft(child, info.StartX - 5);
+                        Canvas.SetTop(child, info.StartY - 5);
+                        break;
+                    case "End":
+                        Canvas.SetLeft(child, info.EndX - 5);
+                        Canvas.SetTop(child, info.EndY - 5);
+                        break;
+
+                    // UShape 的調整點
+                    case "LeftBottom":
+                        Canvas.SetLeft(child, -5);
+                        if (info.Type == "UShape")
+                            Canvas.SetTop(child, info.LeftHeight - 5);
+                        else // HShape
+                            Canvas.SetTop(child, info.Height / 2 + info.LeftHeight / 2 - 5);
+                        break;
+                    case "RightBottom":
+                        Canvas.SetLeft(child, info.Width - 5);
+                        if (info.Type == "UShape")
+                            Canvas.SetTop(child, info.RightHeight - 5);
+                        else // HShape
+                            Canvas.SetTop(child, info.Height / 2 + info.RightHeight / 2 - 5);
+                        break;
+                    case "TopRight":
+                        Canvas.SetLeft(child, info.Width - 5);
+                        Canvas.SetTop(child, -5);
+                        break;
+
+                    // HShape 額外的調整點
+                    case "LeftTop":
+                        Canvas.SetLeft(child, -5);
+                        Canvas.SetTop(child, info.Height / 2 - info.LeftHeight / 2 - 5);
+                        break;
+                    case "RightTop":
+                        Canvas.SetLeft(child, info.Width - 5);
+                        Canvas.SetTop(child, info.Height / 2 - info.RightHeight / 2 - 5);
+                        break;
+                    case "RightMid":
+                        Canvas.SetLeft(child, info.Width - 5);
+                        Canvas.SetTop(child, info.Height / 2 - 5);
+                        break;
+                }
+            }
+        }
+        private void AddHandle(Canvas container, string name, Brush color, Cursor cursor)
+        {
+            var handle = new Ellipse
+            {
+                Width = 10,
+                Height = 10,
+                Fill = color,
+                Stroke = Brushes.White,
+                StrokeThickness = 1,
+                Cursor = cursor,
+                Tag = "Handle"
+            };
+
+            handle.SetValue(FrameworkElement.NameProperty, name);
+            handle.MouseLeftButtonDown += Handle_MouseDown;
+            handle.MouseMove += Handle_MouseMove;
+            handle.MouseLeftButtonUp += Handle_MouseUp;
+
+            container.Children.Add(handle);
+        }
+        private void Handle_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Ellipse handle && handle.Parent is Canvas container)
+            {
+                isResizing = true;
+                currentResizeHandle = handle.GetValue(FrameworkElement.NameProperty) as string ?? "";
+                currentLineCanvas = container;
+                dragStart = e.GetPosition(ChartCanvas);
+                handle.CaptureMouse();
+                e.Handled = true;
+            }
+        }
+
+        private void Handle_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!isResizing || currentLineCanvas == null) return;
+            if (currentLineCanvas.Tag is not LineShapeInfo info) return;
+
+            var pos = e.GetPosition(ChartCanvas);
+            var border = currentLineCanvas.Parent as Border;
+            if (border == null) return;
+
+            double containerLeft = Canvas.GetLeft(border);
+            double containerTop = Canvas.GetTop(border);
+            double localX = pos.X - containerLeft;
+            double localY = pos.Y - containerTop;
+
+            // Shift 鍵可以限制角度（用於直線）
+            bool shiftPressed = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+
+            // 處理 Line/Arrow 的端點拖拽
+            if (currentResizeHandle == "Start" || currentResizeHandle == "End")
+            {
+                double anchorX = currentResizeHandle == "Start" ? info.EndX : info.StartX;
+                double anchorY = currentResizeHandle == "Start" ? info.EndY : info.StartY;
+
+                double targetX = localX, targetY = localY;
+
+                // Shift 限制為 45 度角
+                if (shiftPressed)
+                {
+                    double dx = localX - anchorX, dy = localY - anchorY;
+                    double length = Math.Sqrt(dx * dx + dy * dy);
+                    if (length > 0)
+                    {
+                        double angle = Math.Atan2(dy, dx);
+                        double snapped = Math.Round(angle / (Math.PI / 4)) * (Math.PI / 4);
+                        targetX = anchorX + length * Math.Cos(snapped);
+                        targetY = anchorY + length * Math.Sin(snapped);
+                    }
+                }
+
+                if (currentResizeHandle == "Start")
+                {
+                    info.StartX = targetX;
+                    info.StartY = targetY;
+                }
+                else
+                {
+                    info.EndX = targetX;
+                    info.EndY = targetY;
+                }
+
+                // 確保座標不會變成負數
+                double minX = Math.Min(info.StartX, info.EndX) - 15;
+                double minY = Math.Min(info.StartY, info.EndY) - 15;
+
+                if (minX < 0)
+                {
+                    info.StartX -= minX;
+                    info.EndX -= minX;
+                    Canvas.SetLeft(border, containerLeft + minX);
+                }
+                if (minY < 0)
+                {
+                    info.StartY -= minY;
+                    info.EndY -= minY;
+                    Canvas.SetTop(border, containerTop + minY);
+                }
+
+                currentLineCanvas.Width = Math.Max(info.StartX, info.EndX) + 15;
+                currentLineCanvas.Height = Math.Max(info.StartY, info.EndY) + 15;
+            }
+            else
+            {
+                // 處理其他形狀的調整
+                double dx = pos.X - dragStart.X;
+                double dy = pos.Y - dragStart.Y;
+
+                switch (currentResizeHandle)
+                {
+                    case "TopRight":
+                    case "RightMid":
+                        // 調整寬度
+                        info.Width = Math.Max(20, info.Width + dx);
+                        currentLineCanvas.Width = info.Width + 10;
+                        break;
+
+                    case "LeftBottom":
+                        if (info.Type == "UShape")
+                        {
+                            // ㄇ 形狀：調整左邊垂直高度
+                            info.LeftHeight = Math.Max(10, info.LeftHeight + dy);
+                            info.Height = Math.Max(info.LeftHeight, info.RightHeight) + 5;
+                        }
+                        else
+                        {
+                            // H 形狀：對稱調整
+                            info.LeftHeight = Math.Max(10, info.LeftHeight + dy * 2);
+                        }
+                        break;
+
+                    case "LeftTop":
+                        // H 形狀：從頂部調整
+                        info.LeftHeight = Math.Max(10, info.LeftHeight - dy * 2);
+                        break;
+
+                    case "RightBottom":
+                        if (info.Type == "UShape")
+                        {
+                            // ㄇ 形狀：調整右邊垂直高度
+                            info.RightHeight = Math.Max(10, info.RightHeight + dy);
+                            info.Height = Math.Max(info.LeftHeight, info.RightHeight) + 5;
+                        }
+                        else
+                        {
+                            // H 形狀：對稱調整
+                            info.RightHeight = Math.Max(10, info.RightHeight + dy * 2);
+                        }
+                        break;
+
+                    case "RightTop":
+                        // H 形狀：從頂部調整
+                        info.RightHeight = Math.Max(10, info.RightHeight - dy * 2);
+                        break;
+                }
+
+                // 更新容器大小
+                if (info.Type == "HShape")
+                {
+                    info.Height = Math.Max(info.LeftHeight, info.RightHeight) + 10;
+                    currentLineCanvas.Height = info.Height;
+                }
+                if (info.Type == "UShape")
+                {
+                    currentLineCanvas.Height = info.Height;
+                }
+
+                dragStart = pos;
+            }
+
+            RedrawLineShape(currentLineCanvas, info);
+            UpdateHandlePositions(currentLineCanvas);
+            e.Handled = true;
+        }
+
+
+        private void Handle_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            isResizing = false;
+            currentResizeHandle = "";
+            currentLineCanvas = null;
+
+            if (sender is Ellipse handle)
+            {
+                handle.ReleaseMouseCapture();
+            }
+            e.Handled = true;
+        }
         private void ClearSelection()
         {
             foreach (var ann in selectedAnnotations) HighlightAnnotation(ann, false);
@@ -1442,40 +1857,56 @@ namespace BioSAK
 
         private void EditAnnotation(FrameworkElement element)
         {
-            // Simplified - just allow text editing
-            if (element is Border border && border.Child is TextBlock tb)
+            if (element is Border border)
             {
-                var format = new TextFormatInfo
+                // 文字編輯
+                if (border.Child is TextBlock tb)
                 {
-                    FontFamily = tb.FontFamily,
-                    FontSize = tb.FontSize,
-                    TextColor = (tb.Foreground as SolidColorBrush)?.Color ?? Colors.Black,
-                    IsBold = tb.FontWeight == FontWeights.Bold,
-                    IsItalic = tb.FontStyle == FontStyles.Italic,
-                    ShowBorder = false
-                };
-                var dialog = new TextAnnotationDialog(tb.Text, format);
-                dialog.Owner = this;
-                if (dialog.ShowDialog() == true)
+                    var format = new TextFormatInfo
+                    {
+                        FontFamily = tb.FontFamily,
+                        FontSize = tb.FontSize,
+                        TextColor = (tb.Foreground as SolidColorBrush)?.Color ?? Colors.Black,
+                        IsBold = tb.FontWeight == FontWeights.Bold,
+                        IsItalic = tb.FontStyle == FontStyles.Italic,
+                        ShowBorder = false
+                    };
+                    var dialog = new TextAnnotationDialog(tb.Text, format);
+                    dialog.Owner = this;
+                    if (dialog.ShowDialog() == true)
+                    {
+                        tb.Text = dialog.AnnotationText;
+                        tb.FontSize = dialog.SelectedFontSize;
+                        tb.FontFamily = dialog.SelectedFontFamily;
+                        tb.FontWeight = dialog.IsBold ? FontWeights.Bold : FontWeights.Normal;
+                        tb.FontStyle = dialog.IsItalic ? FontStyles.Italic : FontStyles.Normal;
+                        tb.Foreground = new SolidColorBrush(dialog.TextColor);
+                    }
+                }
+                // 線條編輯
+                else if (border.Child is Canvas lineCanvas && lineCanvas.Tag is LineShapeInfo info)
                 {
-                    tb.Text = dialog.AnnotationText;
+                    var dialog = new LineSettingsDialog(info);
+                    dialog.Owner = this;
+                    if (dialog.ShowDialog() == true)
+                    {
+                        info.Thickness = dialog.LineThickness;
+                        info.Stroke = new SolidColorBrush(dialog.LineColor);
+                        info.ArrowDirection = dialog.ArrowDirection;
+
+                        RedrawLineShape(lineCanvas, info);
+                        UpdateHandlePositions(lineCanvas);
+                    }
                 }
             }
         }
 
         private void AddTextBox_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new TextAnnotationDialog();
-            dialog.Owner = this;
-            if (dialog.ShowDialog() == true)
-            {
-                var tb = new TextBlock { Text = dialog.AnnotationText, FontSize = dialog.SelectedFontSize, Padding = new Thickness(5) };
-                var border = new Border { Child = tb, Background = Brushes.Transparent, Cursor = Cursors.SizeAll };
-                Canvas.SetLeft(border, 100);
-                Canvas.SetTop(border, 100);
-                ChartCanvas.Children.Add(border);
-                annotations.Add(border);
-            }
+            // 進入文字添加模式
+            isTextAddMode = true;
+            ChartCanvas.Cursor = Cursors.Cross;
+                           
         }
 
         private void OpenSymbolPicker_Click(object sender, RoutedEventArgs e)
@@ -1495,18 +1926,256 @@ namespace BioSAK
 
         private void AddLine_Click(object sender, RoutedEventArgs e)
         {
-            // Simplified line adding
             if (sender is Button btn && btn.Tag is string lineType)
             {
-                var line = new Line { X1 = 0, Y1 = 0, X2 = 80, Y2 = 0, Stroke = Brushes.Black, StrokeThickness = 2 };
-                var canvas = new Canvas { Width = 85, Height = 10, Background = Brushes.Transparent };
-                canvas.Children.Add(line);
-                var border = new Border { Child = canvas, Cursor = Cursors.SizeAll };
-                Canvas.SetLeft(border, 150);
-                Canvas.SetTop(border, 150);
-                ChartCanvas.Children.Add(border);
-                annotations.Add(border);
+                CreateLineAnnotation(lineType);
             }
+        }
+
+        private void CreateLineAnnotation(string lineType)
+        {
+            var container = new Canvas { Background = Brushes.Transparent, Cursor = Cursors.SizeAll };
+
+            var info = new LineShapeInfo
+            {
+                Type = lineType,
+                Stroke = Brushes.Black,
+                Thickness = 2,
+                Width = 100,
+                Height = 40,
+                LeftHeight = 40,
+                RightHeight = 40,
+                ArrowDirection = "Right",
+                StartX = 5,
+                StartY = 10,
+                EndX = 105,
+                EndY = 10
+            };
+
+            switch (lineType)
+            {
+                case "Line":
+                case "Arrow":
+                    container.Width = 110;
+                    container.Height = 20;
+                    info.Height = 20;
+                    break;
+                case "UShape":
+                    container.Width = 100;
+                    container.Height = 45;
+                    info.Height = 45;
+                    info.LeftHeight = 40;
+                    info.RightHeight = 40;
+                    break;
+                case "HShape":
+                    container.Width = 100;
+                    container.Height = 50;
+                    info.Height = 50;
+                    info.LeftHeight = 40;
+                    info.RightHeight = 40;
+                    break;
+            }
+
+            container.Tag = info;
+            RedrawLineShape(container, info);
+            AddResizeHandles(container, lineType);
+
+            var border = new Border
+            {
+                Child = container,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                Cursor = Cursors.SizeAll
+            };
+
+            Canvas.SetLeft(border, 150);
+            Canvas.SetTop(border, 150);
+            ChartCanvas.Children.Add(border);
+            annotations.Add(border);
+        }
+        private void RedrawLineShape(Canvas container, LineShapeInfo info)
+        {
+            // 清除舊的形狀線條（保留 Handle）
+            ClearShapeLines(container);
+
+            switch (info.Type)
+            {
+                case "Line":
+                    var line = new Line
+                    {
+                        X1 = info.StartX,
+                        Y1 = info.StartY,
+                        X2 = info.EndX,
+                        Y2 = info.EndY,
+                        Stroke = info.Stroke,
+                        StrokeThickness = info.Thickness,
+                        Tag = "ShapeLine"
+                    };
+                    container.Children.Add(line);
+                    break;
+
+                case "Arrow":
+                    DrawArrowShape(container, info);
+                    break;
+
+                case "UShape":
+                    DrawUShape(container, info);
+                    break;
+
+                case "HShape":
+                    DrawHShape(container, info);
+                    break;
+            }
+        }
+        private void ClearShapeLines(Canvas container)
+        {
+            var toRemove = container.Children.OfType<FrameworkElement>()
+                .Where(c => c.Tag?.ToString() != "Handle").ToList();
+            foreach (var item in toRemove)
+            {
+                container.Children.Remove(item);
+            }
+        }
+        private void DrawArrowShape(Canvas container, LineShapeInfo info)
+        {
+            double dx = info.EndX - info.StartX;
+            double dy = info.EndY - info.StartY;
+            double length = Math.Sqrt(dx * dx + dy * dy);
+            if (length == 0) length = 1;
+
+            double ux = dx / length, uy = dy / length;
+            double px = -uy, py = ux;
+            double arrowSize = 10;
+            string dir = info.ArrowDirection ?? "Right";
+
+            double lsx = info.StartX, lsy = info.StartY, lex = info.EndX, ley = info.EndY;
+
+            if (dir == "Left" || dir == "Both") { lsx += ux * arrowSize; lsy += uy * arrowSize; }
+            if (dir == "Right" || dir == "Both") { lex -= ux * arrowSize; ley -= uy * arrowSize; }
+
+            // 主線條
+            container.Children.Add(new Line
+            {
+                X1 = lsx,
+                Y1 = lsy,
+                X2 = lex,
+                Y2 = ley,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
+
+            // 右箭頭
+            if (dir == "Right" || dir == "Both")
+            {
+                container.Children.Add(new Polygon
+                {
+                    Points = new PointCollection {
+                new Point(info.EndX - ux * arrowSize + px * arrowSize * 0.5, info.EndY - uy * arrowSize + py * arrowSize * 0.5),
+                new Point(info.EndX, info.EndY),
+                new Point(info.EndX - ux * arrowSize - px * arrowSize * 0.5, info.EndY - uy * arrowSize - py * arrowSize * 0.5)
+            },
+                    Fill = info.Stroke,
+                    Tag = "ShapeLine"
+                });
+            }
+
+            // 左箭頭
+            if (dir == "Left" || dir == "Both")
+            {
+                container.Children.Add(new Polygon
+                {
+                    Points = new PointCollection {
+                new Point(info.StartX + ux * arrowSize + px * arrowSize * 0.5, info.StartY + uy * arrowSize + py * arrowSize * 0.5),
+                new Point(info.StartX, info.StartY),
+                new Point(info.StartX + ux * arrowSize - px * arrowSize * 0.5, info.StartY + uy * arrowSize - py * arrowSize * 0.5)
+            },
+                    Fill = info.Stroke,
+                    Tag = "ShapeLine"
+                });
+            }
+        }
+
+        private void DrawUShape(Canvas container, LineShapeInfo info)
+        {
+            // ㄇ 形狀：左垂直線 + 頂部水平線 + 右垂直線
+            // 左邊垂直線（從頂部向下）
+            container.Children.Add(new Line
+            {
+                X1 = 0,
+                Y1 = 0,
+                X2 = 0,
+                Y2 = info.LeftHeight,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
+
+            // 頂部水平線
+            container.Children.Add(new Line
+            {
+                X1 = 0,
+                Y1 = 0,
+                X2 = info.Width,
+                Y2 = 0,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
+
+            // 右邊垂直線（從頂部向下）
+            container.Children.Add(new Line
+            {
+                X1 = info.Width,
+                Y1 = 0,
+                X2 = info.Width,
+                Y2 = info.RightHeight,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
+        }
+        
+        private void DrawHShape(Canvas container, LineShapeInfo info)
+        {
+            // H 形狀（工字型）
+            double midY = info.Height / 2;
+
+            // 左邊垂直線
+            container.Children.Add(new Line
+            {
+                X1 = 0,
+                Y1 = midY - info.LeftHeight / 2,
+                X2 = 0,
+                Y2 = midY + info.LeftHeight / 2,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
+
+            // 中間水平線
+            container.Children.Add(new Line
+            {
+                X1 = 0,
+                Y1 = midY,
+                X2 = info.Width,
+                Y2 = midY,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
+
+            // 右邊垂直線
+            container.Children.Add(new Line
+            {
+                X1 = info.Width,
+                Y1 = midY - info.RightHeight / 2,
+                X2 = info.Width,
+                Y2 = midY + info.RightHeight / 2,
+                Stroke = info.Stroke,
+                StrokeThickness = info.Thickness,
+                Tag = "ShapeLine"
+            });
         }
 
         private void DeleteSelected_Click(object sender, RoutedEventArgs e) => DeleteSelectedAnnotations();
@@ -1766,6 +2435,7 @@ namespace BioSAK
 
         #endregion
     }
+   
 
     #region Helper Classes
 

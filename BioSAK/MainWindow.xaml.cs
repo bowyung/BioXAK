@@ -21,22 +21,36 @@ namespace BioSAK
         {
             InitializeComponent();
         }
+
         private void MainFrame_Navigated(object sender, NavigationEventArgs e)
         {
             // 只要有導航就隱藏歡迎圖片
             Welcome.Visibility = Visibility.Hidden;
         }
+
         private void NavigateToPage(Page page)
         {
             MainFrame.Navigate(page);
-            // 不用在這裡隱藏，Navigated 事件會自動處理
-        }
-        // ===== DNA Tools =====
-        private void NucleotideComplementary_Click(object sender, RoutedEventArgs e)
-        {
-            MainFrame.Navigate(new NucleotideComplementary());
         }
 
+        // ===== TCGA DATABASE =====
+        private void TcgaAnalysis_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new TcgaAnalysisPage());
+        }
+
+        private void GeneIdConverter_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new GeneIdConverterPage());
+        }
+
+        // ===== Flow Cytometry =====
+        private void Flow_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new FlowCytometryAnalyzer());
+        }
+
+        // ===== Graphs =====
         private void GraphsGenerator_Click(object sender, RoutedEventArgs e)
         {
             var selector = new GraphTypeSelector();
@@ -49,33 +63,34 @@ namespace BioSAK
                 }
                 else if (selector.SelectedType == "Column")
                 {
-                    MainFrame.Navigate(new GraphGen()); 
+                    MainFrame.Navigate(new GraphGen());
                 }
                 else if (selector.SelectedType == "Grouped")
                 {
-                    MainFrame.Navigate(new GraphGen()); 
+                    MainFrame.Navigate(new GraphGen());
                 }
             }
         }
-        private void PrimerTmSelfComplementaryCalculator_Click(object sender, RoutedEventArgs e)
-        {
-            MainFrame.Navigate(new Page1());
-        }
 
-        private void DSNucleotideGenerator_Click(object sender, RoutedEventArgs e)
+        // ===== DNA Tools =====
+        private void NucleotideComplementary_Click(object sender, RoutedEventArgs e)
         {
-            MainFrame.Navigate(new Page1());
+            MainFrame.Navigate(new NucleotideComplementary());
         }
-
-        private void PlasmidDesign_Click(object sender, RoutedEventArgs e)
+        private void PrimerDesign_Click(object sender, RoutedEventArgs e)
         {
-            MainFrame.Navigate(new Page1());
+            MainFrame.Navigate(new PrimerDesignerPage());
         }
-
-        // ===== CRISPR / Gene Editing (新增) =====
+        // ===== CRISPR / Gene Editing =====
         private void sgRNADesigner_Click(object sender, RoutedEventArgs e)
         {
             MainFrame.Navigate(new sgRNADesignerPage());
+        }
+
+        // ===== CLONING =====
+        private void VectorDesigner_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new VectorDesignerPage());
         }
 
         // ===== Restriction Enzyme =====
@@ -90,6 +105,10 @@ namespace BioSAK
         }
 
         // ===== Protein =====
+        private void WesternBlotOrganizer_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new WesternBlotOrganizer());
+        }
         private void ProteinConcentrationCalculator_Click(object sender, RoutedEventArgs e)
         {
             MainFrame.Navigate(new ProteinBCA());
@@ -106,16 +125,12 @@ namespace BioSAK
             MainFrame.Navigate(new ConcCal());
         }
 
-        // ===== Flow Cytometry =====
-        private void Flow_Click(object sender, RoutedEventArgs e)
-        {
-            MainFrame.Navigate(new FlowCytometryAnalyzer());
-        }
-
         // ===== Help =====
         private void About_Click(object sender, RoutedEventArgs e)
         {
-            MainFrame.Navigate(new Page1());
+            var aboutWindow = new AboutWindow();
+            aboutWindow.Owner = this;
+            aboutWindow.ShowDialog();
         }
     }
 }

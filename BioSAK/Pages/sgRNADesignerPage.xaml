@@ -1,450 +1,1140 @@
 <Page x:Class="BioSAK.Pages.sgRNADesignerPage"
+
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+
       mc:Ignorable="d" 
+
       d:DesignHeight="750" d:DesignWidth="1100"
+
       Title="sgRNA Designer"
+
       Background="#F5F5F5">
 
+
+
     <Page.Resources>
+
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+
             <Setter Property="Background" Value="#2196F3"/>
+
             <Setter Property="Foreground" Value="White"/>
+
             <Setter Property="BorderThickness" Value="0"/>
+
             <Setter Property="Padding" Value="16,10"/>
+
             <Setter Property="FontSize" Value="13"/>
+
             <Setter Property="Cursor" Value="Hand"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="Button">
+
                         <Border x:Name="border" Background="{TemplateBinding Background}"
+
                                 CornerRadius="5" Padding="{TemplateBinding Padding}">
+
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
                         </Border>
+
                         <ControlTemplate.Triggers>
+
                             <Trigger Property="IsMouseOver" Value="True">
+
                                 <Setter TargetName="border" Property="Background" Value="#1976D2"/>
+
                             </Trigger>
+
                             <Trigger Property="IsEnabled" Value="False">
+
                                 <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+
                             </Trigger>
+
                         </ControlTemplate.Triggers>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
+
+
 
         <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+
             <Setter Property="Background" Value="#4CAF50"/>
+
             <Setter Property="Foreground" Value="White"/>
+
             <Setter Property="BorderThickness" Value="0"/>
+
             <Setter Property="Padding" Value="15,8"/>
+
             <Setter Property="FontSize" Value="12"/>
+
             <Setter Property="Cursor" Value="Hand"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="Button">
+
                         <Border x:Name="border" Background="{TemplateBinding Background}"
+
                                 CornerRadius="4" Padding="{TemplateBinding Padding}">
+
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
                         </Border>
+
                         <ControlTemplate.Triggers>
+
                             <Trigger Property="IsMouseOver" Value="True">
+
                                 <Setter TargetName="border" Property="Background" Value="#388E3C"/>
+
                             </Trigger>
+
                             <Trigger Property="IsEnabled" Value="False">
+
                                 <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+
                             </Trigger>
+
                         </ControlTemplate.Triggers>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
+
+
 
         <Style x:Key="SmallButtonStyle" TargetType="Button">
+
             <Setter Property="Background" Value="#FF9800"/>
+
             <Setter Property="Foreground" Value="White"/>
+
             <Setter Property="BorderThickness" Value="0"/>
+
             <Setter Property="Padding" Value="10,5"/>
+
             <Setter Property="FontSize" Value="11"/>
+
             <Setter Property="Cursor" Value="Hand"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="Button">
+
                         <Border x:Name="border" Background="{TemplateBinding Background}"
+
                                 CornerRadius="3" Padding="{TemplateBinding Padding}">
+
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
                         </Border>
+
                         <ControlTemplate.Triggers>
+
                             <Trigger Property="IsMouseOver" Value="True">
+
                                 <Setter TargetName="border" Property="Background" Value="#F57C00"/>
+
                             </Trigger>
+
                             <Trigger Property="IsEnabled" Value="False">
+
                                 <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+
                             </Trigger>
+
                         </ControlTemplate.Triggers>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
 
-        <Style x:Key="CollapseToggleStyle" TargetType="ToggleButton">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4" Padding="8,4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#E8E8E8"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+
 
         <Style x:Key="CardStyle" TargetType="Border">
+
             <Setter Property="Background" Value="White"/>
+
             <Setter Property="BorderBrush" Value="#E0E0E0"/>
+
             <Setter Property="BorderThickness" Value="1"/>
+
             <Setter Property="CornerRadius" Value="8"/>
+
             <Setter Property="Padding" Value="15"/>
+
         </Style>
+
+
 
         <Style x:Key="LabelStyle" TargetType="TextBlock">
+
             <Setter Property="FontSize" Value="12"/>
+
             <Setter Property="FontWeight" Value="SemiBold"/>
+
             <Setter Property="Foreground" Value="#555"/>
+
             <Setter Property="Margin" Value="0,0,0,5"/>
+
         </Style>
+
+
 
         <Style x:Key="InputStyle" TargetType="TextBox">
+
             <Setter Property="Padding" Value="10,8"/>
+
             <Setter Property="FontSize" Value="13"/>
+
             <Setter Property="BorderBrush" Value="#DDD"/>
+
             <Setter Property="BorderThickness" Value="1"/>
+
             <Setter Property="Background" Value="White"/>
+
         </Style>
+
+
 
         <Style x:Key="ComboStyle" TargetType="ComboBox">
+
             <Setter Property="Padding" Value="10,8"/>
+
             <Setter Property="FontSize" Value="13"/>
+
             <Setter Property="BorderBrush" Value="#DDD"/>
+
             <Setter Property="BorderThickness" Value="1"/>
+
             <Setter Property="Background" Value="White"/>
+
         </Style>
+
+
+
+        <!-- GridSplitter 樣式 -->
+
+        <Style x:Key="HorizontalSplitterStyle" TargetType="GridSplitter">
+
+            <Setter Property="Height" Value="6"/>
+
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+
+            <Setter Property="VerticalAlignment" Value="Center"/>
+
+            <Setter Property="Background" Value="Transparent"/>
+
+            <Setter Property="Cursor" Value="SizeNS"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="GridSplitter">
+
+                        <Border Background="Transparent" Height="6">
+
+                            <Grid>
+
+                                <Border Height="2" VerticalAlignment="Center" Background="#E0E0E0" CornerRadius="1" Margin="50,0"/>
+
+                                <Border Width="30" Height="4" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#BDBDBD" CornerRadius="2"/>
+
+                            </Grid>
+
+                        </Border>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+            <Style.Triggers>
+
+                <Trigger Property="IsMouseOver" Value="True">
+
+                    <Setter Property="Background" Value="#E3F2FD"/>
+
+                </Trigger>
+
+            </Style.Triggers>
+
+        </Style>
+
     </Page.Resources>
 
+
+
     <Grid Margin="15">
+
         <Grid.RowDefinitions>
+
             <RowDefinition Height="Auto"/>
+
             <RowDefinition Height="*"/>
+
         </Grid.RowDefinitions>
 
+
+
         <!-- 可折疊的輸入區 -->
+
         <Border Grid.Row="0" Background="White" CornerRadius="8" BorderBrush="#E0E0E0" BorderThickness="1" Margin="0,0,0,10">
+
             <Grid>
+
                 <Grid.RowDefinitions>
+
                     <RowDefinition Height="Auto"/>
+
                     <RowDefinition Height="Auto"/>
+
                 </Grid.RowDefinitions>
 
-                <!-- 折疊標題列 (可點擊) -->
+
+
+                <!-- 折疊標題列 -->
+
                 <Border Grid.Row="0" Background="#FAFAFA" CornerRadius="8,8,0,0" Padding="12,10" 
+
                         MouseLeftButtonDown="InputHeader_Click" Cursor="Hand">
+
                     <Grid>
+
                         <StackPanel Orientation="Horizontal">
+
                             <TextBlock x:Name="CollapseArrow" Text="▼" FontSize="12" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
                             <TextBlock Text="sgRNA Designer" FontSize="16" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
+
                             <TextBlock x:Name="InputSectionSummary" Text="" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold"/>
+
                         </StackPanel>
+
                         <TextBlock Text="Click to expand/collapse" FontSize="10" Foreground="#999" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
                     </Grid>
+
                 </Border>
+
+
 
                 <!-- 可折疊的輸入內容 -->
+
                 <Border x:Name="InputContentPanel" Grid.Row="1" Padding="15" BorderBrush="#EEEEEE" BorderThickness="0,1,0,0">
+
                     <Grid>
+
                         <Grid.ColumnDefinitions>
+
                             <ColumnDefinition Width="*"/>
+
                             <ColumnDefinition Width="25"/>
+
                             <ColumnDefinition Width="*"/>
+
                         </Grid.ColumnDefinitions>
 
-                        <!-- 左側：Search Gene -->
+
+
+                        <!-- 左側：Search Gene (簡化版 - 只保留名稱搜尋) -->
+
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="🔍 Search Gene from NCBI" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
+
+                            <TextBlock Text="🔍 Search Gene" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
+
+
 
                             <Grid>
+
                                 <Grid.ColumnDefinitions>
+
                                     <ColumnDefinition Width="*"/>
+
                                     <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="*"/>
+
+                                    <ColumnDefinition Width="Auto"/>
+
                                 </Grid.ColumnDefinitions>
 
+
+
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Gene Symbol" Style="{StaticResource LabelStyle}"/>
-                                    <TextBox x:Name="GeneSymbolTextBox" Style="{StaticResource InputStyle}" Text="ACTB"/>
+
+                                    <TextBlock Text="Gene Name / ID" Style="{StaticResource LabelStyle}"/>
+
+                                    <TextBox x:Name="GeneQueryTextBox" Style="{StaticResource InputStyle}" 
+
+                                             Text="ACTB"
+
+                                             ToolTip="Enter gene symbol (ACTB), Ensembl ID (ENSG00000075624), or NCBI Gene ID (60)"/>
+
+                                    <TextBlock Text="Accepts: Symbol, ENSG ID, NCBI ID" FontSize="9" Foreground="#888" Margin="0,3,0,0"/>
+
                                 </StackPanel>
+
+
 
                                 <StackPanel Grid.Column="2">
+
                                     <TextBlock Text="Species" Style="{StaticResource LabelStyle}"/>
-                                    <ComboBox x:Name="SpeciesComboBox" Style="{StaticResource ComboStyle}">
+
+                                    <ComboBox x:Name="SpeciesComboBox" Style="{StaticResource ComboStyle}" Width="140">
+
                                         <ComboBoxItem Content="Homo sapiens" IsSelected="True" Tag="9606"/>
+
                                         <ComboBoxItem Content="Mus musculus" Tag="10090"/>
+
                                         <ComboBoxItem Content="Rattus norvegicus" Tag="10116"/>
+
                                     </ComboBox>
+
                                 </StackPanel>
+
                             </Grid>
 
-                            <TextBlock Text="── OR enter accession ──" HorizontalAlignment="Center" Foreground="#CCC" FontSize="10" Margin="0,8"/>
 
-                            <StackPanel>
-                                <TextBlock Text="RefSeqGene Accession (NG_...)" Style="{StaticResource LabelStyle}"/>
-                                <TextBox x:Name="AccessionTextBox" Style="{StaticResource InputStyle}"/>
-                            </StackPanel>
+
+                            <!-- 搜尋結果提示 -->
+
+                            <TextBlock x:Name="SearchResultHint" Text="" FontSize="10" Foreground="#1565C0" 
+
+                                       Margin="0,8,0,0" TextWrapping="Wrap" FontStyle="Italic"/>
+
+
 
                             <Button x:Name="FetchGeneButton" Content="🔍 Fetch Gene" 
+
                                     Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0"
+
                                     Click="FetchGeneButton_Click"/>
+
                         </StackPanel>
+
+
 
                         <!-- 分隔線 -->
+
                         <Rectangle Grid.Column="1" Width="1" Fill="#E0E0E0" Margin="12,0"/>
 
+
+
                         <!-- 右側：Input DNA Sequence -->
+
                         <StackPanel Grid.Column="2">
+
                             <TextBlock Text="📋 Input DNA Sequence" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
 
-                            <TextBlock Text="Paste CDS/mRNA sequence (FASTA or plain)" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="SequenceInputTextBox" Style="{StaticResource InputStyle}" 
-                                     Height="70" AcceptsReturn="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="10"/>
-                            <TextBlock Text="Opens BLAST to identify gene" FontSize="9" Foreground="#888" Margin="0,4,0,0"/>
 
-                            <Button x:Name="AlignSequenceButton" Content="🧬 Align &amp; Identify" 
+
+                            <TextBlock Text="Paste CDS/mRNA sequence (FASTA or plain)" Style="{StaticResource LabelStyle}"/>
+
+                            <TextBox x:Name="SequenceInputTextBox" Style="{StaticResource InputStyle}" 
+
+                                     Height="70" AcceptsReturn="True" TextWrapping="Wrap"
+
+                                     VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="10"/>
+
+                            <TextBlock Text="Treats entire sequence as one exon for sgRNA design" FontSize="9" Foreground="#888" Margin="0,4,0,0"/>
+
+
+
+                            <Button x:Name="AlignSequenceButton" Content="🧬 Find sgRNAs in Sequence" 
+
                                     Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0"
+
                                     Click="AlignSequenceButton_Click"/>
+
                         </StackPanel>
+
                     </Grid>
+
                 </Border>
+
             </Grid>
+
         </Border>
 
-        <!-- 主要內容區 (視覺化 + 表格) -->
+
+
+        <!-- 主要內容區 -->
+
         <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+
             <Grid>
+
                 <Grid.RowDefinitions>
+
                     <RowDefinition Height="Auto"/>
+
                     <RowDefinition Height="Auto"/>
+
+                    <RowDefinition Height="Auto" MinHeight="100"/>
+
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+
+                    <RowDefinition Height="*" MinHeight="120"/>
+
                     <RowDefinition Height="Auto"/>
+
+                    <RowDefinition Height="Auto"/>
+
                 </Grid.RowDefinitions>
 
+
+
                 <!-- 控制列 -->
+
                 <Grid Grid.Row="0" Margin="0,0,0,8">
+
                     <Grid.ColumnDefinitions>
+
                         <ColumnDefinition Width="Auto"/>
+
                         <ColumnDefinition Width="*"/>
+
                         <ColumnDefinition Width="Auto"/>
+
                     </Grid.ColumnDefinitions>
 
+
+
                     <Button x:Name="AnalyzeButton" Grid.Column="0" Content="🧬 Find sgRNAs in CDS" 
+
                             Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+
                             Click="AnalyzeButton_Click"/>
 
+
+
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
+
                         <TextBlock Text="PAM:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="#555" FontSize="12"/>
+
                         <ComboBox x:Name="PAMComboBox" Width="95" Style="{StaticResource ComboStyle}" FontSize="12">
+
                             <ComboBoxItem Content="NGG (SpCas9)" IsSelected="True"/>
+
                             <ComboBoxItem Content="NAG (SpCas9)"/>
+
                         </ComboBox>
+
                         <TextBlock Text="Len:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="#555" FontSize="12"/>
+
                         <ComboBox x:Name="sgRNALengthComboBox" Width="50" Style="{StaticResource ComboStyle}" FontSize="12">
+
                             <ComboBoxItem Content="18"/>
+
                             <ComboBoxItem Content="19"/>
+
                             <ComboBoxItem Content="20" IsSelected="True"/>
+
                         </ComboBox>
+
                     </StackPanel>
+
                 </Grid>
 
+
+
                 <!-- 狀態列 -->
+
                 <Border Grid.Row="1" Background="#E3F2FD" CornerRadius="4" Padding="10,6" Margin="0,0,0,8"
+
                         x:Name="InfoBar" Visibility="Collapsed">
+
                     <StackPanel Orientation="Horizontal">
+
                         <TextBlock x:Name="InfoIcon" Text="ℹ️" Margin="0,0,6,0"/>
+
                         <TextBlock x:Name="InfoText" Text="" Foreground="#1565C0" TextWrapping="Wrap" FontSize="12"/>
+
                     </StackPanel>
+
                 </Border>
+
+
 
                 <!-- Gene 視覺化區 -->
+
                 <Border Grid.Row="2" Background="#FAFAFA" CornerRadius="5" 
-                        BorderBrush="#E0E0E0" BorderThickness="1" Margin="0,0,0,8"
-                        x:Name="VisualizationBorder">
+
+                        BorderBrush="#E0E0E0" BorderThickness="1"
+
+                        x:Name="VisualizationBorder" MinHeight="120">
+
                     <Grid>
+
                         <Grid.RowDefinitions>
+
                             <RowDefinition Height="Auto"/>
+
                             <RowDefinition Height="*"/>
+
                         </Grid.RowDefinitions>
 
+
+
                         <Border Grid.Row="0" Background="#EEEEEE" Padding="8,4">
+
                             <Grid>
+
                                 <StackPanel Orientation="Horizontal">
+
                                     <TextBlock Text="📊 Gene Structure" FontWeight="SemiBold" Foreground="#333" FontSize="11"/>
+
                                     <TextBlock x:Name="GeneInfoLabel" Text="" Foreground="#666" Margin="10,0,0,0" FontSize="10"/>
+
                                 </StackPanel>
-                                
+
+
+
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Rectangle Width="12" Height="7" Fill="#4CAF50" RadiusX="2" RadiusY="2"/>
-                                    <TextBlock Text="CDS" FontSize="9" Foreground="#666" Margin="2,0,6,0" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#2196F3"/>
-                                    <TextBlock Text="sgRNA" FontSize="9" Foreground="#666" Margin="2,0,6,0" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#FF9800"/>
-                                    <TextBlock Text="⭐" FontSize="9" Foreground="#666" Margin="2,0,0,0" VerticalAlignment="Center"/>
+
+                                    <Button x:Name="ZoomOutButton" Content="−" Width="22" Height="20" 
+
+                                            FontSize="14" FontWeight="Bold" Padding="0" Margin="0,0,2,0"
+
+                                            Click="ZoomOutButton_Click" ToolTip="Zoom Out"
+
+                                            Background="#E0E0E0" BorderThickness="0" Cursor="Hand"/>
+
+                                    <Button x:Name="ZoomResetButton" Content="⟲" Width="22" Height="20" 
+
+                                            FontSize="11" Padding="0" Margin="0,0,2,0"
+
+                                            Click="ZoomResetButton_Click" ToolTip="Reset Zoom"
+
+                                            Background="#E0E0E0" BorderThickness="0" Cursor="Hand"/>
+
+                                    <Button x:Name="ZoomInButton" Content="+" Width="22" Height="20" 
+
+                                            FontSize="14" FontWeight="Bold" Padding="0" Margin="0,0,12,0"
+
+                                            Click="ZoomInButton_Click" ToolTip="Zoom In"
+
+                                            Background="#E0E0E0" BorderThickness="0" Cursor="Hand"/>
+
+
+
+                                    <!-- 圖例 -->
+
+                                    <Rectangle Width="14" Height="8" Fill="#C8E6C9" Stroke="#4CAF50" StrokeThickness="1" RadiusX="2" RadiusY="2" VerticalAlignment="Center"/>
+
+                                    <TextBlock Text="Exon" FontSize="9" Foreground="#666" Margin="3,0,10,0" VerticalAlignment="Center"/>
+
+                                    <Rectangle Width="14" Height="8" Fill="#FFB74D" Stroke="#FF9800" StrokeThickness="1" RadiusX="2" RadiusY="2" VerticalAlignment="Center"/>
+
+                                    <TextBlock Text="CDS" FontSize="9" Foreground="#666" Margin="3,0,10,0" VerticalAlignment="Center"/>
+
+                                    <Ellipse Width="8" Height="8" Fill="#2196F3" VerticalAlignment="Center"/>
+
+                                    <TextBlock Text="sgRNA" FontSize="9" Foreground="#666" Margin="3,0,10,0" VerticalAlignment="Center"/>
+
+                                    <Ellipse Width="8" Height="8" Fill="#FF9800" VerticalAlignment="Center"/>
+
+                                    <TextBlock Text="⭐" FontSize="9" Foreground="#666" Margin="3,0,0,0" VerticalAlignment="Center"/>
+
                                 </StackPanel>
+
                             </Grid>
+
                         </Border>
 
-                        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
-                                      MinHeight="70" MaxHeight="100">
-                            <Canvas x:Name="GeneVisualizationCanvas" MinHeight="70" Background="White" ClipToBounds="True"/>
+
+
+                        <ScrollViewer Grid.Row="1" 
+
+                                      x:Name="GeneVisualizationScrollViewer"
+
+                                      HorizontalScrollBarVisibility="Auto" 
+
+                                      VerticalScrollBarVisibility="Disabled"
+
+                                      MinHeight="90"
+
+                                      PreviewMouseWheel="GeneVisualizationScrollViewer_PreviewMouseWheel">
+
+                            <Canvas x:Name="GeneVisualizationCanvas" MinHeight="90" Background="White" ClipToBounds="True"/>
+
                         </ScrollViewer>
 
+
+
                         <TextBlock x:Name="EmptyVisualizationText" Grid.Row="1"
+
                                    Text="Fetch gene data to begin" Foreground="#AAA" FontStyle="Italic" FontSize="11"
+
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
                     </Grid>
+
                 </Border>
+
+
+
+                <!-- GridSplitter -->
+
+                <GridSplitter Grid.Row="3" Style="{StaticResource HorizontalSplitterStyle}"
+
+                              ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
+
+                              Margin="0,4"/>
+
+
 
                 <!-- sgRNA 列表區 -->
-                <Border Grid.Row="3" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
+
+                <Border Grid.Row="4" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" MinHeight="120">
+
                     <Grid>
+
                         <Grid.RowDefinitions>
+
                             <RowDefinition Height="Auto"/>
+
                             <RowDefinition Height="*"/>
+
                         </Grid.RowDefinitions>
 
+
+
                         <Border Grid.Row="0" Background="#EEEEEE" Padding="8,4">
+
                             <Grid>
+
                                 <StackPanel Orientation="Horizontal">
+
                                     <TextBlock Text="🎯 sgRNA Candidates" FontWeight="SemiBold" Foreground="#333" FontSize="11"/>
+
                                     <TextBlock x:Name="sgRNACountLabel" Text="" Foreground="#666" Margin="10,0,0,0" FontSize="10"/>
+
                                 </StackPanel>
-                                <TextBlock Text="⭐ G...A" FontSize="9" Foreground="#FF9800" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+
+                                    <TextBlock Text="⭐ = Recommended" FontSize="9" Foreground="#FF9800" VerticalAlignment="Center"/>
+
+                                </StackPanel>
+
                             </Grid>
+
                         </Border>
 
+
+
                         <DataGrid x:Name="sgRNADataGrid" Grid.Row="1"
+
                                   AutoGenerateColumns="False"
+
                                   IsReadOnly="False"
-                                  SelectionMode="Single"
+
+                                  SelectionMode="Extended"
+
                                   GridLinesVisibility="Horizontal"
+
                                   HeadersVisibility="Column"
+
                                   BorderThickness="0"
+
                                   Background="White"
+
                                   RowBackground="White"
+
                                   AlternatingRowBackground="#FAFAFA"
+
                                   CanUserSortColumns="True"
+
                                   SelectionChanged="sgRNADataGrid_SelectionChanged"
+
                                   FontSize="11">
+
                             <DataGrid.Columns>
-                                <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="26"/>
-                                <DataGridTextColumn Header="#" Binding="{Binding Index}" Width="28" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="Position" Binding="{Binding PositionDisplay}" Width="80" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="E" Binding="{Binding ExonDisplay}" Width="28" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="sgRNA Sequence (5'→3')" Binding="{Binding Sequence}" Width="*" IsReadOnly="True">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FontFamily" Value="Consolas"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Header="PAM" Binding="{Binding PAM}" Width="38" IsReadOnly="True">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="FontFamily" Value="Consolas"/>
-                                            <Setter Property="Foreground" Value="#E65100"/>
-                                            <Setter Property="FontWeight" Value="SemiBold"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Header="±" Binding="{Binding Strand}" Width="22" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="GC" Binding="{Binding GCContent}" Width="35" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="" Binding="{Binding RecommendDisplay}" Width="20" IsReadOnly="True">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTemplateColumn Header="BLAST" Width="65">
+
+                                <!-- 全選勾選框 Header -->
+
+                                <DataGridTemplateColumn Width="30">
+
+                                    <DataGridTemplateColumn.Header>
+
+                                        <CheckBox x:Name="SelectAllCheckBox" 
+
+                                                  Click="SelectAllCheckBox_Click"
+
+                                                  ToolTip="Select All / Deselect All"/>
+
+                                    </DataGridTemplateColumn.Header>
+
                                     <DataGridTemplateColumn.CellTemplate>
+
                                         <DataTemplate>
-                                            <Button Content="BLAST" Style="{StaticResource SmallButtonStyle}"
-                                                    Click="BlastSingle_Click" Tag="{Binding}" Padding="5,2" FontSize="10"/>
+
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+
+                                                      HorizontalAlignment="Center"/>
+
                                         </DataTemplate>
+
                                     </DataGridTemplateColumn.CellTemplate>
+
                                 </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="#" Binding="{Binding Index}" Width="28" IsReadOnly="True"/>
+
+                                <DataGridTextColumn Header="Position" Binding="{Binding PositionDisplay}" Width="80" IsReadOnly="True"/>
+
+                                <DataGridTextColumn Header="E" Binding="{Binding ExonDisplay}" Width="28" IsReadOnly="True"/>
+
+                                <DataGridTextColumn Header="sgRNA Sequence (5'→3')" Binding="{Binding Sequence}" Width="*" IsReadOnly="True">
+
+                                    <DataGridTextColumn.ElementStyle>
+
+                                        <Style TargetType="TextBlock">
+
+                                            <Setter Property="FontFamily" Value="Consolas"/>
+
+                                        </Style>
+
+                                    </DataGridTextColumn.ElementStyle>
+
+                                </DataGridTextColumn>
+
+                                <DataGridTextColumn Header="PAM" Binding="{Binding PAM}" Width="38" IsReadOnly="True">
+
+                                    <DataGridTextColumn.ElementStyle>
+
+                                        <Style TargetType="TextBlock">
+
+                                            <Setter Property="FontFamily" Value="Consolas"/>
+
+                                            <Setter Property="Foreground" Value="#E65100"/>
+
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+
+                                        </Style>
+
+                                    </DataGridTextColumn.ElementStyle>
+
+                                </DataGridTextColumn>
+
+                                <DataGridTextColumn Header="±" Binding="{Binding Strand}" Width="22" IsReadOnly="True"/>
+
+                                <DataGridTextColumn Header="GC" Binding="{Binding GCContent}" Width="35" IsReadOnly="True"/>
+
+                                <DataGridTextColumn Header="" Binding="{Binding RecommendDisplay}" Width="20" IsReadOnly="True">
+
+                                    <DataGridTextColumn.ElementStyle>
+
+                                        <Style TargetType="TextBlock">
+
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+
+                                        </Style>
+
+                                    </DataGridTextColumn.ElementStyle>
+
+                                </DataGridTextColumn>
+
+                                <DataGridTextColumn Header="+1 ins" Binding="{Binding FrameshiftPlus1}" Width="55" IsReadOnly="True"
+
+                                                    ToolTipService.ToolTip="Protein truncation with +1 nucleotide insertion">
+
+                                    <DataGridTextColumn.ElementStyle>
+
+                                        <Style TargetType="TextBlock">
+
+                                            <Setter Property="Foreground" Value="#D32F2F"/>
+
+                                            <Setter Property="FontSize" Value="10"/>
+
+                                        </Style>
+
+                                    </DataGridTextColumn.ElementStyle>
+
+                                </DataGridTextColumn>
+
+                                <DataGridTextColumn Header="+2 ins" Binding="{Binding FrameshiftPlus2}" Width="55" IsReadOnly="True"
+
+                                                    ToolTipService.ToolTip="Protein truncation with +2 nucleotide insertion">
+
+                                    <DataGridTextColumn.ElementStyle>
+
+                                        <Style TargetType="TextBlock">
+
+                                            <Setter Property="Foreground" Value="#D32F2F"/>
+
+                                            <Setter Property="FontSize" Value="10"/>
+
+                                        </Style>
+
+                                    </DataGridTextColumn.ElementStyle>
+
+                                </DataGridTextColumn>
+
+                                <DataGridTemplateColumn Header="BLAST" Width="65">
+
+                                    <DataGridTemplateColumn.CellTemplate>
+
+                                        <DataTemplate>
+
+                                            <Button Content="BLAST" Style="{StaticResource SmallButtonStyle}"
+
+                                                    Click="BlastSingle_Click" Tag="{Binding}" Padding="5,2" FontSize="10"/>
+
+                                        </DataTemplate>
+
+                                    </DataGridTemplateColumn.CellTemplate>
+
+                                </DataGridTemplateColumn>
+
                             </DataGrid.Columns>
+
                             <DataGrid.RowStyle>
+
                                 <Style TargetType="DataGridRow">
+
                                     <Style.Triggers>
+
                                         <DataTrigger Binding="{Binding IsRecommended}" Value="True">
+
                                             <Setter Property="Background" Value="#FFF8E1"/>
+
                                         </DataTrigger>
+
                                     </Style.Triggers>
+
                                 </Style>
+
                             </DataGrid.RowStyle>
+
                         </DataGrid>
 
+
+
                         <TextBlock x:Name="EmptyListText" Grid.Row="1"
+
                                    Text="Click 'Find sgRNAs in CDS' after loading gene"
+
                                    Foreground="#AAA" FontStyle="Italic" FontSize="10"
+
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
                     </Grid>
+
                 </Border>
+
+
+
+                <!-- 推薦條件說明 -->
+
+                <Border Grid.Row="5" Background="#FFFDE7" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
+
+                        BorderBrush="#FFE082" BorderThickness="1">
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock Text="⭐" FontSize="12" Margin="0,0,6,0"/>
+
+                        <TextBlock Text="Recommended criteria:" FontWeight="SemiBold" Foreground="#F57F17" FontSize="11" Margin="0,0,8,0"/>
+
+                        <TextBlock Text="Starts with" Foreground="#666" FontSize="11"/>
+
+                        <TextBlock Text=" G " FontFamily="Consolas" FontWeight="Bold" Foreground="#1565C0" FontSize="11"/>
+
+                        <TextBlock Text="+ Ends with" Foreground="#666" FontSize="11"/>
+
+                        <TextBlock Text=" A " FontFamily="Consolas" FontWeight="Bold" Foreground="#1565C0" FontSize="11"/>
+
+                        <TextBlock Text="(before PAM) + GC content" Foreground="#666" FontSize="11"/>
+
+                        <TextBlock Text=" 40-60%" FontWeight="Bold" Foreground="#1565C0" FontSize="11"/>
+
+                    </StackPanel>
+
+                </Border>
+
+
 
                 <!-- 底部按鈕 -->
-                <Border Grid.Row="4" Padding="0,8,0,0" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,8,0,0">
+
+                <Border Grid.Row="6" Padding="0,8,0,0" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,8,0,0">
+
                     <Grid>
-                        <StackPanel Orientation="Horizontal">
+
+                        <Grid.ColumnDefinitions>
+
+                            <ColumnDefinition Width="Auto"/>
+
+                            <ColumnDefinition Width="Auto"/>
+
+                            <ColumnDefinition Width="*"/>
+
+                        </Grid.ColumnDefinitions>
+
+
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+
                             <Button x:Name="ExportButton" Content="📥 Export" 
+
                                     Style="{StaticResource SecondaryButtonStyle}"
+
                                     IsEnabled="False" Click="ExportButton_Click" Padding="12,6"/>
+
                             <Button x:Name="CopyButton" Content="📋 Copy" 
+
                                     Style="{StaticResource SecondaryButtonStyle}"
+
                                     Margin="6,0,0,0" IsEnabled="False" Click="CopyButton_Click" Padding="12,6"/>
+
                             <Button x:Name="BlastAllButton" Content="🔬 BLAST Selected" 
+
                                     Style="{StaticResource SmallButtonStyle}"
+
                                     Margin="6,0,0,0" IsEnabled="False" Click="BlastAllButton_Click"/>
+
                         </StackPanel>
 
-                        <StackPanel x:Name="ProgressPanel" Orientation="Horizontal" 
-                                    HorizontalAlignment="Right" Visibility="Collapsed">
-                            <ProgressBar x:Name="ProgressBar" IsIndeterminate="True" Width="70" Height="10"/>
-                            <TextBlock x:Name="ProgressText" Text="..." 
-                                       Margin="5,0,0,0" VerticalAlignment="Center" Foreground="#666" FontSize="10"/>
+
+
+                        <Rectangle Grid.Column="1" Width="1" Fill="#E0E0E0" Margin="15,2"/>
+
+
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+
+                            <Button x:Name="FrameshiftAnalysisButton" Content="🧬 Frameshift Analysis" 
+
+                                    Background="#9C27B0" Foreground="White" BorderThickness="0"
+
+                                    Padding="12,6" FontSize="12" Cursor="Hand"
+
+                                    IsEnabled="False" Click="FrameshiftAnalysisButton_Click"
+
+                                    ToolTip="Analyze protein truncation caused by +1/+2 frameshift after Cas9 cleavage">
+
+                                <Button.Template>
+
+                                    <ControlTemplate TargetType="Button">
+
+                                        <Border x:Name="border" Background="{TemplateBinding Background}"
+
+                                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                        </Border>
+
+                                        <ControlTemplate.Triggers>
+
+                                            <Trigger Property="IsMouseOver" Value="True">
+
+                                                <Setter TargetName="border" Property="Background" Value="#7B1FA2"/>
+
+                                            </Trigger>
+
+                                            <Trigger Property="IsEnabled" Value="False">
+
+                                                <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+
+                                            </Trigger>
+
+                                        </ControlTemplate.Triggers>
+
+                                    </ControlTemplate>
+
+                                </Button.Template>
+
+                            </Button>
+
+
+
+                            <StackPanel x:Name="AnalysisProgressPanel" Orientation="Horizontal" 
+
+                                        Margin="10,0,0,0" Visibility="Collapsed" VerticalAlignment="Center">
+
+                                <ProgressBar x:Name="AnalysisProgressBar" Width="100" Height="14" 
+
+                                             Minimum="0" Maximum="100" Value="0" Foreground="#9C27B0"/>
+
+                                <TextBlock x:Name="AnalysisProgressText" Text="0%" 
+
+                                           Margin="6,0,0,0" VerticalAlignment="Center" 
+
+                                           Foreground="#666" FontSize="11" MinWidth="35"/>
+
+                            </StackPanel>
+
+
+
+                            <TextBlock x:Name="SelectedCountText" Text="" 
+
+                                       Margin="10,0,0,0" VerticalAlignment="Center"
+
+                                       Foreground="#666" FontSize="11" FontStyle="Italic"/>
+
                         </StackPanel>
+
                     </Grid>
+
                 </Border>
+
             </Grid>
+
         </Border>
+
+
 
         <!-- Loading Overlay -->
+
         <Border x:Name="LoadingOverlay" Grid.RowSpan="2" Background="#80FFFFFF" Visibility="Collapsed">
+
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
                 <ProgressBar IsIndeterminate="True" Width="160" Height="16"/>
+
                 <TextBlock x:Name="LoadingText" Text="Connecting..." 
+
                            Margin="0,10,0,0" FontSize="12" Foreground="#555" HorizontalAlignment="Center"/>
+
             </StackPanel>
+
         </Border>
+
     </Grid>
+
 </Page>
+

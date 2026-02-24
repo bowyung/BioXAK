@@ -1,0 +1,140 @@
+LOCUS       AF025845                3705 bp    DNA     circular SYN 18-FEB-2000
+DEFINITION  Co-reporter vector pRL-SV40, complete sequence.
+ACCESSION   AF025845
+VERSION     AF025845.2
+KEYWORDS    .
+SOURCE      Co-reporter vector pRL-SV40
+  ORGANISM  Co-reporter vector pRL-SV40
+            other sequences; artificial sequences; vectors.
+REFERENCE   1  (bases 1 to 3705)
+  AUTHORS   Sherf,B., Navarro,S. and Wood,K.V.
+  TITLE     Dual-Luciferase(TM) Reporter Assay: An Advanced Co-reporter
+            Technology
+  JOURNAL   Promega Notes 57, 2-5 (1996)
+REFERENCE   2  (bases 1 to 3705)
+  AUTHORS   Sherf,B., Navarro,S. and Wood,K.V.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (20-SEP-1997) Production, Promega Co., 5445 East Cheryl
+            Parkway, Madison, WI 53711, USA
+REFERENCE   3  (bases 1 to 3705)
+  AUTHORS   Sherf,B., Navarro,S. and Wood,K.V.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (18-FEB-2000) Production, Promega Co., 5445 East Cheryl
+            Parkway, Madison, WI 53711, USA
+  REMARK    Sequence update by submitter
+COMMENT     On Feb 18, 2000 this sequence version replaced AF025845.1.
+FEATURES             Location/Qualifiers
+     source          1..3705
+                     /organism="Co-reporter vector pRL-SV40"
+                     /mol_type="genomic DNA"
+                     /db_xref="taxon:68405"
+     regulatory      7..418
+                     /regulatory_class="promoter"
+                     /note="SV40 enhancer and early promoter"
+     intron          486..622
+                     /note="chimeric intron"
+     regulatory      666..684
+                     /regulatory_class="promoter"
+                     /note="T7 promoter"
+     misc_feature    683
+                     /note="T7 promoter transcription start site"
+     gene            694..1629
+                     /gene="Rluc"
+     CDS             694..1629
+                     /gene="Rluc"
+                     /note="cDNA cloned from the anthozoan coelenterate Renilla
+                     reniformis (sea pansy)"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="Renilla luciferase"
+                     /protein_id="AAB82577.1"
+                     /translation="MTSKVYDPEQRKRMITGPQWWARCKQMNVLDSFINYYDSEKHAE
+                     NAVIFLHGNAASSYLWRHVVPHIEPVARCIIPDLIGMGKSGKSGNGSYRLLDHYKYLT
+                     AWFELLNLPKKIIFVGHDWGACLAFHYSYEHQDKIKAIVHAESVVDVIESWDEWPDIE
+                     EDIALIKSEEGEKMVLENNFFVETMLPSKIMRKLEPEEFAAYLEPFKEKGEVRRPTLS
+                     WPREIPLVKGGKPDVVQIVRNYNAYLRASDDLPKMFIESDPGFFSNAIVEGAKKFPNT
+                     EFVKVKGLHFSQEDAPDEMGKYIKSFVERVLKNEQ"
+     regulatory      1671..1872
+                     /regulatory_class="polyA_signal_sequence"
+                     /note="SV40 late poly(A) signal"
+     gene            2019..2879
+                     /gene="ampR"
+     CDS             2019..2879
+                     /gene="ampR"
+                     /function="ampicillin resistance"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="beta-lactamase"
+                     /protein_id="AAB82578.1"
+                     /translation="MSIQHFRVALIPFFAAFCLPVFAHPETLVKVKDAEDQLGARVGY
+                     IELDLNSGKILESFRPEERFPMMSTFKVLLCGAVLSRIDAGQEQLGRRIHYSQNDLVE
+                     YSPVTEKHLTDGMTVRELCSAAITMSDNTAANLLLTTIGGPKELTAFLHNMGDHVTRL
+                     DRWEPELNEAIPNDERDTTMPVAMATTLRKLLTGELLTLASRQQLIDWMEADKVAGPL
+                     LRSALPAGWFIADKSGAGERGSRGIIAALGPDGKPSRIVVIYTTGSQATMDERNRQIA
+                     EIGASLIKHW"
+ORIGIN      
+        1 agatctgcgc agcaccatgg cctgaaataa cctctgaaag aggaacttgg ttaggtacct
+       61 tctgaggcgg aaagaaccag ctgtggaatg tgtgtcagtt agggtgtgga aagtccccag
+      121 gctccccagc aggcagaagt atgcaaagca tgcatctcaa ttagtcagca accaggtgtg
+      181 gaaagtcccc aggctcccca gcaggcagaa gtatgcaaag catgcatctc aattagtcag
+      241 caaccatagt cccgccccta actccgccca tcccgcccct aactccgccc agttccgccc
+      301 attctccgcc ccatggctga ctaatttttt ttatttatgc agaggccgag gccgcctcgg
+      361 cctctgagct attccagaag tagtgaggag gcttttttgg aggcctaggc ttttgcaaaa
+      421 agcttgattc ttctgacaca acagtctcga acttaagctg cagaagttgg tcgtgaggca
+      481 ctgggcaggt aagtatcaag gttacaagac aggtttaagg agaccaatag aaactgggct
+      541 tgtcgagaca gagaagactc ttgcgtttct gataggcacc tattggtctt actgacatcc
+      601 actttgcctt tctctccaca ggtgtccact cccagttcaa ttacagctct taaggctaga
+      661 gtacttaata cgactcacta taggctagcc accatgactt cgaaagttta tgatccagaa
+      721 caaaggaaac ggatgataac tggtccgcag tggtgggcca gatgtaaaca aatgaatgtt
+      781 cttgattcat ttattaatta ttatgattca gaaaaacatg cagaaaatgc tgttattttt
+      841 ttacatggta acgcggcctc ttcttattta tggcgacatg ttgtgccaca tattgagcca
+      901 gtagcgcggt gtattatacc agaccttatt ggtatgggca aatcaggcaa atctggtaat
+      961 ggttcttata ggttacttga tcattacaaa tatcttactg catggtttga acttcttaat
+     1021 ttaccaaaga agatcatttt tgtcggccat gattggggtg cttgtttggc atttcattat
+     1081 agctatgagc atcaagataa gatcaaagca atagttcacg ctgaaagtgt agtagatgtg
+     1141 attgaatcat gggatgaatg gcctgatatt gaagaagata ttgcgttgat caaatctgaa
+     1201 gaaggagaaa aaatggtttt ggagaataac ttcttcgtgg aaaccatgtt gccatcaaaa
+     1261 atcatgagaa agttagaacc agaagaattt gcagcatatc ttgaaccatt caaagagaaa
+     1321 ggtgaagttc gtcgtccaac attatcatgg cctcgtgaaa tcccgttagt aaaaggtggt
+     1381 aaacctgacg ttgtacaaat tgttaggaat tataatgctt atctacgtgc aagtgatgat
+     1441 ttaccaaaaa tgtttattga atcggaccca ggattctttt ccaatgctat tgttgaaggt
+     1501 gccaagaagt ttcctaatac tgaatttgtc aaagtaaaag gtcttcattt ttcgcaagaa
+     1561 gatgcacctg atgaaatggg aaaatatatc aaatcgttcg ttgagcgagt tctcaaaaat
+     1621 gaacaataat tctagagcgg ccgcttcgag cagacatgat aagatacatt gatgagtttg
+     1681 gacaaaccac aactagaatg cagtgaaaaa aatgctttat ttgtgaaatt tgtgatgcta
+     1741 ttgctttatt tgtaaccatt ataagctgca ataaacaagt taacaacaac aattgcattc
+     1801 attttatgtt tcaggttcag ggggaggtgt gggaggtttt ttaaagcaag taaaacctct
+     1861 acaaatgtgg taaaatcgat aaggatccag gtggcacttt tcggggaaat gtgcgcggaa
+     1921 cccctatttg tttatttttc taaatacatt caaatatgta tccgctcatg agacaataac
+     1981 cctgataaat gcttcaataa tattgaaaaa ggaagagtat gagtattcaa catttccgtg
+     2041 tcgcccttat tccctttttt gcggcatttt gccttcctgt ttttgctcac ccagaaacgc
+     2101 tggtgaaagt aaaagatgct gaagatcagt tgggtgcacg agtgggttac atcgaactgg
+     2161 atctcaacag cggtaagatc cttgagagtt ttcgccccga agaacgtttt ccaatgatga
+     2221 gcacttttaa agttctgcta tgtggcgcgg tattatcccg tattgacgcc gggcaagagc
+     2281 aactcggtcg ccgcatacac tattctcaga atgacttggt tgagtactca ccagtcacag
+     2341 aaaagcatct tacggatggc atgacagtaa gagaattatg cagtgctgcc ataaccatga
+     2401 gtgataacac tgcggccaac ttacttctga caacgatcgg aggaccgaag gagctaaccg
+     2461 cttttttgca caacatgggg gatcatgtaa ctcgccttga tcgttgggaa ccggagctga
+     2521 atgaagccat accaaacgac gagcgtgaca ccacgatgcc tgtagcaatg gcaacaacgt
+     2581 tgcgcaaact attaactggc gaactactta ctctagcttc ccggcaacaa ttaatagact
+     2641 ggatggaggc ggataaagtt gcaggaccac ttctgcgctc ggcccttccg gctggctggt
+     2701 ttattgctga taaatctgga gccggtgagc gtgggtctcg cggtatcatt gcagcactgg
+     2761 ggccagatgg taagccctcc cgtatcgtag ttatctacac gacggggagt caggcaacta
+     2821 tggatgaacg aaatagacag atcgctgaga taggtgcctc actgattaag cattggtaac
+     2881 tgtcagacca agtttactca tatatacttt agattgattt aaaacttcat ttttaattta
+     2941 aaaggatcta ggtgaagatc ctttttgata atctcatgac caaaatccct taacgtgagt
+     3001 tttcgttcca ctgagcgtca gaccccgtag aaaagatcaa aggatcttct tgagatcctt
+     3061 tttttctgcg cgtaatctgc tgcttgcaaa caaaaaaacc accgctacca gcggtggttt
+     3121 gtttgccgga tcaagagcta ccaactcttt ttccgaaggt aactggcttc agcagagcgc
+     3181 agataccaaa tactgttctt ctagtgtagc cgtagttagg ccaccacttc aagaactctg
+     3241 tagcaccgcc tacatacctc gctctgctaa tcctgttacc agtggctgct gccagtggcg
+     3301 ataagtcgtg tcttaccggg ttggactcaa gacgatagtt accggataag gcgcagcggt
+     3361 cgggctgaac ggggggttcg tgcacacagc ccagcttgga gcgaacgacc tacaccgaac
+     3421 tgagatacct acagcgtgag ctatgagaaa gcgccacgct tcccgaaggg agaaaggcgg
+     3481 acaggtatcc ggtaagcggc agggtcggaa caggagagcg cacgagggag cttccagggg
+     3541 gaaacgcctg gtatctttat agtcctgtcg ggtttcgcca cctctgactt gagcgtcgat
+     3601 ttttgtgatg ctcgtcaggg gggcggagcc tatggaaaaa cgccagcaac gcggcctttt
+     3661 tacggttcct ggccttttgc tggccttttg ctcacatggc tcgac
+//
+
+

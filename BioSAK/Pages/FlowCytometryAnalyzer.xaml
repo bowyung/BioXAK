@@ -55,6 +55,24 @@
                         <TextBlock x:Name="txtFileInfo" Text="No file loaded" Foreground="#666666" 
                                    Margin="0,0,0,10" TextWrapping="Wrap"/>
 
+                        <!-- Compensation -->
+                        <GroupBox Header="🎨 Compensation" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <CheckBox x:Name="chkApplyCompensation" Content="Apply Compensation" 
+                                          Margin="0,0,0,6" Checked="ChkCompensation_Changed" Unchecked="ChkCompensation_Changed"/>
+                                <Border x:Name="pnlCompInfo" Background="#D4EDDA" BorderBrush="#C3E6CB"
+                                        BorderThickness="1" Padding="6" Margin="0,0,0,6" Visibility="Collapsed">
+                                    <TextBlock x:Name="txtCompInfo" Foreground="#155724" FontSize="10" TextWrapping="Wrap"/>
+                                </Border>
+                                <Border x:Name="pnlCompWarn" Background="#FFF3CD" BorderBrush="#FFEEBA"
+                                        BorderThickness="1" Padding="6" Margin="0,0,0,6" Visibility="Collapsed">
+                                    <TextBlock x:Name="txtCompWarn" Foreground="#856404" FontSize="10" TextWrapping="Wrap"/>
+                                </Border>
+                                <Button x:Name="btnEditCompensation" Content="⚙️ View / Edit Matrix" 
+                                        Click="BtnEditCompensation_Click" Padding="6,3"/>
+                            </StackPanel>
+                        </GroupBox>
+
                         <!-- View Type -->
                         <GroupBox Header="View Type" Margin="0,0,0,10">
                             <StackPanel Margin="5">
@@ -86,6 +104,7 @@
                                             <ComboBox x:Name="cboXScale" SelectionChanged="Scale_Changed">
                                                 <ComboBoxItem Content="Linear"/>
                                                 <ComboBoxItem Content="Log" IsSelected="True"/>
+                                                <ComboBoxItem Content="Biex"/>
                                             </ComboBox>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2">
@@ -93,6 +112,7 @@
                                             <ComboBox x:Name="cboYScale" SelectionChanged="Scale_Changed">
                                                 <ComboBoxItem Content="Linear"/>
                                                 <ComboBoxItem Content="Log" IsSelected="True"/>
+                                                <ComboBoxItem Content="Biex"/>
                                             </ComboBox>
                                         </StackPanel>
                                     </Grid>
@@ -101,6 +121,13 @@
 
                             <GroupBox Header="Axis Range (empty = auto)" Margin="0,0,0,10">
                                 <StackPanel Margin="5">
+                                    <!-- Negative-value warning for Log mode -->
+                                    <Border x:Name="pnlNegExcluded" Background="#FFF3CD" BorderBrush="#FFEEBA"
+                                            BorderThickness="1" Padding="5" Margin="0,0,0,6" Visibility="Collapsed">
+                                        <TextBlock Text="⚠️ Log mode: negative values excluded from display and gating."
+                                                   Foreground="#856404" FontSize="10" TextWrapping="Wrap"/>
+                                    </Border>
+
                                     <TextBlock Text="X Range:" Margin="0,0,0,3"/>
                                     <Grid Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
@@ -108,9 +135,31 @@
                                             <ColumnDefinition Width="20"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="txtXMin" TextChanged="AxisRange_Changed" Tag="xmin"/>
+                                        <TextBox x:Name="txtXMin" TextChanged="AxisRange_Changed" Tag="xmin">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="invalid">
+                                                            <Setter Property="BorderBrush" Value="Red"/>
+                                                            <Setter Property="Background" Value="#FFF0F0"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
                                         <TextBlock Text="~" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtXMax" Grid.Column="2" TextChanged="AxisRange_Changed" Tag="xmax"/>
+                                        <TextBox x:Name="txtXMax" Grid.Column="2" TextChanged="AxisRange_Changed" Tag="xmax">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="invalid">
+                                                            <Setter Property="BorderBrush" Value="Red"/>
+                                                            <Setter Property="Background" Value="#FFF0F0"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
                                     </Grid>
 
                                     <TextBlock Text="Y Range:" Margin="0,0,0,3"/>
@@ -120,9 +169,31 @@
                                             <ColumnDefinition Width="20"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="txtYMin" TextChanged="AxisRange_Changed" Tag="ymin"/>
+                                        <TextBox x:Name="txtYMin" TextChanged="AxisRange_Changed" Tag="ymin">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="invalid">
+                                                            <Setter Property="BorderBrush" Value="Red"/>
+                                                            <Setter Property="Background" Value="#FFF0F0"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
                                         <TextBlock Text="~" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtYMax" Grid.Column="2" TextChanged="AxisRange_Changed" Tag="ymax"/>
+                                        <TextBox x:Name="txtYMax" Grid.Column="2" TextChanged="AxisRange_Changed" Tag="ymax">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="invalid">
+                                                            <Setter Property="BorderBrush" Value="Red"/>
+                                                            <Setter Property="Background" Value="#FFF0F0"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
                                     </Grid>
                                     <Button Content="Reset Range" Click="BtnResetRange_Click" Padding="8,4"/>
                                 </StackPanel>
@@ -370,6 +441,10 @@
         <StatusBar Grid.Row="3">
             <StatusBarItem>
                 <TextBlock x:Name="txtStatus" Text="Ready. Load an FCS file or demo data to begin."/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar x:Name="progressBar" Width="120" Height="14" IsIndeterminate="True" 
+                             Visibility="Collapsed" Margin="0,0,8,0"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

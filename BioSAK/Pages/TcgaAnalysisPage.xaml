@@ -1,0 +1,746 @@
+﻿<Page x:Class="BioSAK.Pages.TcgaAnalysisPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      mc:Ignorable="d" 
+      d:DesignHeight="900" d:DesignWidth="1200"
+      Title="TCGA Analysis"
+      Background="#F5F5F5">
+
+    <Page.Resources>
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#333"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Background" Value="#2196F3"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1976D2"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ExportButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Background" Value="#4CAF50"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#388E3C"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CopyButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Background" Value="#FF9800"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F57C00"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SelectableStatsStyle" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <Style x:Key="SmallButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="3" Padding="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#BDBDBD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CancerListItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#BBDEFB"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E3F2FD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="ConditionRadioStyle" TargetType="RadioButton">
+            <Setter Property="Margin" Value="0,0,15,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="DataGridStyle" TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="RowHeight" Value="28"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+            <Setter Property="SelectionUnit" Value="CellOrRowHeader"/>
+            <Setter Property="ClipboardCopyMode" Value="IncludeHeader"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid x:Name="ProgressOverlay" Visibility="Collapsed" Panel.ZIndex="100">
+            <Border Background="#80000000"/>
+            <Border Background="White" CornerRadius="8" Padding="30" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="350">
+                <StackPanel>
+                    <TextBlock x:Name="ProgressTitle" Text="Loading..." FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15"/>
+                    <ProgressBar x:Name="ProgressBar" Height="20" Minimum="0" Maximum="100" Value="0"/>
+                    <TextBlock x:Name="ProgressText" Text="0%" HorizontalAlignment="Center" Margin="0,10,0,0" Foreground="#666"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="15">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="TCGA Database Analysis" 
+                           FontSize="22" FontWeight="Bold" Foreground="#1976D2" Margin="0,0,0,15"/>
+
+                <!-- Cancer Selection -->
+                <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                    </Border.Effect>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="180"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="📊 Cancer Type Selection" Style="{StaticResource SectionTitleStyle}" 
+                                       VerticalAlignment="Center" Margin="0,0,20,0"/>
+                            <RadioButton x:Name="SingleSelectRadio" Content="Single Select" 
+                                         IsChecked="True" Margin="0,0,15,0" 
+                                         Checked="SelectionMode_Changed" VerticalAlignment="Center"/>
+                            <RadioButton x:Name="MultiSelectRadio" Content="Multi Select" 
+                                         Checked="SelectionMode_Changed" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <Grid x:Name="SingleSelectPanel" Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="300"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <ComboBox x:Name="SingleCancerComboBox" Height="32" 
+                                          SelectionChanged="SingleCancerComboBox_SelectionChanged"/>
+                                <TextBlock x:Name="SingleCancerInfoText" Margin="0,10,0,0" Foreground="#666" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid x:Name="MultiSelectPanel" Grid.Row="1" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Available Cancers" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <ListBox x:Name="AvailableCancerList" Height="140" 
+                                         ItemContainerStyle="{StaticResource CancerListItemStyle}"
+                                         SelectionMode="Extended" MouseDoubleClick="AvailableCancerList_MouseDoubleClick">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,20,10,0">
+                                <Button Content="▶" Style="{StaticResource SmallButtonStyle}" Click="AddSelectedCancers_Click"/>
+                                <Button Content="▶▶" Style="{StaticResource SmallButtonStyle}" Click="AddAllCancers_Click"/>
+                                <Button Content="◀" Style="{StaticResource SmallButtonStyle}" Click="RemoveSelectedCancers_Click"/>
+                                <Button Content="◀◀" Style="{StaticResource SmallButtonStyle}" Click="RemoveAllCancers_Click"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Selected Cancers" FontWeight="SemiBold" Margin="0,0,5,5"/>
+                                    <TextBlock x:Name="SelectedCountText" Text=" (0)" Foreground="#666"/>
+                                </StackPanel>
+                                <ListBox x:Name="SelectedCancerList" Height="140"
+                                         ItemContainerStyle="{StaticResource CancerListItemStyle}"
+                                         SelectionMode="Extended" MouseDoubleClick="SelectedCancerList_MouseDoubleClick">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- Condition Selection -->
+                <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                    </Border.Effect>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔬 Sample Condition:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,15,0"/>
+                        <RadioButton x:Name="ConditionBoth" Content="Both" IsChecked="True" Style="{StaticResource ConditionRadioStyle}"/>
+                        <RadioButton x:Name="ConditionTumorOnly" Content="Tumor Only" Style="{StaticResource ConditionRadioStyle}"/>
+                        <RadioButton x:Name="ConditionNormalOnly" Content="Normal Only" Style="{StaticResource ConditionRadioStyle}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Analysis Panel with Tabs -->
+                <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="15">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                    </Border.Effect>
+
+                    <TabControl x:Name="AnalysisTabControl">
+                        <!-- Tab 1: Box Plot -->
+                        <TabItem Header="📊 Box Plot">
+                            <Grid Margin="15">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                                    <TextBlock Text="Gene ID:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBox x:Name="BoxPlotGeneIdTextBox" Width="150" Height="30" 
+                                             VerticalContentAlignment="Center" Padding="5"/>
+                                    <Button Content="Analyze" Style="{StaticResource ActionButtonStyle}" Margin="10,0,0,0"
+                                            Click="AnalyzeGeneExpression_Click"/>
+                                    <Button Content="📷 Export PNG" Style="{StaticResource ExportButtonStyle}" 
+                                            Click="ExportBoxPlotImage_Click"/>
+                                    <Button Content="📄 Export CSV" Style="{StaticResource ExportButtonStyle}" 
+                                            Click="ExportBoxPlotCsv_Click"/>
+                                </StackPanel>
+
+                                <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" HorizontalAlignment="Left">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                        <Canvas x:Name="BoxPlotCanvas" Width="800" Height="500" Background="White" ClipToBounds="True"/>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <StackPanel Grid.Row="2" Margin="0,15,0,0">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="📋 Statistics Table" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Button Content="📋 Copy Table" Style="{StaticResource CopyButtonStyle}" 
+                                                Margin="15,0,0,0" Click="CopyBoxPlotStats_Click"/>
+                                    </StackPanel>
+                                    <DataGrid x:Name="BoxPlotStatsGrid" Style="{StaticResource DataGridStyle}" MaxHeight="250">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Cancer" Binding="{Binding CancerCode}" Width="80"/>
+                                            <DataGridTextColumn Header="Gene" Binding="{Binding GeneName}" Width="100"/>
+                                            <DataGridTextColumn Header="Tumor N" Binding="{Binding TumorN}" Width="70"/>
+                                            <DataGridTextColumn Header="Tumor Mean" Binding="{Binding TumorMean, StringFormat=F3}" Width="90"/>
+                                            <DataGridTextColumn Header="Tumor SD" Binding="{Binding TumorSd, StringFormat=F3}" Width="80"/>
+                                            <DataGridTextColumn Header="Normal N" Binding="{Binding NormalN}" Width="70"/>
+                                            <DataGridTextColumn Header="Normal Mean" Binding="{Binding NormalMean, StringFormat=F3}" Width="95"/>
+                                            <DataGridTextColumn Header="Normal SD" Binding="{Binding NormalSd, StringFormat=F3}" Width="80"/>
+                                            <DataGridTextColumn Header="P-value" Binding="{Binding PValueDisplay}" Width="100"/>
+                                            <DataGridTextColumn Header="FDR" Binding="{Binding FdrDisplay}" Width="100"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="3" x:Name="BoxPlotResultText" TextWrapping="Wrap" Foreground="#666" Margin="0,10,0,0"/>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- Tab 2: Correlation Heatmap -->
+                        <TabItem Header="🔗 Heatmap">
+                            <Grid Margin="15">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0" Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Gene IDs (one per line):" Margin="0,0,0,5"/>
+                                        <TextBox x:Name="CorrelationGenesTextBox" Width="250" Height="120"
+                                                 AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                                        <Button Content="Generate Heatmap" Style="{StaticResource ActionButtonStyle}"
+                                                Click="CalculateCorrelation_Click"/>
+                                        <Button Content="📷 Export PNG" Style="{StaticResource ExportButtonStyle}" Margin="0,10,0,0"
+                                                Click="ExportHeatmapImage_Click"/>
+                                        <Button Content="📄 Export CSV" Style="{StaticResource ExportButtonStyle}" Margin="0,5,0,0"
+                                                Click="ExportHeatmapCsv_Click"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" HorizontalAlignment="Left">
+                                    <Canvas x:Name="HeatmapCanvas" Width="600" Height="600" Background="White" ClipToBounds="True"/>
+                                </Border>
+
+                                <TextBlock Grid.Row="2" x:Name="HeatmapResultText" TextWrapping="Wrap" Foreground="#666" Margin="0,10,0,0"/>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- Tab 3: Scatter Plot -->
+                        <TabItem Header="📈 Scatter">
+                            <Grid Margin="15">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                                    <TextBlock Text="Gene X:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="ScatterGeneXTextBox" Width="150" Height="30" VerticalContentAlignment="Center" Padding="5"/>
+                                    <TextBlock Text="Gene Y:" VerticalAlignment="Center" Margin="20,0,5,0"/>
+                                    <TextBox x:Name="ScatterGeneYTextBox" Width="150" Height="30" VerticalContentAlignment="Center" Padding="5"/>
+                                    <Button Content="Plot" Style="{StaticResource ActionButtonStyle}" Margin="15,0,0,0" Click="PlotScatter_Click"/>
+                                    <Button Content="📷 Export PNG" Style="{StaticResource ExportButtonStyle}" Click="ExportScatterImage_Click"/>
+                                    <Button Content="📄 Export CSV" Style="{StaticResource ExportButtonStyle}" Click="ExportScatterCsv_Click"/>
+                                </StackPanel>
+
+                                <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" HorizontalAlignment="Left">
+                                    <Canvas x:Name="ScatterPlotCanvas" Width="700" Height="600" Background="White" ClipToBounds="True"/>
+                                </Border>
+
+                                <Border Grid.Row="2" Background="#F5F5F5" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="ScatterResultText" Style="{StaticResource SelectableStatsStyle}" Grid.Column="0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="10,0,0,0">
+                                            <Button Content="📋 Copy Stats" Style="{StaticResource CopyButtonStyle}" Click="CopyScatterStats_Click"/>
+                                            <Button Content="📋 Copy R²" Style="{StaticResource CopyButtonStyle}" Margin="0,5,0,0" Click="CopyScatterR2_Click"/>
+                                            <Button Content="📋 Copy Eq" Style="{StaticResource CopyButtonStyle}" Margin="0,5,0,0" Click="CopyScatterEquation_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- Tab 4: Kaplan-Meier Survival Analysis (NEW) -->
+                        <TabItem Header="📉 Survival (KM)">
+                            <Grid Margin="15">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Control Panel -->
+                                <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <TextBlock Text="Gene ID:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBox x:Name="KMGeneIdTextBox" Width="150" Height="30" 
+                                                 VerticalContentAlignment="Center" Padding="5"/>
+                                        <Button Content="Load Data" Style="{StaticResource ActionButtonStyle}" 
+                                                Margin="10,0,0,0" Click="LoadSurvivalData_Click"/>
+                                        <Button Content="📷 Export PNG" Style="{StaticResource ExportButtonStyle}"
+                                                Click="ExportKMImage_Click"/>
+                                        <Button Content="📄 Export CSV" Style="{StaticResource ExportButtonStyle}"
+                                                Click="ExportKMCsv_Click"/>
+                                    </StackPanel>
+
+                                    <!-- Percentile Slider - REAL-TIME UPDATE -->
+                                    <Border Background="#F0F0F0" CornerRadius="4" Padding="15" Margin="0,5,0,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                <TextBlock Text="Expression Cutoff Percentile: " VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="KMPercentileText" Text="50%" FontWeight="Bold" 
+                                                           Foreground="#1976D2" VerticalAlignment="Center" Width="50"/>
+                                                <TextBlock Text="  |  High: top " VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                <TextBlock x:Name="KMHighPercentText" Text="50%" VerticalAlignment="Center" Foreground="#e74c3c" FontWeight="Bold"/>
+                                                <TextBlock Text=" , Low: bottom " VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="KMLowPercentText" Text="50%" VerticalAlignment="Center" Foreground="#3498db" FontWeight="Bold"/>
+                                            </StackPanel>
+                                            <Slider x:Name="KMPercentileSlider" Minimum="10" Maximum="90" Value="50" 
+                                                    TickFrequency="5" IsSnapToTickEnabled="True" Width="600"
+                                                    ValueChanged="KMPercentileSlider_ValueChanged"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                <TextBlock Text="10%" Foreground="#888" FontSize="10"/>
+                                                <TextBlock Text="90%" Foreground="#888" FontSize="10" Margin="555,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Chart Area -->
+                                <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" HorizontalAlignment="Left">
+                                    <Canvas x:Name="KMPlotCanvas" Width="800" Height="500" Background="White" ClipToBounds="True"/>
+                                </Border>
+
+                                <!-- Statistics -->
+                                <Border Grid.Row="2" Background="#F5F5F5" CornerRadius="4" Padding="15" Margin="0,15,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="🔴 High Expression Group" FontWeight="Bold" Foreground="#e74c3c" Margin="0,0,0,5"/>
+                                            <TextBlock x:Name="KMHighGroupStats" FontFamily="Consolas" FontSize="11"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="🔵 Low Expression Group" FontWeight="Bold" Foreground="#3498db" Margin="0,0,0,5"/>
+                                            <TextBlock x:Name="KMLowGroupStats" FontFamily="Consolas" FontSize="11"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                                            <Button Content="📋 Copy Stats" Style="{StaticResource CopyButtonStyle}" Click="CopyKMStats_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Log-Rank Test Result -->
+                                <Border Grid.Row="3" Background="#E3F2FD" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+                                    <TextBlock x:Name="KMLogRankText" FontSize="14" FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- Tab 5: Volcano Plot (NEW) -->
+                        <TabItem Header="🌋 Volcano">
+                            <Grid Margin="15">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Control Panel -->
+                                <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <Button Content="Generate Volcano Plot" Style="{StaticResource ActionButtonStyle}"
+                        Click="GenerateVolcano_Click"/>
+                                        <Button Content="📷 Export PNG" Style="{StaticResource ExportButtonStyle}"
+                        Click="ExportVolcanoImage_Click"/>
+                                        <Button Content="📄 Export CSV" Style="{StaticResource ExportButtonStyle}"
+                        Click="ExportVolcanoCsv_Click"/>
+                                        <TextBlock Text="  (Compares Tumor vs Normal)" Foreground="#666" 
+                           VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Threshold Settings -->
+                                    <Border Background="#F0F0F0" CornerRadius="4" Padding="15">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="FDR Threshold:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                            <TextBox x:Name="VolcanoFdrTextBox" Width="60" Height="25" Text="0.05" 
+                             VerticalContentAlignment="Center" TextAlignment="Center"
+                             TextChanged="VolcanoThreshold_Changed"/>
+
+                                            <TextBlock Text="Log2 FC Threshold:" VerticalAlignment="Center" Margin="20,0,5,0"/>
+                                            <TextBox x:Name="VolcanoFcTextBox" Width="60" Height="25" Text="1.0"
+                             VerticalContentAlignment="Center" TextAlignment="Center"
+                             TextChanged="VolcanoThreshold_Changed"/>
+
+                                            <TextBlock Text="  |  " Foreground="#CCC" VerticalAlignment="Center" Margin="10,0"/>
+                                            <TextBlock x:Name="VolcanoSummaryText" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Chart -->
+                                <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" HorizontalAlignment="Left">
+                                    <Canvas x:Name="VolcanoPlotCanvas" Width="900" Height="600" Background="White" ClipToBounds="True"/>
+                                </Border>
+
+                                <!-- Significant Genes Table with Search and Checkbox -->
+                                <StackPanel Grid.Row="2" Margin="0,15,0,0">
+                                    <!-- Header with Search -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="📋 Significant Genes" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" x:Name="VolcanoGeneCountText" Text=" (0 genes)" Foreground="#666" VerticalAlignment="Center"/>
+
+                                        <!-- Search Box -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,15,0">
+                                            <TextBlock Text="🔍 Search Gene:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBox x:Name="VolcanoSearchTextBox" Width="150" Height="25" 
+                             VerticalContentAlignment="Center" Padding="5,0"
+                             TextChanged="VolcanoSearch_TextChanged"/>
+                                            <Button Content="Clear" Padding="8,3" Margin="5,0,0,0" 
+                            Click="VolcanoSearchClear_Click"/>
+                                            <Button Content="Highlight Selected" Padding="8,3" Margin="10,0,0,0"
+                            Background="#FF9800" Foreground="White"
+                            Click="VolcanoHighlightSelected_Click"/>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="3" Content="📋 Copy Table" Style="{StaticResource CopyButtonStyle}" 
+                        Click="CopyVolcanoStats_Click"/>
+                                    </Grid>
+
+                                    <!-- DataGrid with Checkbox Column -->
+                                    <DataGrid x:Name="VolcanoStatsGrid" Style="{StaticResource DataGridStyle}" MaxHeight="300"
+                      SelectionMode="Extended" CanUserSortColumns="True">
+                                        <DataGrid.Columns>
+                                            <!-- Highlight Checkbox Column -->
+                                            <DataGridTemplateColumn Header="📍" Width="40">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox IsChecked="{Binding IsHighlighted, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Click="VolcanoHighlightCheckbox_Click"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+
+                                            <DataGridTextColumn Header="Gene" Binding="{Binding GeneName}" Width="100"/>
+                                            <DataGridTextColumn Header="Gene ID" Binding="{Binding GeneId}" Width="120"/>
+                                            <DataGridTextColumn Header="Log2 FC" Binding="{Binding Log2FoldChange, StringFormat=F3}" Width="80"/>
+                                            <DataGridTextColumn Header="P-value" Binding="{Binding PValueDisplay}" Width="100"/>
+                                            <DataGridTextColumn Header="FDR" Binding="{Binding FDRDisplay}" Width="100"/>
+                                            <DataGridTextColumn Header="Regulation" Binding="{Binding Regulation}" Width="80"/>
+                                            <DataGridTextColumn Header="Tumor Mean" Binding="{Binding TumorMean, StringFormat=F3}" Width="90"/>
+                                            <DataGridTextColumn Header="Normal Mean" Binding="{Binding NormalMean, StringFormat=F3}" Width="95"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+
+                                    <!-- Highlighted Genes Info -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <TextBlock Text="📌 Highlighted genes: " Foreground="#666"/>
+                                        <TextBlock x:Name="VolcanoHighlightedCountText" Text="0" FontWeight="SemiBold" Foreground="#FF9800"/>
+                                        <Button Content="Clear All Highlights" Padding="8,2" Margin="15,0,0,0" FontSize="11"
+                        Click="VolcanoClearHighlights_Click"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="3" x:Name="VolcanoResultText" TextWrapping="Wrap" Foreground="#666" Margin="0,10,0,0"/>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- Tab 6: Co-Expression Analysis -->
+                        <TabItem Header="🔗 Co-Expression">
+                            <Grid Margin="15">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Control Panel -->
+                                <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <TextBlock Text="Target Gene:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBox x:Name="CoExprGeneTextBox" Width="150" Height="30" 
+                                                 VerticalContentAlignment="Center" Padding="5"/>
+                                        <Button Content="Analyze Co-Expression" Style="{StaticResource ActionButtonStyle}" 
+                                                Margin="10,0,0,0" Click="AnalyzeCoExpression_Click"/>
+                                        <Button Content="📄 Export CSV" Style="{StaticResource ExportButtonStyle}" 
+                                                Click="ExportCoExprCsv_Click"/>
+                                    </StackPanel>
+
+                                    <!-- Filter Settings -->
+                                    <Border Background="#F0F0F0" CornerRadius="4" Padding="15">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <TextBlock Text="FDR Threshold:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                <TextBox x:Name="CoExprFdrTextBox" Width="60" Height="25" Text="0.05" 
+                                                         VerticalContentAlignment="Center" TextAlignment="Center"
+                                                         TextChanged="CoExprFilter_TextChanged"/>
+
+                                                <TextBlock Text="Min |r|:" VerticalAlignment="Center" Margin="20,0,5,0"/>
+                                                <TextBox x:Name="CoExprMinRTextBox" Width="60" Height="25" Text="0.3" 
+                                                         VerticalContentAlignment="Center" TextAlignment="Center"
+                                                         TextChanged="CoExprFilter_TextChanged"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Sort by:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <RadioButton x:Name="CoExprSortAbsR" Content="|r| (descending)" 
+                                                             IsChecked="True" Margin="0,0,15,0" VerticalAlignment="Center"
+                                                             Checked="CoExprSort_Changed"/>
+                                                <RadioButton x:Name="CoExprSortPValue" Content="P-value (ascending)" 
+                                                             Margin="0,0,15,0" VerticalAlignment="Center"
+                                                             Checked="CoExprSort_Changed"/>
+                                                <RadioButton x:Name="CoExprSortR" Content="r (descending)" 
+                                                             VerticalAlignment="Center"
+                                                             Checked="CoExprSort_Changed"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Summary -->
+                                <Border Grid.Row="1" Background="#E3F2FD" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="CoExprSummaryText" Grid.Column="0" VerticalAlignment="Center"
+                                                   Text="Enter a gene and click Analyze to find co-expressed genes." Foreground="#555"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <TextBlock Text="🔍 Search:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                            <TextBox x:Name="CoExprSearchTextBox" Width="130" Height="25" 
+                                                     VerticalContentAlignment="Center" Padding="5,0"
+                                                     TextChanged="CoExprSearch_TextChanged"/>
+                                            <Button Content="📋 Copy Table" Style="{StaticResource CopyButtonStyle}" 
+                                                    Margin="10,0,0,0" Click="CopyCoExprTable_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Results DataGrid -->
+                                <DataGrid x:Name="CoExprDataGrid" Grid.Row="2" Style="{StaticResource DataGridStyle}"
+                                          MaxHeight="500" SelectionMode="Extended" CanUserSortColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn Header="📈" Width="45">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="📈" ToolTip="Open in Scatter Plot" 
+                                                            FontSize="12" Padding="2" Cursor="Hand"
+                                                            Background="Transparent" BorderThickness="0"
+                                                            Click="CoExprScatterButton_Click"
+                                                            Tag="{Binding}"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="50"/>
+                                        <DataGridTextColumn Header="Gene" Binding="{Binding GeneName}" Width="120"/>
+                                        <DataGridTextColumn Header="Gene ID" Binding="{Binding GeneId}" Width="140"/>
+                                        <DataGridTextColumn Header="Pearson r" Binding="{Binding PearsonR, StringFormat=F4}" Width="90"/>
+                                        <DataGridTextColumn Header="|r|" Binding="{Binding AbsR, StringFormat=F4}" Width="70"/>
+                                        <DataGridTextColumn Header="P-value" Binding="{Binding PValueDisplay}" Width="100"/>
+                                        <DataGridTextColumn Header="FDR" Binding="{Binding FDRDisplay}" Width="100"/>
+                                        <DataGridTextColumn Header="Direction" Binding="{Binding Direction}" Width="80"/>
+                                        <DataGridTextColumn Header="N" Binding="{Binding N}" Width="60"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <!-- Result Info -->
+                                <TextBlock Grid.Row="3" x:Name="CoExprResultText" TextWrapping="Wrap" Foreground="#666" Margin="0,10,0,0"/>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

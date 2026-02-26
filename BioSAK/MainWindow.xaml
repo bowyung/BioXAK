@@ -227,6 +227,6 @@
                Grid.Column="1"
                NavigationUIVisibility="Hidden"
                Navigated="MainFrame_Navigated"/>
-        <Image x:Name="Welcome" Margin="92,-7,-128,10" Source="/Fig/NAME.png" Stretch="Fill" Grid.ColumnSpan="2"/>
+        <Image x:Name="Welcome" Margin="92,-7,-128,10" Source="/Fig/NAME.png" Stretch="Fill" Grid.ColumnSpan="2" IsHitTestVisible="False"/>
     </Grid>
 </Window>

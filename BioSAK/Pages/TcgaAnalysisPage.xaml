@@ -471,12 +471,12 @@
                                                 <TextBlock x:Name="KMLowPercentText" Text="50%" VerticalAlignment="Center" Foreground="#3498db" FontWeight="Bold"/>
                                             </StackPanel>
                                             <Slider x:Name="KMPercentileSlider" Minimum="10" Maximum="90" Value="50" 
-                                                    TickFrequency="5" IsSnapToTickEnabled="True" Width="600"
+                                                    TickFrequency="5" IsSnapToTickEnabled="True" HorizontalAlignment="Stretch"
                                                     ValueChanged="KMPercentileSlider_ValueChanged"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                                <TextBlock Text="10%" Foreground="#888" FontSize="10"/>
-                                                <TextBlock Text="90%" Foreground="#888" FontSize="10" Margin="555,0,0,0"/>
-                                            </StackPanel>
+                                            <Grid HorizontalAlignment="Stretch" Margin="6,2,6,0">
+                                                <TextBlock Text="10%" Foreground="#888" FontSize="10" HorizontalAlignment="Left"/>
+                                                <TextBlock Text="90%" Foreground="#888" FontSize="10" HorizontalAlignment="Right"/>
+                                            </Grid>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>

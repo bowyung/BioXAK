@@ -3,24 +3,17 @@ library(DESeq2)
 library(SummarizedExperiment)
 library(jsonlite)
 
-# ============================================================
-#  TCGA 完整 Pipeline：下載 → 標準化 → 臨床資料 → BioXAK JSON
-#  輸出：Data/TCGA/{project}_meta.json
-#         Data/TCGA/{project}_matrix.bin
-#         Data/TCGA/projects_index.json
-# ============================================================
 
-cache_dir  <- "TCGA_cache"      # GDC 原始下載快取
-output_dir <- "Data/TCGA"       # BioXAK 資料資料夾
+
+cache_dir  <- "TCGA_cache"      
+output_dir <- "Data/TCGA"       
 if (!dir.exists(cache_dir))  dir.create(cache_dir,  recursive = TRUE)
 if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
-# 要處理的 TCGA 癌症（設為 NULL 自動抓全部）
 TARGET_PROJECTS <- NULL
-# 例如只跑特定幾個：
 # TARGET_PROJECTS <- c("TCGA-CHOL", "TCGA-LIHC", "TCGA-BRCA")
 
-# ── 輔助函數 ─────────────────────────────────────────────────
+
 null_na <- function(x) lapply(x, function(v) {
   if (is.null(v) || length(v) == 0) return(NULL)
   if (length(v) == 1 && is.na(v)) return(NULL)
@@ -32,14 +25,11 @@ check_memory <- function(tag = "") {
   cat("  💾", tag, round(m, 0), "MB\n")
 }
 
-# ── 取得 TCGA 專案清單 ────────────────────────────────────────
 if (is.null(TARGET_PROJECTS)) {
   all_proj   <- TCGAbiolinks:::getGDCprojects()
   TARGET_PROJECTS <- grep("^TCGA-", all_proj$project_id, value = TRUE)
 }
-cat("準備處理", length(TARGET_PROJECTS), "個 TCGA 專案\n\n")
 
-# ── 主迴圈 ────────────────────────────────────────────────────
 project_index <- list()
 
 for (project in TARGET_PROJECTS) {
@@ -51,7 +41,6 @@ for (project in TARGET_PROJECTS) {
 
   if (file.exists(meta_out) && file.exists(matrix_out)) {
     cat("  ✅ 已存在，跳過（刪除檔案可重新產生）\n")
-    # 仍讀入 index
     existing <- tryCatch(fromJSON(meta_out), error = function(e) NULL)
     if (!is.null(existing)) {
       project_index[[length(project_index) + 1]] <- list(
@@ -75,7 +64,7 @@ for (project in TARGET_PROJECTS) {
              data.category = "Transcriptome Profiling",
              data.type = "Gene Expression Quantification",
              workflow.type = "STAR - Counts"),
-    error = function(e) { cat("  ❌ 查詢失敗:", e$message, "\n"); NULL }
+    error = function(e) { cat(" 查詢失敗:", e$message, "\n"); NULL }
   )
   if (is.null(query)) next
 
@@ -265,17 +254,3 @@ index_path <- file.path(output_dir, "projects_index.json")
 writeLines(toJSON(project_index, auto_unbox = TRUE, pretty = TRUE), index_path)
 cat("\n✅ projects_index.json 寫出（", length(project_index), "個專案）\n")
 cat("🎉 全部完成！輸出在:", output_dir, "\n")
-
-# ── 最終驗證：MTNAP1 (ENSG00000141219) ──────────────────────
-cat("\n── 驗證 ENSG00000141219 ──\n")
-json_files <- list.files(output_dir, pattern="_meta\\.json$", full.names=TRUE)
-found_in <- c(); missing_in <- c()
-for (jf in json_files) {
-  m    <- tryCatch(fromJSON(jf), error=function(e) NULL)
-  proj <- gsub("_meta\\.json$", "", basename(jf))
-  if (is.null(m)) next
-  if ("ENSG00000141219" %in% m$gene_ids) found_in <- c(found_in, proj) else missing_in <- c(missing_in, proj)
-}
-cat("✅ 有 (", length(found_in), "):", paste(found_in, collapse=", "), "\n")
-if (length(missing_in) > 0)
-  cat("❌ 無 (", length(missing_in), "):", paste(missing_in, collapse=", "), "\n")

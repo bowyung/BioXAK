@@ -24,8 +24,7 @@ namespace BioSAK
 
         private void MainFrame_Navigated(object sender, NavigationEventArgs e)
         {
-            // 只要有導航就隱藏歡迎圖片
-            Welcome.Visibility = Visibility.Hidden;
+            Welcome.Visibility = Visibility.Collapsed;
         }
 
         private void NavigateToPage(Page page)

@@ -200,13 +200,26 @@ namespace BioSAK.Pages
             try
             {
                 ShowProgress("Loading TCGA projects...");
+
+                // ★ 新增：資料不存在時自動觸發下載流程
                 if (!_dataService.IsDataAvailable())
                 {
                     HideProgress();
-                    MessageBox.Show("TCGA data not found.\nPlease ensure data files are in Data/TCGA folder.",
-                        "Data Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+
+                    var downloadWin = new TcgaDataDownloadWindow();
+                    downloadWin.Owner = Window.GetWindow(this);
+                    bool? result = downloadWin.ShowDialog();
+
+                    // 使用者跳過或下載失敗 → 直接返回
+                    if (result != true || !downloadWin.DownloadCompleted)
+                    {
+                        return;
+                    }
+
+                    // 下載完成 → 重新顯示進度並繼續載入
+                    ShowProgress("Loading TCGA projects...");
                 }
+                // ★ 原本的 MessageBox 警告整段刪除（約 5 行）
 
                 _allProjects = await _dataService.GetProjectIndexAsync();
                 _allProjects = _allProjects.OrderBy(p => p.CancerCode).ToList();
@@ -223,7 +236,8 @@ namespace BioSAK.Pages
             catch (Exception ex)
             {
                 HideProgress();
-                MessageBox.Show($"Error loading data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error loading data: {ex.Message}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

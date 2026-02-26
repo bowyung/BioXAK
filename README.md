@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/framework-.NET%20WPF-purple" />
 </p>
 
-> 繁體中文說明請參閱 [讀我.md](讀我.md)
+> 繁體中文說明請參閱 [讀我檔案.md](讀我檔案.md)
 
 ---
 

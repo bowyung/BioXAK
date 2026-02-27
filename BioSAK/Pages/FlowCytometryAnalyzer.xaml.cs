@@ -7,12 +7,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Reflection;
 using Microsoft.Win32;
 
 namespace BioSAK
@@ -22,6 +22,7 @@ namespace BioSAK
         // Data structures
         private List<FcsFile> fcsFiles = new List<FcsFile>();
         private FcsFile? selectedFile;
+        private FcsFile? _globalCompSource = null;
         private FcsFile? overlayFile;
 
         // Gate templates (polygon/range definitions - independent of files)
@@ -52,14 +53,25 @@ namespace BioSAK
         private string gatingMode = "view";
         private string histGatingMode = "view";
         private string plotType = "dot";
-        private string xScaleMode = "Log";   // "Linear" | "Log" | "Biex"
-        private string yScaleMode = "Log";
-        private bool xLogScale => xScaleMode == "Log";
-        private bool yLogScale => yScaleMode == "Log";
-        private bool xBiexScale => xScaleMode == "Biex";
-        private bool yBiexScale => yScaleMode == "Biex";
+        private bool xLogScale = true;
+        private bool yLogScale = true;
         private bool histLogScale = true;
         private bool autoApplyGates = false;
+
+        // Scale mode strings (Log / Biex / Linear)
+        private string xScaleMode = "Log";
+        private string yScaleMode = "Log";
+
+        // Biexponential (logicle) scale constants
+        private const double BiexT = 262144.0;   // top of scale
+        private const double BiexLinLimit = 26.2144;    // linear segment half-width (~BiexT/10000)
+        private bool xBiexScale = false;
+        private bool yBiexScale = false;
+
+        // Compensation
+        private bool applyCompensation = false;
+        private readonly Dictionary<(int row, int col), Slider> _compSliders = new();
+        private bool _sliderUpdating = false;
 
         // Colormap selections
         private string dotColormap = "Turbo";
@@ -93,6 +105,10 @@ namespace BioSAK
         // Preserve histogram settings across file switches
         private string lastHistParamName = "";
 
+        // Cached axis range — set by DrawScatterPlot, used by ScreenToData for exact alignment
+        private double _cachedXMin = 0.1, _cachedXMax = 262144;
+        private double _cachedYMin = 0.1, _cachedYMax = 262144;
+
         // Initialization flag
         private bool isInitialized = false;
 
@@ -106,8 +122,11 @@ namespace BioSAK
             clickTimer.Interval = TimeSpan.FromMilliseconds(250);
             clickTimer.Tick += ClickTimer_Tick;
 
-            // Register first tab's canvas
+            // Register first tab's canvas and wire up all mouse events
+            // (XAML only has Left; Right and Move are added here for reliability)
             tabCanvases[tabItem1] = plotCanvas;
+            plotCanvas.MouseRightButtonDown += PlotCanvas_MouseRightButtonDown;
+
             tabAnalysis.SelectionChanged += TabAnalysis_SelectionChanged;
 
             isInitialized = true;
@@ -164,12 +183,9 @@ namespace BioSAK
             var results = GetCurrentFileGateResults();
             var eventIndices = new HashSet<int>();
 
-            // Get parent gate events if specified
             HashSet<int>? parentEvents = null;
             if (!string.IsNullOrEmpty(gate.ParentGateName) && results.ContainsKey(gate.ParentGateName))
-            {
                 parentEvents = results[gate.ParentGateName];
-            }
 
             if (gate.GateType == GateType.Polygon)
             {
@@ -177,46 +193,30 @@ namespace BioSAK
                 int yIndex = FindParameterIndex(selectedFile, gate.YParamName);
                 if (xIndex < 0 || yIndex < 0) return;
 
-                // Determine if each axis uses log scale (log requires > 0).
-                // Biex and Linear axes accept negative / zero values from compensation.
-                bool xMustBePositive = xScaleMode == "Log";
-                bool yMustBePositive = yScaleMode == "Log";
+                bool xMustPos = xScaleMode == "Log";
+                bool yMustPos = yScaleMode == "Log";
 
                 for (int i = 0; i < selectedFile.Events.Count; i++)
                 {
-                    if (parentEvents != null && !parentEvents.Contains(i))
-                        continue;
-
+                    if (parentEvents != null && !parentEvents.Contains(i)) continue;
                     var ev = selectedFile.Events[i];
-
-                    // Skip events that are out of range for the current scale.
-                    // In Log mode negative / zero values are invisible and cannot
-                    // be inside a gate; in Biex/Linear they are valid data points.
-                    if (xMustBePositive && ev[xIndex] <= 0) continue;
-                    if (yMustBePositive && ev[yIndex] <= 0) continue;
-
-                    var point = new Point(ev[xIndex], ev[yIndex]);
-                    if (PointInPolygon(point, gate.Points))
+                    if (xMustPos && ev[xIndex] <= 0) continue;
+                    if (yMustPos && ev[yIndex] <= 0) continue;
+                    if (PointInPolygon(new Point(ev[xIndex], ev[yIndex]), gate.Points))
                         eventIndices.Add(i);
                 }
             }
             else if (gate.GateType == GateType.Range)
             {
-                // Range gate - single parameter
                 int paramIndex = FindParameterIndex(selectedFile, gate.XParamName);
                 if (paramIndex < 0) return;
 
                 for (int i = 0; i < selectedFile.Events.Count; i++)
                 {
-                    if (parentEvents != null && !parentEvents.Contains(i))
-                        continue;
-
-                    var ev = selectedFile.Events[i];
-                    double value = ev[paramIndex];
+                    if (parentEvents != null && !parentEvents.Contains(i)) continue;
+                    double value = selectedFile.Events[i][paramIndex];
                     if (value >= gate.RangeMin && value <= gate.RangeMax)
-                    {
                         eventIndices.Add(i);
-                    }
                 }
             }
 
@@ -226,107 +226,70 @@ namespace BioSAK
         private async Task ApplyAllGatesToCurrentFile()
         {
             if (selectedFile == null) return;
-
-            var file = selectedFile;  // capture before await
+            var file = selectedFile;
             var templates = gateTemplates.ToList();
             string scaleX = xScaleMode;
             string scaleY = yScaleMode;
-
-            var results = await Task.Run(() =>
+            var res = await Task.Run(() =>
             {
-                var res = new Dictionary<string, HashSet<int>>();
-                foreach (var gate in templates)
-                    ApplyGateToFileCore(file, gate, res, scaleX, scaleY);
-                return res;
+                var dict = new Dictionary<string, HashSet<int>>();
+                foreach (var g in templates) ApplyGateToFileCore(file, g, dict, scaleX, scaleY);
+                return dict;
             });
-
-            // Update on UI thread
-            fileGateResults[file.Filename] = results;
+            fileGateResults[file.Filename] = res;
             UpdateGateDisplayNames();
         }
 
-        /// <summary>
-        /// Synchronous version used for overlay/secondary files where async is not needed.
-        /// Uses the current scale modes for negative-value filtering.
-        /// </summary>
         private void ApplyAllGatesToFile(FcsFile file)
         {
             if (file == null) return;
-
             var res = new Dictionary<string, HashSet<int>>();
-            foreach (var gate in gateTemplates)
-                ApplyGateToFileCore(file, gate, res, xScaleMode, yScaleMode);
+            foreach (var g in gateTemplates) ApplyGateToFileCore(file, g, res, xScaleMode, yScaleMode);
             fileGateResults[file.Filename] = res;
         }
 
-        /// <summary>
-        /// Thread-safe gate computation (no UI access).
-        /// Writes result directly into the provided dictionary.
-        /// </summary>
         private static void ApplyGateToFileCore(FcsFile file, GateTemplate gate,
-            Dictionary<string, HashSet<int>> results,
-            string xScaleMode, string yScaleMode)
+            Dictionary<string, HashSet<int>> results, string xScaleMode, string yScaleMode)
         {
             var eventIndices = new HashSet<int>();
-
             HashSet<int>? parentEvents = null;
             if (!string.IsNullOrEmpty(gate.ParentGateName) && results.ContainsKey(gate.ParentGateName))
                 parentEvents = results[gate.ParentGateName];
 
             if (gate.GateType == GateType.Polygon)
             {
-                int xIndex = FindParameterIndexStatic(file, gate.XParamName);
-                int yIndex = FindParameterIndexStatic(file, gate.YParamName);
-                if (xIndex < 0 || yIndex < 0) return;
-
-                bool xMustBePositive = xScaleMode == "Log";
-                bool yMustBePositive = yScaleMode == "Log";
-
+                int xIdx = file.Parameters.FindIndex(p => p.Name == gate.XParamName || p.Label == gate.XParamName);
+                int yIdx = file.Parameters.FindIndex(p => p.Name == gate.YParamName || p.Label == gate.YParamName);
+                if (xIdx < 0 || yIdx < 0) return;
+                bool xPos = xScaleMode == "Log", yPos = yScaleMode == "Log";
                 for (int i = 0; i < file.Events.Count; i++)
                 {
                     if (parentEvents != null && !parentEvents.Contains(i)) continue;
                     var ev = file.Events[i];
-                    if (xMustBePositive && ev[xIndex] <= 0) continue;
-                    if (yMustBePositive && ev[yIndex] <= 0) continue;
-                    if (PointInPolygonStatic(new Point(ev[xIndex], ev[yIndex]), gate.Points))
-                        eventIndices.Add(i);
+                    if (xPos && ev[xIdx] <= 0) continue;
+                    if (yPos && ev[yIdx] <= 0) continue;
+                    bool inside = false;
+                    var pt = new Point(ev[xIdx], ev[yIdx]);
+                    for (int a = 0, b = gate.Points.Count - 1; a < gate.Points.Count; b = a++)
+                        if (((gate.Points[a].Y > pt.Y) != (gate.Points[b].Y > pt.Y)) &&
+                            (pt.X < (gate.Points[b].X - gate.Points[a].X) * (pt.Y - gate.Points[a].Y)
+                                    / (gate.Points[b].Y - gate.Points[a].Y) + gate.Points[a].X))
+                            inside = !inside;
+                    if (inside) eventIndices.Add(i);
                 }
             }
             else if (gate.GateType == GateType.Range)
             {
-                int paramIndex = FindParameterIndexStatic(file, gate.XParamName);
-                if (paramIndex < 0) return;
-
+                int pIdx = file.Parameters.FindIndex(p => p.Name == gate.XParamName || p.Label == gate.XParamName);
+                if (pIdx < 0) return;
                 for (int i = 0; i < file.Events.Count; i++)
                 {
                     if (parentEvents != null && !parentEvents.Contains(i)) continue;
-                    double value = file.Events[i][paramIndex];
-                    if (value >= gate.RangeMin && value <= gate.RangeMax)
-                        eventIndices.Add(i);
+                    double v = file.Events[i][pIdx];
+                    if (v >= gate.RangeMin && v <= gate.RangeMax) eventIndices.Add(i);
                 }
             }
-
             results[gate.Name] = eventIndices;
-        }
-
-        private static int FindParameterIndexStatic(FcsFile file, string name)
-        {
-            for (int i = 0; i < file.Parameters.Count; i++)
-                if (file.Parameters[i].Name == name || file.Parameters[i].Label == name)
-                    return i;
-            return -1;
-        }
-
-        private static bool PointInPolygonStatic(Point point, List<Point> polygon)
-        {
-            if (polygon.Count < 3) return false;
-            bool inside = false;
-            for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
-                if (((polygon[i].Y > point.Y) != (polygon[j].Y > point.Y)) &&
-                    (point.X < (polygon[j].X - polygon[i].X) * (point.Y - polygon[i].Y)
-                               / (polygon[j].Y - polygon[i].Y) + polygon[i].X))
-                    inside = !inside;
-            return inside;
         }
 
         private int FindParameterIndex(FcsFile file, string paramName)
@@ -521,15 +484,13 @@ namespace BioSAK
                 MessageBox.Show("Please load a file first.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
             if (gateTemplates.Count == 0)
             {
                 MessageBox.Show("No gates defined. Create gates first.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
             progressBar.Visibility = Visibility.Visible;
-            txtStatus.Text = "Applying gates...";
+            txtStatus.Text = "Applying gates…";
             await ApplyAllGatesToCurrentFile();
             DrawPlot();
             progressBar.Visibility = Visibility.Collapsed;
@@ -558,6 +519,7 @@ namespace BioSAK
             canvas.MouseLeftButtonDown += PlotCanvas_MouseLeftButtonDown;
             canvas.MouseLeftButtonUp += PlotCanvas_MouseLeftButtonUp;
             canvas.MouseMove += PlotCanvas_MouseMove;
+            canvas.MouseRightButtonDown += PlotCanvas_MouseRightButtonDown;
             canvas.SizeChanged += (s, args) => {
                 if (tabAnalysis.SelectedItem == newTab)
                 {
@@ -621,6 +583,8 @@ namespace BioSAK
 
         #region File Operations
 
+        private const int MaxLoadEvents = 500_000;
+
         private async void BtnLoadFile_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
@@ -628,12 +592,11 @@ namespace BioSAK
                 Filter = "FCS Files (*.fcs)|*.fcs|All Files (*.*)|*.*",
                 Multiselect = true
             };
-
             if (dialog.ShowDialog() != true) return;
 
             btnLoadFile.IsEnabled = false;
             progressBar.Visibility = Visibility.Visible;
-            txtStatus.Text = "Loading...";
+            txtStatus.Text = "Loading…";
 
             foreach (var filename in dialog.FileNames)
             {
@@ -659,272 +622,188 @@ namespace BioSAK
             txtStatus.Text = $"Loaded {fcsFiles.Count} file(s)";
         }
 
-        private void BtnLoadDemo_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Embedded demo FCS resource name (set as EmbeddedResource in .csproj).
+        /// Place the file at: Data/Demo/Specimen_001_4color.fcs
+        /// </summary>
+        private const string DemoFcsResourceName = "BioSAK.Data.Demo.Specimen_001_4color.fcs";
+        private const string DemoFcsFileName = "Specimen_001_4color.fcs";
+
+        private async void BtnLoadDemo_Click(object sender, RoutedEventArgs e)
         {
-            fcsFiles.Clear();
-            cboFiles.Items.Clear();
-            cboOverlay.Items.Clear();
+            btnLoadDemo.IsEnabled = false;
+            progressBar.Visibility = Visibility.Visible;
+            txtStatus.Text = "Loading demo FCS…";
 
-            var demo1 = GenerateDemoData("Demo_Sample.fcs");
-            var demo2 = GenerateDemoData2("Demo_Treatment.fcs");
+            try
+            {
+                // ── 1. Try loading from embedded resource ──────────────────
+                string tempPath = System.IO.Path.Combine(
+                    System.IO.Path.GetTempPath(), DemoFcsFileName);
 
-            fcsFiles.Add(demo1);
-            fcsFiles.Add(demo2);
+                var assembly = Assembly.GetExecutingAssembly();
+                using (var stream = assembly.GetManifestResourceStream(DemoFcsResourceName))
+                {
+                    if (stream == null)
+                    {
+                        // ── 2. Fallback: look for file next to executable ──
+                        string exeDir = AppDomain.CurrentDomain.BaseDirectory;
+                        string[] searchPaths = new[]
+                        {
+                            System.IO.Path.Combine(exeDir, "Data", "Demo", DemoFcsFileName),
+                            System.IO.Path.Combine(exeDir, "Demo", DemoFcsFileName),
+                            System.IO.Path.Combine(exeDir, DemoFcsFileName),
+                        };
 
-            cboFiles.Items.Add(demo1.Filename);
-            cboFiles.Items.Add(demo2.Filename);
-            cboOverlay.Items.Add(demo1.Filename);
-            cboOverlay.Items.Add(demo2.Filename);
+                        string? found = searchPaths.FirstOrDefault(File.Exists);
+                        if (found == null)
+                        {
+                            MessageBox.Show(
+                                $"Demo FCS file not found.\n\n" +
+                                $"Please place '{DemoFcsFileName}' in one of:\n" +
+                                string.Join("\n", searchPaths),
+                                "Demo File Missing", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+                        tempPath = found;
+                    }
+                    else
+                    {
+                        using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write);
+                        await stream.CopyToAsync(fs);
+                    }
+                }
 
-            cboFiles.SelectedIndex = 0;
-            cboOverlay.SelectedIndex = 1;
+                // ── 3. Parse with the standard FCS parser ──────────────────
+                var demoFile = await Task.Run(() => ParseFcsFile(tempPath));
 
-            txtStatus.Text = "Demo data loaded (2 samples for testing gate inheritance)";
+                fcsFiles.Clear();
+                cboFiles.Items.Clear();
+                cboOverlay.Items.Clear();
+
+                fcsFiles.Add(demoFile);
+                cboFiles.Items.Add(demoFile.Filename);
+                cboOverlay.Items.Add(demoFile.Filename);
+                cboFiles.SelectedIndex = 0;
+
+                int nFluor = demoFile.Parameters.Count(p =>
+                    !p.Name.StartsWith("FSC", StringComparison.OrdinalIgnoreCase) &&
+                    !p.Name.StartsWith("SSC", StringComparison.OrdinalIgnoreCase) &&
+                    !p.Name.Equals("Time", StringComparison.OrdinalIgnoreCase));
+
+                txtStatus.Text = $"Demo loaded: {demoFile.Filename}  —  " +
+                                 $"{demoFile.EventCount:N0} events, {nFluor} fluorescence channels" +
+                                 (demoFile.HasCompensationData ? ", compensation available" : "");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load demo FCS:\n{ex.Message}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                txtStatus.Text = "Demo load failed";
+            }
+            finally
+            {
+                btnLoadDemo.IsEnabled = true;
+                progressBar.Visibility = Visibility.Collapsed;
+            }
         }
-
-        private const int MaxLoadEvents = 500_000; // cap to avoid OOM on spectral-flow files
 
         private FcsFile ParseFcsFile(string filepath)
         {
             using var fs = new FileStream(filepath, FileMode.Open, FileAccess.Read);
             using var reader = new BinaryReader(fs);
 
-            // ── Header ────────────────────────────────────────────────────────
             var header = Encoding.ASCII.GetString(reader.ReadBytes(58));
             var textStart = int.Parse(header.Substring(10, 8).Trim());
             var textEnd = int.Parse(header.Substring(18, 8).Trim());
             var dataStart = int.Parse(header.Substring(26, 8).Trim());
             var dataEnd = int.Parse(header.Substring(34, 8).Trim());
 
-            // ── TEXT segment ─────────────────────────────────────────────────
             fs.Seek(textStart, SeekOrigin.Begin);
-            var textSegment = Encoding.UTF8.GetString(reader.ReadBytes(textEnd - textStart + 1));
-            var delimiter = textSegment[0];
-            var parts = textSegment.Substring(1).Split(delimiter);
+            var textSeg = Encoding.UTF8.GetString(reader.ReadBytes(textEnd - textStart + 1));
+            var delim = textSeg[0];
+            var parts = textSeg.Substring(1).Split(delim);
 
-            var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var meta = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < parts.Length - 1; i += 2)
-                if (!string.IsNullOrEmpty(parts[i]))
-                    metadata[parts[i]] = parts[i + 1];
+                if (!string.IsNullOrEmpty(parts[i])) meta[parts[i]] = parts[i + 1];
 
-            int numParams = int.Parse(metadata.GetValueOrDefault("$PAR") ?? "0");
-            int numEvents = int.Parse(metadata.GetValueOrDefault("$TOT") ?? "0");
-            var byteOrder = metadata.GetValueOrDefault("$BYTEORD") ?? "1,2,3,4";
-            bool isLittleEndian = byteOrder.StartsWith("1");
+            int numParams = int.Parse(meta.GetValueOrDefault("$PAR") ?? "0");
+            int numEvents = int.Parse(meta.GetValueOrDefault("$TOT") ?? "0");
+            bool littleEnd = (meta.GetValueOrDefault("$BYTEORD") ?? "1,2,3,4").StartsWith("1");
+            string dataType = (meta.GetValueOrDefault("$DATATYPE") ?? "F").Trim().ToUpper();
 
-            // $DATATYPE: F = float32, D = double64, I = integer (width from $PnB)
-            string dataType = (metadata.GetValueOrDefault("$DATATYPE") ?? "F").Trim().ToUpper();
-
-            // Per-parameter bit-width (used for integer type)
             var paramBits = new int[numParams];
             for (int i = 0; i < numParams; i++)
-                paramBits[i] = int.TryParse(metadata.GetValueOrDefault($"$P{i + 1}B"), out int b) ? b : 32;
+                paramBits[i] = int.TryParse(meta.GetValueOrDefault($"$P{i + 1}B"), out int b) ? b : 32;
 
-            int bytesPerParam = dataType switch
-            {
-                "D" => 8,
-                "I" => 0,   // variable; read per-parameter from $PnB
-                _ => 4    // "F" and anything else → float32
-            };
-
-            // ── Parameters ───────────────────────────────────────────────────
             var parameters = new List<FcsParameter>();
             for (int i = 1; i <= numParams; i++)
             {
-                var name = metadata.GetValueOrDefault($"$P{i}N") ?? $"P{i}";
-                var label = metadata.GetValueOrDefault($"$P{i}S") ?? name;
+                var name = meta.GetValueOrDefault($"$P{i}N") ?? $"P{i}";
+                var label = meta.GetValueOrDefault($"$P{i}S") ?? name;
                 double range = 262144;
-                if (double.TryParse(metadata.GetValueOrDefault($"$P{i}R"), out double r) && r > 0)
-                    range = r;
+                if (double.TryParse(meta.GetValueOrDefault($"$P{i}R"), out double r) && r > 0) range = r;
                 parameters.Add(new FcsParameter { Name = name, Label = label, Range = range });
             }
 
-            // ── DATA segment ─────────────────────────────────────────────────
             fs.Seek(dataStart, SeekOrigin.Begin);
+            int bpe = dataType == "D" ? numParams * 8
+                    : dataType == "I" ? paramBits.Sum(b => b / 8)
+                    : numParams * 4;
+            int dataLen = dataEnd - dataStart + 1;
+            int actualEvt = bpe > 0 ? Math.Min(numEvents, dataLen / bpe) : numEvents;
 
-            // Compute bytes-per-event for this file
-            int bytesPerEvent = 0;
-            if (dataType == "I")
-                foreach (var b in paramBits) bytesPerEvent += b / 8;
-            else
-                bytesPerEvent = numParams * bytesPerParam;
-
-            int dataLength = dataEnd - dataStart + 1;
-            int actualEvents = (bytesPerEvent > 0)
-                ? Math.Min(numEvents, dataLength / bytesPerEvent)
-                : numEvents;
-
-            // Random subsample at load time if file exceeds MaxLoadEvents to avoid OOM
-            bool needsSubsample = actualEvents > MaxLoadEvents;
-            HashSet<int>? keepIndices = null;
-            if (needsSubsample)
+            bool sample = actualEvt > MaxLoadEvents;
+            HashSet<int>? keep = null;
+            if (sample)
             {
                 var rng = new Random(42);
-                keepIndices = new HashSet<int>(
-                    Enumerable.Range(0, actualEvents)
-                              .OrderBy(_ => rng.Next())
-                              .Take(MaxLoadEvents));
+                keep = new HashSet<int>(Enumerable.Range(0, actualEvt)
+                    .OrderBy(_ => rng.Next()).Take(MaxLoadEvents));
             }
 
-            var events = new List<float[]>(Math.Min(actualEvents, MaxLoadEvents));
+            var paramRanges = parameters.Select(p => (float)p.Range).ToArray();
 
-            for (int ev = 0; ev < actualEvents; ev++)
+            var events = new List<float[]>(Math.Min(actualEvt, MaxLoadEvents));
+            for (int ev = 0; ev < actualEvt; ev++)
             {
-                float[] eventData = ReadOneEvent(reader, isLittleEndian, dataType, numParams, paramBits);
-
-                if (needsSubsample && !keepIndices!.Contains(ev))
-                    continue; // skip, but we still had to advance the stream above
-
-                events.Add(eventData);
-            }
-
-            string filename = System.IO.Path.GetFileName(filepath);
-            if (needsSubsample)
-                filename += $" [subsampled {MaxLoadEvents / 1000}k/{actualEvents / 1000}k]";
-
-            var fcsFile = new FcsFile { Filename = filename, Parameters = parameters, Events = events };
-
-            // ── Parse $SPILLOVER / $COMP compensation matrix ──────────────────
-            ParseSpillover(fcsFile, metadata);
-
-            return fcsFile;
-        }
-
-        /// <summary>Reads one event from the binary stream according to $DATATYPE.</summary>
-        private static float[] ReadOneEvent(BinaryReader reader, bool littleEndian,
-            string dataType, int numParams, int[] paramBits)
-        {
-            var eventData = new float[numParams];
-            for (int p = 0; p < numParams; p++)
-            {
-                float value;
-                if (dataType == "D")
+                var row = new float[numParams];
+                for (int p = 0; p < numParams; p++)
                 {
-                    var bytes = reader.ReadBytes(8);
-                    if (!littleEndian) Array.Reverse(bytes);
-                    value = (float)BitConverter.ToDouble(bytes, 0);
+                    float v;
+                    if (dataType == "D")
+                    {
+                        var b = reader.ReadBytes(8); if (!littleEnd) Array.Reverse(b);
+                        v = (float)BitConverter.ToDouble(b, 0);
+                    }
+                    else if (dataType == "I")
+                    {
+                        int bc = paramBits[p] / 8;
+                        var b = reader.ReadBytes(bc); if (!littleEnd) Array.Reverse(b);
+                        var pad = new byte[4]; Array.Copy(b, pad, Math.Min(bc, 4));
+                        v = (float)BitConverter.ToUInt32(pad, 0);
+                    }
+                    else
+                    {
+                        var b = reader.ReadBytes(4); if (!littleEnd) Array.Reverse(b);
+                        v = BitConverter.ToSingle(b, 0);
+                    }
+                    if (float.IsNaN(v) || float.IsInfinity(v)) v = 0f;
+                    // Cap to $PnR — saturated ADC events pile up exactly at max;
+                    // values slightly exceeding $PnR are float precision artifacts.
+                    if (v > paramRanges[p]) v = paramRanges[p];
+                    row[p] = v;
                 }
-                else if (dataType == "I")
-                {
-                    int byteCount = paramBits[p] / 8;
-                    var bytes = reader.ReadBytes(byteCount);
-                    if (!littleEndian) Array.Reverse(bytes);
-                    // Pad to 4 bytes and read as uint
-                    var padded = new byte[4];
-                    Array.Copy(bytes, padded, Math.Min(byteCount, 4));
-                    value = (float)BitConverter.ToUInt32(padded, 0);
-                }
-                else  // "F" float32
-                {
-                    var bytes = reader.ReadBytes(4);
-                    if (!littleEndian) Array.Reverse(bytes);
-                    value = BitConverter.ToSingle(bytes, 0);
-                }
-
-                eventData[p] = float.IsNaN(value) || float.IsInfinity(value) ? 0f : value;
-            }
-            return eventData;
-        }
-
-        private FcsFile GenerateDemoData(string filename)
-        {
-            var parameters = new List<FcsParameter>
-            {
-                new FcsParameter { Name = "FSC-A", Label = "FSC-A" },
-                new FcsParameter { Name = "SSC-A", Label = "SSC-A" },
-                new FcsParameter { Name = "FITC-A", Label = "CD4 FITC" },
-                new FcsParameter { Name = "PE-A", Label = "CD8 PE" },
-                new FcsParameter { Name = "APC-A", Label = "CD3 APC" },
-                new FcsParameter { Name = "Pacific Blue-A", Label = "CD45 Pacific Blue" }
-            };
-
-            var events = new List<float[]>();
-            var rand = new Random(42);
-
-            for (int i = 0; i < 6000; i++)
-            {
-                events.Add(new float[]
-                {
-                    (float)(50000 + rand.NextDouble() * 30000 + (rand.NextDouble() - 0.5) * 20000),
-                    (float)(30000 + rand.NextDouble() * 25000 + (rand.NextDouble() - 0.5) * 15000),
-                    (float)(rand.NextDouble() < 0.4 ? 5000 + rand.NextDouble() * 50000 : 100 + rand.NextDouble() * 2000),
-                    (float)(rand.NextDouble() < 0.3 ? 8000 + rand.NextDouble() * 60000 : 100 + rand.NextDouble() * 2000),
-                    (float)(20000 + rand.NextDouble() * 100000),
-                    (float)(50000 + rand.NextDouble() * 80000)
-                });
+                if (!sample || keep!.Contains(ev)) events.Add(row);
             }
 
-            for (int i = 0; i < 2000; i++)
-            {
-                events.Add(new float[]
-                {
-                    (float)(80000 + rand.NextDouble() * 40000),
-                    (float)(60000 + rand.NextDouble() * 40000),
-                    (float)(200 + rand.NextDouble() * 3000),
-                    (float)(150 + rand.NextDouble() * 2000),
-                    (float)(1000 + rand.NextDouble() * 5000),
-                    (float)(80000 + rand.NextDouble() * 60000)
-                });
-            }
+            string fname = System.IO.Path.GetFileName(filepath);
+            if (sample) fname += $" [sampled {MaxLoadEvents / 1000}k/{actualEvt / 1000}k]";
 
-            for (int i = 0; i < 2000; i++)
-            {
-                events.Add(new float[]
-                {
-                    (float)(100000 + rand.NextDouble() * 60000),
-                    (float)(120000 + rand.NextDouble() * 80000),
-                    (float)(100 + rand.NextDouble() * 1000),
-                    (float)(100 + rand.NextDouble() * 1000),
-                    (float)(500 + rand.NextDouble() * 3000),
-                    (float)(30000 + rand.NextDouble() * 40000)
-                });
-            }
-
-            return new FcsFile { Filename = filename, Parameters = parameters, Events = events };
-        }
-
-        private FcsFile GenerateDemoData2(string filename)
-        {
-            var parameters = new List<FcsParameter>
-            {
-                new FcsParameter { Name = "FSC-A", Label = "FSC-A" },
-                new FcsParameter { Name = "SSC-A", Label = "SSC-A" },
-                new FcsParameter { Name = "FITC-A", Label = "CD4 FITC" },
-                new FcsParameter { Name = "PE-A", Label = "CD8 PE" },
-                new FcsParameter { Name = "APC-A", Label = "CD3 APC" },
-                new FcsParameter { Name = "Pacific Blue-A", Label = "CD45 Pacific Blue" }
-            };
-
-            var events = new List<float[]>();
-            var rand = new Random(123);
-
-            for (int i = 0; i < 5600; i++)
-            {
-                events.Add(new float[]
-                {
-                    (float)(55000 + rand.NextDouble() * 25000),
-                    (float)(35000 + rand.NextDouble() * 20000),
-                    (float)(rand.NextDouble() < 0.6 ? 15000 + rand.NextDouble() * 80000 : 100 + rand.NextDouble() * 1500),
-                    (float)(rand.NextDouble() < 0.2 ? 5000 + rand.NextDouble() * 40000 : 100 + rand.NextDouble() * 1500),
-                    (float)(30000 + rand.NextDouble() * 120000),
-                    (float)(60000 + rand.NextDouble() * 70000)
-                });
-            }
-
-            for (int i = 0; i < 2400; i++)
-            {
-                events.Add(new float[]
-                {
-                    (float)(90000 + rand.NextDouble() * 50000),
-                    (float)(80000 + rand.NextDouble() * 60000),
-                    (float)(150 + rand.NextDouble() * 2000),
-                    (float)(100 + rand.NextDouble() * 1500),
-                    (float)(800 + rand.NextDouble() * 4000),
-                    (float)(40000 + rand.NextDouble() * 50000)
-                });
-            }
-
-            return new FcsFile { Filename = filename, Parameters = parameters, Events = events };
+            var fcs = new FcsFile { Filename = fname, Parameters = parameters, Events = events };
+            ParseSpillover(fcs, meta);
+            return fcs;
         }
 
         #endregion
@@ -933,40 +812,35 @@ namespace BioSAK
 
         private async void CboFiles_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (cboFiles.SelectedIndex >= 0 && cboFiles.SelectedIndex < fcsFiles.Count)
+            if (cboFiles.SelectedIndex < 0 || cboFiles.SelectedIndex >= fcsFiles.Count) return;
+
+            if (selectedFile != null && cboHistParam.SelectedIndex >= 0)
+                lastHistParamName = selectedFile.Parameters[cboHistParam.SelectedIndex].Label;
+
+            selectedFile = fcsFiles[cboFiles.SelectedIndex];
+
+            if (!selectedFile.HasCompensationData && _globalCompSource?.HasCompensationData == true)
             {
-                // Save current histogram parameter name before switching
-                if (selectedFile != null && cboHistParam.SelectedIndex >= 0)
-                    lastHistParamName = selectedFile.Parameters[cboHistParam.SelectedIndex].Label;
-
-                // Note: histThreshold is preserved across file switches (not cleared here)
-
-                selectedFile = fcsFiles[cboFiles.SelectedIndex];
-
-                // Apply gates in background FIRST before updating comboboxes.
-                // This ensures gate results exist before any DrawPlot is triggered.
-                if (gateTemplates.Count > 0)
-                {
-                    txtStatus.Text = $"Applying gates to {selectedFile.Filename}...";
-                    await ApplyAllGatesToCurrentFile();
-                }
-
-                UpdateParameterComboBoxes();
-
-                // Restore histogram parameter selection by name
-                RestoreHistogramParameter();
-
-                txtFileInfo.Text = $"Events: {selectedFile.Events.Count:N0} | Parameters: {selectedFile.Parameters.Count}";
-
-                txtStatus.Text = gateTemplates.Count > 0
-                    ? $"Switched to {selectedFile.Filename} - Gates applied"
-                    : $"Switched to {selectedFile.Filename}";
-
-                UpdateCompensationInfoPanel();
-                UpdateNegativeValueWarning();
-                DrawPlot();
+                selectedFile.SpilloverChannels = _globalCompSource.SpilloverChannels.ToList();
+                selectedFile.SpilloverMatrix = (float[,])_globalCompSource.SpilloverMatrix!.Clone();
+                selectedFile.CompensationMatrix = _globalCompSource.CompensationMatrix;
+                selectedFile.BuildSpilloverIndex();
             }
+
+            if (gateTemplates.Count > 0)
+                await ApplyAllGatesToCurrentFile();
+
+            UpdateParameterComboBoxes();
+            RestoreHistogramParameter();
+            BuildCompensationSliders();
+            UpdateCompensationUI();
+            UpdateNegativeValueWarning();
+
+            txtFileInfo.Text = $"Events: {selectedFile.Events.Count:N0} | Parameters: {selectedFile.Parameters.Count}";
+            txtStatus.Text = $"Switched to {selectedFile.Filename}";
+            DrawPlot();
         }
+
 
         private void RestoreHistogramParameter()
         {
@@ -1035,6 +909,10 @@ namespace BioSAK
             if (!isInitialized || cboXScale == null || cboYScale == null) return;
             xScaleMode = (cboXScale.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Log";
             yScaleMode = (cboYScale.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Log";
+            xLogScale = xScaleMode == "Log";
+            yLogScale = yScaleMode == "Log";
+            xBiexScale = xScaleMode == "Biex";
+            yBiexScale = yScaleMode == "Biex";
             UpdateNegativeValueWarning();
             DrawPlot();
         }
@@ -1213,27 +1091,11 @@ namespace BioSAK
             if (!isInitialized) return;
             if (sender is TextBox tb)
             {
-                bool isEmpty = string.IsNullOrWhiteSpace(tb.Text);
-                bool isValid = isEmpty || double.TryParse(tb.Text, out _);
+                double? value = null;
+                if (double.TryParse(tb.Text, out double parsed))
+                    value = parsed;
 
-                // Visual feedback: red border for invalid input
-                tb.Tag = isValid ? tb.Tag?.ToString()?.Replace("invalid", "").Trim() : "invalid";
-
-                if (!isValid) return; // don't redraw with bad input
-
-                double? value = isEmpty ? null : (double.TryParse(tb.Text, out double parsed) ? parsed : (double?)null);
-
-                // Restore original tag for routing
-                string route = tb.Name switch
-                {
-                    "txtXMin" => "xmin",
-                    "txtXMax" => "xmax",
-                    "txtYMin" => "ymin",
-                    "txtYMax" => "ymax",
-                    _ => ""
-                };
-
-                switch (route)
+                switch (tb.Tag?.ToString())
                 {
                     case "xmin": customXMin = value; break;
                     case "xmax": customXMax = value; break;
@@ -1241,77 +1103,6 @@ namespace BioSAK
                     case "ymax": customYMax = value; break;
                 }
                 DrawPlot();
-            }
-        }
-
-        private void UpdateNegativeValueWarning()
-        {
-            if (pnlNegExcluded == null) return;
-            bool eitherLog = xScaleMode == "Log" || yScaleMode == "Log";
-            pnlNegExcluded.Visibility = eitherLog ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void ChkCompensation_Changed(object sender, RoutedEventArgs e)
-        {
-            if (!isInitialized) return;
-            applyCompensation = chkApplyCompensation.IsChecked == true;
-            UpdateCompensationInfoPanel();
-            DrawPlot();
-        }
-
-        private void UpdateCompensationInfoPanel()
-        {
-            if (pnlCompInfo == null || pnlCompWarn == null) return;
-
-            if (selectedFile == null)
-            {
-                pnlCompInfo.Visibility = Visibility.Collapsed;
-                pnlCompWarn.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            if (selectedFile.HasCompensationData)
-            {
-                pnlCompWarn.Visibility = Visibility.Collapsed;
-                if (applyCompensation)
-                {
-                    txtCompInfo.Text = $"✓ Compensation active: {selectedFile.SpilloverChannels.Count} channels";
-                    pnlCompInfo.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    pnlCompInfo.Visibility = Visibility.Collapsed;
-                }
-            }
-            else
-            {
-                pnlCompInfo.Visibility = Visibility.Collapsed;
-                if (applyCompensation)
-                {
-                    txtCompWarn.Text = "⚠️ No $SPILLOVER data found in this FCS file. Load a file with compensation data, or use Edit Matrix.";
-                    pnlCompWarn.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    pnlCompWarn.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
-
-        private void BtnEditCompensation_Click(object sender, RoutedEventArgs e)
-        {
-            if (selectedFile == null)
-            {
-                MessageBox.Show("Load an FCS file first.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            var win = new CompensationEditorWindow(selectedFile);
-            win.Owner = Window.GetWindow(this);
-            if (win.ShowDialog() == true)
-            {
-                // User confirmed changes: recompute and redraw
-                UpdateCompensationInfoPanel();
-                if (applyCompensation) DrawPlot();
             }
         }
 
@@ -1371,57 +1162,292 @@ namespace BioSAK
 
         #endregion
 
+        #region Compensation UI
+
+        private void UpdateNegativeValueWarning()
+        {
+            if (pnlNegExcluded == null) return;
+            bool eitherLog = xScaleMode == "Log" || yScaleMode == "Log";
+            pnlNegExcluded.Visibility = eitherLog ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ChkCompensation_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!isInitialized) return;
+            applyCompensation = chkApplyCompensation.IsChecked == true;
+            UpdateCompensationUI();
+            DrawPlot();
+        }
+
+        private void BuildCompensationSliders()
+        {
+            if (spCompSliders == null) return;
+            spCompSliders.Children.Clear();
+            _compSliders.Clear();
+
+            if (selectedFile == null || !selectedFile.HasCompensationData) return;
+
+            var channels = selectedFile.SpilloverChannels;
+            int n = channels.Count;
+
+            for (int row = 0; row < n; row++)
+            {
+                spCompSliders.Children.Add(new TextBlock
+                {
+                    Text = channels[row],
+                    FontWeight = FontWeights.SemiBold,
+                    FontSize = 11,
+                    Foreground = System.Windows.Media.Brushes.SteelBlue,
+                    Margin = new Thickness(0, row == 0 ? 0 : 6, 0, 2)
+                });
+
+                for (int col = 0; col < n; col++)
+                {
+                    if (row == col) continue;
+                    float spillVal = selectedFile.SpilloverMatrix![row, col];
+
+                    var rowGrid = new Grid { Margin = new Thickness(4, 1, 0, 1) };
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(72) });
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(50) });
+
+                    var lbl = new TextBlock
+                    {
+                        Text = $"← {channels[col]}",
+                        FontSize = 10,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Foreground = System.Windows.Media.Brushes.DimGray
+                    };
+
+                    var valBox = new TextBox
+                    {
+                        Text = $"{spillVal:F1}",
+                        FontSize = 10,
+                        Width = 46,
+                        TextAlignment = TextAlignment.Right,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        VerticalContentAlignment = VerticalAlignment.Center,
+                        Padding = new Thickness(2, 1, 2, 1),
+                        BorderThickness = new Thickness(1),
+                        BorderBrush = System.Windows.Media.Brushes.LightGray
+                    };
+
+                    var slider = new Slider
+                    {
+                        Minimum = -30,
+                        Maximum = 120,
+                        Value = spillVal,
+                        SmallChange = 0.5,
+                        LargeChange = 5,
+                        Tag = (row, col),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    int captRow = row, captCol = col;
+
+                    // Slider → update TextBox + matrix
+                    slider.ValueChanged += (s, args) =>
+                    {
+                        if (_sliderUpdating) return;
+                        valBox.Text = $"{args.NewValue:F1}";
+                        OnSpilloverSliderChanged(captRow, captCol, (float)args.NewValue);
+                    };
+
+                    // TextBox Enter key → update Slider + matrix
+                    valBox.KeyDown += (s, args) =>
+                    {
+                        if (args.Key == Key.Enter)
+                        {
+                            if (double.TryParse(valBox.Text.Trim(),
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out double parsed))
+                            {
+                                parsed = Math.Clamp(parsed, slider.Minimum, slider.Maximum);
+                                valBox.Text = $"{parsed:F1}";
+                                _sliderUpdating = true;
+                                slider.Value = parsed;
+                                _sliderUpdating = false;
+                                OnSpilloverSliderChanged(captRow, captCol, (float)parsed);
+                            }
+                            else
+                            {
+                                valBox.Text = $"{slider.Value:F1}";
+                            }
+                            args.Handled = true;
+                            // Move focus away from TextBox
+                            slider.Focus();
+                        }
+                    };
+
+                    // TextBox loses focus → also commit
+                    valBox.LostFocus += (s, args) =>
+                    {
+                        if (double.TryParse(valBox.Text.Trim(),
+                            System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out double parsed))
+                        {
+                            parsed = Math.Clamp(parsed, slider.Minimum, slider.Maximum);
+                            valBox.Text = $"{parsed:F1}";
+                            _sliderUpdating = true;
+                            slider.Value = parsed;
+                            _sliderUpdating = false;
+                            OnSpilloverSliderChanged(captRow, captCol, (float)parsed);
+                        }
+                        else
+                        {
+                            valBox.Text = $"{slider.Value:F1}";
+                        }
+                    };
+
+                    Grid.SetColumn(lbl, 0); Grid.SetColumn(slider, 1); Grid.SetColumn(valBox, 2);
+                    rowGrid.Children.Add(lbl); rowGrid.Children.Add(slider); rowGrid.Children.Add(valBox);
+                    spCompSliders.Children.Add(rowGrid);
+                    _compSliders[(row, col)] = slider;
+                }
+            }
+        }
+
+        private void OnSpilloverSliderChanged(int row, int col, float newValue)
+        {
+            if (selectedFile?.SpilloverMatrix == null) return;
+            selectedFile.SpilloverMatrix[row, col] = newValue;
+            int n = selectedFile.SpilloverChannels.Count;
+            var norm = new float[n, n];
+            for (int r = 0; r < n; r++)
+                for (int c = 0; c < n; c++)
+                    norm[r, c] = selectedFile.SpilloverMatrix[r, c] / 100f;
+            selectedFile.CompensationMatrix = InvertMatrixPublic(norm, n);
+            selectedFile.BuildSpilloverIndex();
+            if (applyCompensation) DrawPlot();
+        }
+
+        private void BtnResetCompensation_Click(object sender, RoutedEventArgs e)
+        {
+            if (selectedFile?.SpilloverMatrix == null) return;
+            int n = selectedFile.SpilloverChannels.Count;
+            _sliderUpdating = true;
+            try
+            {
+                for (int r = 0; r < n; r++)
+                    for (int c = 0; c < n; c++)
+                    {
+                        float v = r == c ? 100f : 0f;
+                        selectedFile.SpilloverMatrix[r, c] = v;
+                        if (_compSliders.TryGetValue((r, c), out var sl))
+                        {
+                            sl.Value = v;
+                            if (sl.Parent is Grid rg && rg.Children[2] is TextBox tb) tb.Text = "0.0";
+                        }
+                    }
+            }
+            finally { _sliderUpdating = false; }
+            var norm = new float[n, n];
+            for (int r = 0; r < n; r++)
+                for (int c = 0; c < n; c++)
+                    norm[r, c] = selectedFile.SpilloverMatrix[r, c] / 100f;
+            selectedFile.CompensationMatrix = InvertMatrixPublic(norm, n);
+            selectedFile.BuildSpilloverIndex();
+            if (applyCompensation) DrawPlot();
+        }
+
+        private void BtnSetupChannels_Click(object sender, RoutedEventArgs e)
+        {
+            if (selectedFile == null) return;
+            var win = new CompensationEditorWindow(selectedFile) { Owner = Window.GetWindow(this) };
+            if (win.ShowDialog() == true)
+            {
+                _globalCompSource = selectedFile;
+                BuildCompensationSliders();
+                UpdateCompensationUI();
+                if (applyCompensation) DrawPlot();
+            }
+        }
+
+        private void UpdateCompensationUI()
+        {
+            if (!isInitialized || pnlCompInfo == null) return;
+            bool hasData = selectedFile?.HasCompensationData == true;
+
+            if (btnSetupChannels != null)
+                btnSetupChannels.Visibility = hasData ? Visibility.Collapsed : Visibility.Visible;
+            if (pnlCompSliders != null)
+                pnlCompSliders.Visibility = hasData ? Visibility.Visible : Visibility.Collapsed;
+
+            pnlCompInfo.Visibility = Visibility.Collapsed;
+            pnlCompWarn.Visibility = Visibility.Collapsed;
+
+            if (selectedFile == null) return;
+            if (hasData && applyCompensation)
+            {
+                txtCompInfo.Text = $"✓ Active · {selectedFile.SpilloverChannels.Count} ch";
+                pnlCompInfo.Visibility = Visibility.Visible;
+            }
+            else if (!hasData && applyCompensation)
+            {
+                txtCompWarn.Text = "⚠️ No spillover data. Use Setup Channels to build a matrix.";
+                pnlCompWarn.Visibility = Visibility.Visible;
+            }
+        }
+
+        // Compatibility alias
+        private void UpdateCompensationInfoPanel() => UpdateCompensationUI();
+
+        #endregion
+
         #region Mouse Handling
 
         private void ClickTimer_Tick(object? sender, EventArgs e)
         {
             clickTimer.Stop();
             isWaitingForDoubleClick = false;
-
-            if (gatingMode == "polygon")
-            {
-                currentPolygonPoints.Add(pendingClickPoint);
-                DrawPlot();
-            }
+            // Timer is now only used as a safeguard; polygon logic moved to ClickCount
         }
 
         private void PlotCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (selectedFile == null) return;
-
             var canvas = sender as Canvas ?? GetCurrentCanvas();
             if (canvas == null) return;
 
             var pos = e.GetPosition(canvas);
 
-            // Update plot size from actual canvas
-            double actualWidth = canvas.ActualWidth;
-            double actualHeight = canvas.ActualHeight;
-            if (actualWidth > 0) plotWidth = actualWidth;
-            if (actualHeight > 0) plotHeight = actualHeight;
+            // Snapshot actual canvas size for coordinate conversion
+            double cw = canvas.ActualWidth > 0 ? canvas.ActualWidth : plotWidth;
+            double ch = canvas.ActualHeight > 0 ? canvas.ActualHeight : plotHeight;
 
             if (currentView == "histogram")
             {
+                // Histogram uses plotWidth from last draw; sync here
+                if (cw > 0) plotWidth = cw;
+                if (ch > 0) plotHeight = ch;
                 HandleHistogramClick(pos);
                 return;
             }
 
-            // Scatter plot handling
-            if (pos.X < plotMargin.Left || pos.X > plotWidth - plotMargin.Right ||
-                pos.Y < plotMargin.Top || pos.Y > plotHeight - plotMargin.Bottom)
+            // Scatter: boundary check with live canvas size
+            double pLeft = plotMargin.Left;
+            double pRight = cw - plotMargin.Right;
+            double pTop = plotMargin.Top;
+            double pBottom = ch - plotMargin.Bottom;
+            if (pos.X < pLeft || pos.X > pRight || pos.Y < pTop || pos.Y > pBottom)
                 return;
 
-            var dataPoint = ScreenToData(pos);
+            // Convert using live canvas size + cached data range
+            var dataPoint = ScreenToDataWithSize(pos, cw, ch);
 
             if (gatingMode == "quadrant")
             {
                 quadrantPosition = dataPoint;
+                if (cw > 0) plotWidth = cw;
+                if (ch > 0) plotHeight = ch;
                 DrawPlot();
             }
             else if (gatingMode == "polygon")
             {
-                if (isWaitingForDoubleClick)
+                if (e.ClickCount >= 2)
                 {
+                    // ── Double-click: the 1st click of the double-click already added a vertex.
+                    //    Use that as the final vertex and close the gate. ──
                     clickTimer.Stop();
                     isWaitingForDoubleClick = false;
 
@@ -1432,6 +1458,8 @@ namespace BioSAK
                             ? gateTemplates[parentGateIndex].Name : "";
                         CreatePolygonGateAndApply(gateName, currentPolygonPoints, parentName);
                         currentPolygonPoints.Clear();
+                        if (cw > 0) plotWidth = cw;
+                        if (ch > 0) plotHeight = ch;
                         DrawPlot();
                     }
                     else
@@ -1441,9 +1469,12 @@ namespace BioSAK
                 }
                 else
                 {
-                    isWaitingForDoubleClick = true;
-                    pendingClickPoint = dataPoint;
-                    clickTimer.Start();
+                    // ── Single-click: add vertex immediately (no timer delay) ──
+                    currentPolygonPoints.Add(dataPoint);
+                    if (cw > 0) plotWidth = cw;
+                    if (ch > 0) plotHeight = ch;
+                    DrawPlot();
+                    txtStatus.Text = $"Point {currentPolygonPoints.Count} added. Double-click to finish, right-click to undo.";
                 }
             }
         }
@@ -1491,81 +1522,171 @@ namespace BioSAK
             }
         }
 
-        private void PlotCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void PlotCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
+
+        private void PlotCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Not used
+            if (currentView == "scatter" && gatingMode == "polygon" && currentPolygonPoints.Count > 0)
+            {
+                // Remove last point; if none left, just reset
+                currentPolygonPoints.RemoveAt(currentPolygonPoints.Count - 1);
+                clickTimer.Stop();
+                isWaitingForDoubleClick = false;
+                DrawPlot();
+                txtStatus.Text = currentPolygonPoints.Count > 0
+                    ? $"Removed last point ({currentPolygonPoints.Count} remaining). Right-click again to undo more. Double-click to finish."
+                    : "Polygon gate cancelled.";
+                e.Handled = true;
+                return;
+            }
+
+            if (currentView == "histogram" && histGatingMode == "range" && histRangeStart.HasValue)
+            {
+                histRangeStart = null;
+                histRangeEnd = null;
+                DrawPlot();
+                txtStatus.Text = "Range gate cancelled.";
+                e.Handled = true;
+                return;
+            }
         }
 
-        private void PlotCanvas_MouseMove(object sender, MouseEventArgs e) { }
+        private Point _lastMousePos;
+
+        private void PlotCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            var canvas = sender as Canvas ?? GetCurrentCanvas();
+            if (canvas == null) return;
+            _lastMousePos = e.GetPosition(canvas);
+            UpdateRubberBand();
+        }
+
+        /// <summary>Draw rubber-band lines on the overlay canvas only — never touches the main canvas.</summary>
+        private void UpdateRubberBand()
+        {
+            rubberBandCanvas.Children.Clear();
+
+            if (currentView == "scatter" && gatingMode == "polygon" && currentPolygonPoints.Count > 0)
+            {
+                double xMin = _cachedXMin, xMax = _cachedXMax;
+                double yMin = _cachedYMin, yMax = _cachedYMax;
+
+                var lastPt = currentPolygonPoints[currentPolygonPoints.Count - 1];
+                double lx = DataToScreenX(lastPt.X, xMin, xMax);
+                double ly = DataToScreenY(lastPt.Y, yMin, yMax);
+
+                // Rubber-band: last vertex → mouse
+                rubberBandCanvas.Children.Add(new Line
+                {
+                    X1 = lx,
+                    Y1 = ly,
+                    X2 = _lastMousePos.X,
+                    Y2 = _lastMousePos.Y,
+                    Stroke = new SolidColorBrush(Color.FromArgb(200, 255, 140, 0)),
+                    StrokeThickness = 1.5,
+                    StrokeDashArray = new DoubleCollection { 4, 4 }
+                });
+
+                // Close preview: mouse → first vertex (only when ≥3 points)
+                if (currentPolygonPoints.Count >= 3)
+                {
+                    var firstPt = currentPolygonPoints[0];
+                    rubberBandCanvas.Children.Add(new Line
+                    {
+                        X1 = _lastMousePos.X,
+                        Y1 = _lastMousePos.Y,
+                        X2 = DataToScreenX(firstPt.X, xMin, xMax),
+                        Y2 = DataToScreenY(firstPt.Y, yMin, yMax),
+                        Stroke = new SolidColorBrush(Color.FromArgb(100, 255, 140, 0)),
+                        StrokeThickness = 1,
+                        StrokeDashArray = new DoubleCollection { 3, 6 }
+                    });
+                }
+            }
+            else if (currentView == "histogram" && histGatingMode == "range" && histRangeStart.HasValue)
+            {
+                double sx = HistDataToScreenX(histRangeStart.Value, histXMin, histXMax);
+                double ex = _lastMousePos.X;
+                double pTop = plotMargin.Top;
+                double pBottom = plotHeight - plotMargin.Bottom;
+
+                rubberBandCanvas.Children.Add(new Rectangle
+                {
+                    Width = Math.Abs(ex - sx),
+                    Height = pBottom - pTop,
+                    Fill = new SolidColorBrush(Color.FromArgb(40, 30, 144, 255)),
+                    Stroke = new SolidColorBrush(Color.FromArgb(160, 30, 144, 255)),
+                    StrokeThickness = 1.5,
+                    StrokeDashArray = new DoubleCollection { 4, 4 }
+                });
+                Canvas.SetLeft(rubberBandCanvas.Children[rubberBandCanvas.Children.Count - 1], Math.Min(sx, ex));
+                Canvas.SetTop(rubberBandCanvas.Children[rubberBandCanvas.Children.Count - 1], pTop);
+            }
+        }
 
         private Point ScreenToData(Point screen)
-        {
-            return new Point(ScreenToDataX(screen.X), ScreenToDataY(screen.Y));
-        }
+            => ScreenToDataWithSize(screen, plotWidth, plotHeight);
 
-        private double ScreenToDataX(double screenX)
+        /// <summary>Convert screen coords to data coords using a specific canvas size.
+        /// Uses _cachedXMin/XMax/YMin/YMax set by the last DrawScatterPlot call.</summary>
+        private Point ScreenToDataWithSize(Point screen, double canvasW, double canvasH)
         {
-            if (selectedFile == null) return 0;
-            int xIndex = cboXParam.SelectedIndex;
-            if (xIndex < 0) return 0;
+            double pLeft = plotMargin.Left;
+            double pRight = canvasW - plotMargin.Right;
+            double pTop = plotMargin.Top;
+            double pBottom = canvasH - plotMargin.Bottom;
 
-            double plotLeft = plotMargin.Left;
-            double plotRight = plotWidth - plotMargin.Right;
-            double t = (screenX - plotLeft) / (plotRight - plotLeft);
+            double tx = (screen.X - pLeft) / (pRight - pLeft);
+            double ty = 1.0 - (screen.Y - pTop) / (pBottom - pTop);
+            tx = Math.Max(0, Math.Min(1, tx));
+            ty = Math.Max(0, Math.Min(1, ty));
+
+            double xMin = _cachedXMin, xMax = _cachedXMax;
+            double yMin = _cachedYMin, yMax = _cachedYMax;
+
+            double dataX, dataY;
 
             if (xBiexScale)
             {
-                var (biexMin, biexMax) = BiexDefaultRange();
-                double xMin = customXMin ?? biexMin;
-                double xMax = customXMax ?? biexMax;
-                double tMin = BiexForward(xMin);
-                double tMax = BiexForward(xMax);
-                return BiexInverse(tMin + t * (tMax - tMin));
+                double s = BiexForward(xMin) + tx * (BiexForward(xMax) - BiexForward(xMin));
+                dataX = BiexInverse(s);
             }
-
-            double xMinS = customXMin ?? (xLogScale ? 0.1 : 0);
-            double xMaxS = customXMax ?? selectedFile.Parameters[xIndex].Range;
-
-            if (xLogScale)
+            else if (xLogScale)
             {
-                double logMin = Math.Log10(Math.Max(0.1, xMinS));
-                double logMax = Math.Log10(xMaxS);
-                return Math.Pow(10, logMin + t * (logMax - logMin));
+                double logMin = Math.Log10(Math.Max(0.1, xMin));
+                double logMax = Math.Log10(Math.Max(0.1, xMax));
+                dataX = Math.Pow(10, logMin + tx * (logMax - logMin));
             }
-            return xMinS + t * (xMaxS - xMinS);
-        }
-
-        private double ScreenToDataY(double screenY)
-        {
-            if (selectedFile == null) return 0;
-            int yIndex = cboYParam.SelectedIndex;
-            if (yIndex < 0) return 0;
-
-            double plotTop = plotMargin.Top;
-            double plotBottom = plotHeight - plotMargin.Bottom;
-            double t = 1 - (screenY - plotTop) / (plotBottom - plotTop);
+            else
+            {
+                dataX = xMin + tx * (xMax - xMin);
+            }
 
             if (yBiexScale)
             {
-                var (biexMin, biexMax) = BiexDefaultRange();
-                double yMin = customYMin ?? biexMin;
-                double yMax = customYMax ?? biexMax;
-                double tMin = BiexForward(yMin);
-                double tMax = BiexForward(yMax);
-                return BiexInverse(tMin + t * (tMax - tMin));
+                double s = BiexForward(yMin) + ty * (BiexForward(yMax) - BiexForward(yMin));
+                dataY = BiexInverse(s);
             }
-
-            double yMinS = customYMin ?? (yLogScale ? 0.1 : 0);
-            double yMaxS = customYMax ?? selectedFile.Parameters[yIndex].Range;
-
-            if (yLogScale)
+            else if (yLogScale)
             {
-                double logMin = Math.Log10(Math.Max(0.1, yMinS));
-                double logMax = Math.Log10(yMaxS);
-                return Math.Pow(10, logMin + t * (logMax - logMin));
+                double logMin = Math.Log10(Math.Max(0.1, yMin));
+                double logMax = Math.Log10(Math.Max(0.1, yMax));
+                dataY = Math.Pow(10, logMin + ty * (logMax - logMin));
             }
-            return yMinS + t * (yMaxS - yMinS);
+            else
+            {
+                dataY = yMin + ty * (yMax - yMin);
+            }
+
+            return new Point(dataX, dataY);
         }
+
+        private double ScreenToDataX(double screenX)
+            => ScreenToDataWithSize(new Point(screenX, plotMargin.Top + 1), plotWidth, plotHeight).X;
+
+        private double ScreenToDataY(double screenY)
+            => ScreenToDataWithSize(new Point(plotMargin.Left + 1, screenY), plotWidth, plotHeight).Y;
+
 
         private double HistScreenToDataX(double screenX)
         {
@@ -1601,6 +1722,9 @@ namespace BioSAK
                 DrawScatterPlot(canvas, false, plotType);
             else
                 DrawHistogram(canvas, false);
+
+            // Keep rubber-band overlay in sync after main redraw
+            UpdateRubberBand();
         }
 
         private void DrawScatterPlot(Canvas canvas, bool isExport, string exportPlotType)
@@ -1639,38 +1763,55 @@ namespace BioSAK
                 displayIndices = displayIndices.OrderBy(x => rand.Next()).Take(MaxDisplayEvents).ToList();
             }
 
-            var xValues = displayIndices.Select(i => selectedFile.Events[i][xIndex]).Where(v => v > 0).ToList();
-            var yValues = displayIndices.Select(i => selectedFile.Events[i][yIndex]).Where(v => v > 0).ToList();
+            // AutoRange: filter depends on scale mode; use $PnR as default ceiling
+            IEnumerable<float> xRaw = displayIndices.Select(i => selectedFile.Events[i][xIndex]);
+            IEnumerable<float> yRaw = displayIndices.Select(i => selectedFile.Events[i][yIndex]);
+            if (xLogScale) xRaw = xRaw.Where(v => v > 0);
+            if (yLogScale) yRaw = yRaw.Where(v => v > 0);
+            var xValues = xRaw.ToList();
+            var yValues = yRaw.ToList();
 
-            // Use $PnR (instrument ADC range) as the default axis maximum.
-            // dataMax * 2 was causing the axis to extend far beyond actual data range
-            // (e.g. FSC-A max=262143 → xMax=524286, wasting half the plot area).
-            // Fall back to 262144 if $PnR is not available.
-            double xParamRange = selectedFile.Parameters[xIndex].Range;
-            double yParamRange = selectedFile.Parameters[yIndex].Range;
+            double xParamRange = xIndex < selectedFile.Parameters.Count ? selectedFile.Parameters[xIndex].Range : 262144;
+            double yParamRange = yIndex < selectedFile.Parameters.Count ? selectedFile.Parameters[yIndex].Range : 262144;
 
             double xMin, xMax, yMin, yMax;
             if (xBiexScale)
             {
-                var (bMin, bMax) = BiexDefaultRange();
-                xMin = customXMin ?? bMin;
-                xMax = customXMax ?? bMax;
+                (xMin, xMax) = customXMin.HasValue && customXMax.HasValue
+                    ? (customXMin.Value, customXMax.Value)
+                    : BiexDefaultRange();
+                if (customXMin.HasValue && !customXMax.HasValue) xMax = BiexDefaultRange().max;
+                if (!customXMin.HasValue && customXMax.HasValue) xMin = BiexDefaultRange().min;
             }
-            else
+            else if (xLogScale)
             {
-                xMin = customXMin ?? (xLogScale ? 0.1 : 0);
+                xMin = customXMin ?? 0.1;
+                var xVals = xValues.Count > 0 ? (double)xValues.Max() : xParamRange;
                 xMax = customXMax ?? xParamRange;
             }
+            else
+            {
+                xMin = customXMin ?? 0;
+                xMax = customXMax ?? (xValues.Count > 0 ? Math.Min((double)xValues.Max() * 1.05, xParamRange) : xParamRange);
+            }
+
             if (yBiexScale)
             {
-                var (bMin, bMax) = BiexDefaultRange();
-                yMin = customYMin ?? bMin;
-                yMax = customYMax ?? bMax;
+                (yMin, yMax) = customYMin.HasValue && customYMax.HasValue
+                    ? (customYMin.Value, customYMax.Value)
+                    : BiexDefaultRange();
+                if (customYMin.HasValue && !customYMax.HasValue) yMax = BiexDefaultRange().max;
+                if (!customYMin.HasValue && customYMax.HasValue) yMin = BiexDefaultRange().min;
+            }
+            else if (yLogScale)
+            {
+                yMin = customYMin ?? 0.1;
+                yMax = customYMax ?? yParamRange;
             }
             else
             {
-                yMin = customYMin ?? (yLogScale ? 0.1 : 0);
-                yMax = customYMax ?? yParamRange;
+                yMin = customYMin ?? 0;
+                yMax = customYMax ?? (yValues.Count > 0 ? Math.Min((double)yValues.Max() * 1.05, yParamRange) : yParamRange);
             }
 
             var plotData = displayIndices.Select(i => selectedFile.Events[i]).ToList();
@@ -1701,6 +1842,10 @@ namespace BioSAK
             if (quadrantPosition.HasValue)
                 DrawQuadrant(canvas, plotData, xIndex, yIndex, xMin, xMax, yMin, yMax);
 
+            // Cache range so ScreenToDataX/Y use exactly the same values
+            _cachedXMin = xMin; _cachedXMax = xMax;
+            _cachedYMin = yMin; _cachedYMax = yMax;
+
             DrawAxes(canvas, xMin, xMax, yMin, yMax);
 
             int validCount = plotData.Count(ev => ev[xIndex] > 0 && ev[yIndex] > 0);
@@ -1713,88 +1858,67 @@ namespace BioSAK
 
         private void DrawDotPlot(Canvas canvas, List<float[]> data, int xIndex, int yIndex, double xMin, double xMax, double yMin, double yMax)
         {
+            var densityGrid = new Dictionary<string, int>();
+            int gridSize = 3;
+            var rng = new Random(42);
+
             double plotLeft = plotMargin.Left;
             double plotRight = plotWidth - plotMargin.Right;
             double plotTop = plotMargin.Top;
             double plotBottom = plotHeight - plotMargin.Bottom;
 
-            int bmpW = (int)(plotRight - plotLeft);
-            int bmpH = (int)(plotBottom - plotTop);
-            if (bmpW <= 0 || bmpH <= 0) return;
-
-            // ── Pass 1: compute per-pixel event density ───────────────────────
-            // Each event maps to exactly one pixel at its true screen coordinate.
-            // ±0.5 integer-channel jitter removes ADC quantization banding
-            // without shifting population positions (same as FlowJo / Cytobank).
-            var densityMap = new int[bmpW, bmpH];
-            var rng = new Random(42);
-
             foreach (var ev in data)
             {
-                // GetEventValue applies compensation matrix when active
                 double xVal = GetEventValue(ev, xIndex);
                 double yVal = GetEventValue(ev, yIndex);
 
-                // In biex mode, negative values are valid (compensation artefacts).
-                // In log mode, skip non-positive values (can't take log of ≤0).
-                if (!xBiexScale && xVal <= 0) continue;
-                if (!yBiexScale && yVal <= 0) continue;
+                // Skip out-of-range for current scale
+                if (xLogScale && xVal <= 0) continue;
+                if (yLogScale && yVal <= 0) continue;
 
-                // ADC jitter only for positive integer-quantized values
-                if (xLogScale && xVal > 1) xVal += rng.NextDouble() - 0.5;
-                if (yLogScale && yVal > 1) yVal += rng.NextDouble() - 0.5;
+                // Soft-clip to axis range (keeps saturated pile-up at edge, not outside)
+                xVal = Math.Max(xMin, Math.Min(xMax, xVal));
+                yVal = Math.Max(yMin, Math.Min(yMax, yVal));
+
+                // ADC quantization jitter (Log axis only, don't jitter saturated values)
+                bool xSaturated = xVal >= xMax * 0.9999;
+                bool ySaturated = yVal >= yMax * 0.9999;
+                if (xLogScale && xVal > 1 && !xSaturated) xVal += rng.NextDouble() - 0.5;
+                if (yLogScale && yVal > 1 && !ySaturated) yVal += rng.NextDouble() - 0.5;
                 if (xLogScale) xVal = Math.Max(0.1, xVal);
                 if (yLogScale) yVal = Math.Max(0.1, yVal);
 
-                int px = (int)(DataToScreenX(xVal, xMin, xMax) - plotLeft);
-                int py = (int)(DataToScreenY(yVal, yMin, yMax) - plotTop);
+                double px = DataToScreenX(xVal, xMin, xMax);
+                double py = DataToScreenY(yVal, yMin, yMax);
 
-                if (px >= 0 && px < bmpW && py >= 0 && py < bmpH)
-                    densityMap[px, py]++;
+                // Screen-level clip (guard against float imprecision)
+                if (px < plotLeft - gridSize || px > plotRight + gridSize) continue;
+                if (py < plotTop - gridSize || py > plotBottom + gridSize) continue;
+
+                int gx = (int)(Math.Max(plotLeft, Math.Min(plotRight, px)) / gridSize) * gridSize;
+                int gy = (int)(Math.Max(plotTop, Math.Min(plotBottom, py)) / gridSize) * gridSize;
+                string key = $"{gx},{gy}";
+                if (!densityGrid.ContainsKey(key)) densityGrid[key] = 0;
+                densityGrid[key]++;
             }
 
-            // ── Pass 2: max density for log-scale normalisation ───────────────
-            int maxDensity = 1;
-            for (int y = 0; y < bmpH; y++)
-                for (int x = 0; x < bmpW; x++)
-                    if (densityMap[x, y] > maxDensity) maxDensity = densityMap[x, y];
-
-            // ── Pass 3: render to WriteableBitmap ─────────────────────────────
-            // WriteableBitmap is orders of magnitude faster than adding 50k WPF
-            // Rectangles and gives pixel-accurate placement with no grid snapping.
-            var wb = new WriteableBitmap(bmpW, bmpH, 96, 96, PixelFormats.Bgra32, null);
-            int[] pixelData = new int[bmpW * bmpH];
-            double logMax = Math.Log(maxDensity + 1);
-
-            for (int y = 0; y < bmpH; y++)
+            int maxDensity = densityGrid.Values.Count > 0 ? densityGrid.Values.Max() : 1;
+            foreach (var kvp in densityGrid)
             {
-                for (int x = 0; x < bmpW; x++)
+                var parts = kvp.Key.Split(',');
+                int px = int.Parse(parts[0]);
+                int py = int.Parse(parts[1]);
+                double t = Math.Log(kvp.Value + 1) / Math.Log(maxDensity + 1);
+                var rect = new Rectangle
                 {
-                    int count = densityMap[x, y];
-                    if (count == 0) continue;
-
-                    double t = Math.Log(count + 1) / logMax;
-                    Color c = GetDotColor(t);
-
-                    // Alpha: minimum 210 (≈82%) for single-event pixels so sparse blue dots
-                    // are clearly visible on a white background; scale up to 255 at full density.
-                    int alpha = (int)(210 + 45 * t);  // 210 → 255
-                    pixelData[y * bmpW + x] = (alpha << 24) | (c.R << 16) | (c.G << 8) | c.B;
-                }
+                    Width = gridSize,
+                    Height = gridSize,
+                    Fill = new SolidColorBrush(GetDotColor(t)),
+                    Opacity = 0.9
+                };
+                Canvas.SetLeft(rect, px); Canvas.SetTop(rect, py);
+                canvas.Children.Add(rect);
             }
-
-            wb.WritePixels(new Int32Rect(0, 0, bmpW, bmpH), pixelData, bmpW * 4, 0);
-
-            var img = new System.Windows.Controls.Image
-            {
-                Source = wb,
-                Width = bmpW,
-                Height = bmpH,
-                Stretch = Stretch.None
-            };
-            Canvas.SetLeft(img, plotLeft);
-            Canvas.SetTop(img, plotTop);
-            canvas.Children.Add(img);
         }
 
         private void DrawContourPlot(Canvas canvas, List<float[]> data, int xIndex, int yIndex, double xMin, double xMax, double yMin, double yMax)
@@ -1880,23 +2004,53 @@ namespace BioSAK
 
             if (screenPoints.Count > 0)
             {
+                // Count in this gate
                 int count = GetGateEventCount(gate.Name);
+
+                // Denominator: parent gate count, or total events if no parent
+                int denominator;
+                if (!string.IsNullOrEmpty(gate.ParentGateName))
+                {
+                    denominator = GetGateEventCount(gate.ParentGateName);
+                }
+                else
+                {
+                    denominator = selectedFile?.Events.Count ?? count;
+                }
+                double percent = denominator > 0 ? (count * 100.0 / denominator) : 0;
+
+                // Label text: name, count, % of parent (or % of total)
+                string parentLabel = !string.IsNullOrEmpty(gate.ParentGateName)
+                    ? $"/{gate.ParentGateName}" : "/All";
+                string labelText = $"{gate.Name}\n{count:N0}  ({percent:F1}%{parentLabel})";
+
+                // Position at polygon centroid (average of screen points)
+                double cx = screenPoints.Average(p => p.X);
+                double cy = screenPoints.Average(p => p.Y);
+
                 var label = new TextBlock
                 {
-                    Text = $"{gate.Name}: {count:N0}",
+                    Text = labelText,
                     Foreground = new SolidColorBrush(Color.FromRgb(0, 100, 0)),
                     FontSize = 11,
                     FontWeight = FontWeights.Bold,
-                    Background = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
+                    Background = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
+                    Padding = new Thickness(3, 1, 3, 1),
+                    TextAlignment = TextAlignment.Center
                 };
-                Canvas.SetLeft(label, screenPoints[0].X + 5);
-                Canvas.SetTop(label, screenPoints[0].Y - 18);
+                label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                Canvas.SetLeft(label, cx - label.DesiredSize.Width / 2);
+                Canvas.SetTop(label, cy - label.DesiredSize.Height / 2);
                 canvas.Children.Add(label);
             }
         }
 
         private void DrawCurrentPolygon(Canvas canvas, double xMin, double xMax, double yMin, double yMax)
         {
+            var orange = new SolidColorBrush(Color.FromRgb(255, 140, 0));
+            var dash = new DoubleCollection { 5, 5 };
+
+            // Committed segments
             for (int i = 0; i < currentPolygonPoints.Count - 1; i++)
             {
                 var p1 = currentPolygonPoints[i];
@@ -1907,29 +2061,48 @@ namespace BioSAK
                     Y1 = DataToScreenY(p1.Y, yMin, yMax),
                     X2 = DataToScreenX(p2.X, xMin, xMax),
                     Y2 = DataToScreenY(p2.Y, yMin, yMax),
-                    Stroke = new SolidColorBrush(Color.FromRgb(255, 140, 0)),
+                    Stroke = orange,
                     StrokeThickness = 2,
-                    StrokeDashArray = new DoubleCollection { 5, 5 }
+                    StrokeDashArray = dash
                 });
             }
 
+            // Vertex dots
             for (int i = 0; i < currentPolygonPoints.Count; i++)
             {
                 var pt = currentPolygonPoints[i];
+                bool isFirst = i == 0;
                 var ellipse = new Ellipse
                 {
-                    Width = 10,
-                    Height = 10,
-                    Fill = new SolidColorBrush(i == 0 ? Colors.Red : Color.FromRgb(255, 140, 0)),
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 1
+                    Width = isFirst ? 12 : 8,
+                    Height = isFirst ? 12 : 8,
+                    Fill = new SolidColorBrush(isFirst ? Colors.Red : Color.FromRgb(255, 140, 0)),
+                    Stroke = Brushes.White,
+                    StrokeThickness = 1.5
                 };
-                Canvas.SetLeft(ellipse, DataToScreenX(pt.X, xMin, xMax) - 5);
-                Canvas.SetTop(ellipse, DataToScreenY(pt.Y, yMin, yMax) - 5);
+                double ex = DataToScreenX(pt.X, xMin, xMax);
+                double ey = DataToScreenY(pt.Y, yMin, yMax);
+                Canvas.SetLeft(ellipse, ex - ellipse.Width / 2);
+                Canvas.SetTop(ellipse, ey - ellipse.Height / 2);
                 canvas.Children.Add(ellipse);
             }
-        }
 
+            // Hint label (top-left of plot area)
+            string hintText = currentPolygonPoints.Count >= 3
+                ? $"{currentPolygonPoints.Count} pts  ·  Right-click to undo  ·  Double-click to close"
+                : $"{currentPolygonPoints.Count} pts  ·  Right-click to undo  ·  Need {3 - currentPolygonPoints.Count} more";
+            var hint = new TextBlock
+            {
+                Text = hintText,
+                FontSize = 10,
+                Foreground = new SolidColorBrush(Color.FromRgb(160, 80, 0)),
+                Background = new SolidColorBrush(Color.FromArgb(180, 255, 255, 220)),
+                Padding = new Thickness(4, 2, 4, 2)
+            };
+            Canvas.SetLeft(hint, plotMargin.Left + 4);
+            Canvas.SetTop(hint, plotMargin.Top + 4);
+            canvas.Children.Add(hint);
+        }
         private void DrawQuadrant(Canvas canvas, List<float[]> data, int xIndex, int yIndex, double xMin, double xMax, double yMin, double yMax)
         {
             if (!quadrantPosition.HasValue) return;
@@ -1988,74 +2161,46 @@ namespace BioSAK
             canvas.Children.Add(new Line { X1 = plotLeft, Y1 = plotBottom, X2 = plotRight, Y2 = plotBottom, Stroke = Brushes.Black, StrokeThickness = 1 });
             canvas.Children.Add(new Line { X1 = plotLeft, Y1 = plotTop, X2 = plotLeft, Y2 = plotBottom, Stroke = Brushes.Black, StrokeThickness = 1 });
 
-            // ── X axis ticks ────────────────────────────────────────────────
-            var xTicks = xBiexScale
-                ? GetBiexAxisTicks(xMin, xMax)
-                : GetAxisTicks(xMin, xMax, xLogScale);
-
-            foreach (var tick in xTicks)
+            // X ticks
+            foreach (var tick in GetScaledAxisTicks(xMin, xMax, xLogScale, xBiexScale))
             {
                 double x = DataToScreenX(tick, xMin, xMax);
-                if (x < plotLeft || x > plotRight) continue;
+                if (x < plotLeft - 1 || x > plotRight + 1) continue;
                 canvas.Children.Add(new Line { X1 = x, Y1 = plotBottom, X2 = x, Y2 = plotBottom + 5, Stroke = Brushes.Black, StrokeThickness = 1 });
-
-                TextBlock label = xBiexScale ? MakeBiexAxisLabel(tick)
-                                : xLogScale ? MakeLogAxisLabel(tick)
-                                : new TextBlock { Text = FormatAxisValue(tick), Foreground = Brushes.Black, FontSize = 10 };
+                string txt = FormatScaleTick(tick, xLogScale, xBiexScale);
+                var label = new TextBlock { Text = txt, Foreground = Brushes.Black, FontSize = 10 };
                 label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 Canvas.SetLeft(label, x - label.DesiredSize.Width / 2);
                 Canvas.SetTop(label, plotBottom + 7);
                 canvas.Children.Add(label);
             }
 
-            // ── Y axis ticks ────────────────────────────────────────────────
-            var yTicks = yBiexScale
-                ? GetBiexAxisTicks(yMin, yMax)
-                : GetAxisTicks(yMin, yMax, yLogScale);
-
-            foreach (var tick in yTicks)
+            // Y ticks
+            foreach (var tick in GetScaledAxisTicks(yMin, yMax, yLogScale, yBiexScale))
             {
                 double y = DataToScreenY(tick, yMin, yMax);
-                if (y < plotTop || y > plotBottom) continue;
+                if (y < plotTop - 1 || y > plotBottom + 1) continue;
                 canvas.Children.Add(new Line { X1 = plotLeft - 5, Y1 = y, X2 = plotLeft, Y2 = y, Stroke = Brushes.Black, StrokeThickness = 1 });
-
-                TextBlock label = yBiexScale ? MakeBiexAxisLabel(tick)
-                                : yLogScale ? MakeLogAxisLabel(tick)
-                                : new TextBlock { Text = FormatAxisValue(tick), Foreground = Brushes.Black, FontSize = 10 };
+                string txt = FormatScaleTick(tick, yLogScale, yBiexScale);
+                var label = new TextBlock { Text = txt, Foreground = Brushes.Black, FontSize = 10 };
                 label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 Canvas.SetLeft(label, plotLeft - label.DesiredSize.Width - 8);
                 Canvas.SetTop(label, y - label.DesiredSize.Height / 2);
                 canvas.Children.Add(label);
             }
 
-            // ── Biex zero-line (dashed) ──────────────────────────────────────
-            if (xBiexScale && xMin < 0 && xMax > 0)
+            // Biex zero line
+            if (xBiexScale)
             {
-                double zx = DataToScreenX(0, xMin, xMax);
-                canvas.Children.Add(new Line
-                {
-                    X1 = zx,
-                    Y1 = plotTop,
-                    X2 = zx,
-                    Y2 = plotBottom,
-                    Stroke = Brushes.Gray,
-                    StrokeThickness = 0.5,
-                    StrokeDashArray = new DoubleCollection { 3, 3 }
-                });
+                double x0 = DataToScreenX(0, xMin, xMax);
+                if (x0 >= plotLeft && x0 <= plotRight)
+                    canvas.Children.Add(new Line { X1 = x0, Y1 = plotTop, X2 = x0, Y2 = plotBottom, Stroke = Brushes.LightGray, StrokeThickness = 0.8, StrokeDashArray = new DoubleCollection { 4, 4 } });
             }
-            if (yBiexScale && yMin < 0 && yMax > 0)
+            if (yBiexScale)
             {
-                double zy = DataToScreenY(0, yMin, yMax);
-                canvas.Children.Add(new Line
-                {
-                    X1 = plotLeft,
-                    Y1 = zy,
-                    X2 = plotRight,
-                    Y2 = zy,
-                    Stroke = Brushes.Gray,
-                    StrokeThickness = 0.5,
-                    StrokeDashArray = new DoubleCollection { 3, 3 }
-                });
+                double y0 = DataToScreenY(0, yMin, yMax);
+                if (y0 >= plotTop && y0 <= plotBottom)
+                    canvas.Children.Add(new Line { X1 = plotLeft, Y1 = y0, X2 = plotRight, Y2 = y0, Stroke = Brushes.LightGray, StrokeThickness = 0.8, StrokeDashArray = new DoubleCollection { 4, 4 } });
             }
 
             if (cboXParam.SelectedIndex >= 0)
@@ -2442,7 +2587,8 @@ namespace BioSAK
                 double x = HistDataToScreenX(tick, xMin, xMax);
                 if (x >= plotLeft && x <= plotRight)
                 {
-                    var label = histLogScale ? MakeLogAxisLabel(tick) : new TextBlock { Text = FormatAxisValue(tick), Foreground = Brushes.Black, FontSize = 10 };
+                    string txt = histLogScale ? FormatLogTick(tick) : FormatLinearTick(tick);
+                    var label = new TextBlock { Text = txt, Foreground = Brushes.Black, FontSize = 10 };
                     label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     Canvas.SetLeft(label, x - label.DesiredSize.Width / 2);
                     Canvas.SetTop(label, plotBottom + 7);
@@ -2805,28 +2951,6 @@ namespace BioSAK
             }
         }
 
-        private void BtnCopyPlot_Click(object sender, RoutedEventArgs e)
-        {
-            var canvas = GetCurrentCanvas();
-            if (canvas == null) return;
-
-            try
-            {
-                var renderBitmap = new RenderTargetBitmap(
-                    (int)plotWidth, (int)plotHeight, 96, 96, PixelFormats.Pbgra32);
-                canvas.Measure(new Size(plotWidth, plotHeight));
-                canvas.Arrange(new Rect(0, 0, plotWidth, plotHeight));
-                renderBitmap.Render(canvas);
-
-                Clipboard.SetImage(renderBitmap);
-                txtStatus.Text = "Plot copied to clipboard.";
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Copy failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
         private void BtnCopyStats_Click(object sender, RoutedEventArgs e)
         {
             if (statsRecords.Count == 0)
@@ -3014,221 +3138,171 @@ namespace BioSAK
 
         #endregion
 
-        #region Compensation & Parsing
-        /// matrix and inverted compensation matrix in the FcsFile.
-        /// $SPILLOVER format: N, Ch1, Ch2, ..., ChN, v11, v12, ..., vNN
-        /// </summary>
-        private static void ParseSpillover(FcsFile file, Dictionary<string, string> metadata)
-        {
-            string? raw = metadata.GetValueOrDefault("$SPILLOVER")
-                       ?? metadata.GetValueOrDefault("SPILLOVER")
-                       ?? metadata.GetValueOrDefault("$COMP");
-            if (string.IsNullOrWhiteSpace(raw)) return;
-
-            try
-            {
-                var tokens = raw.Split(',');
-                if (tokens.Length < 2) return;
-
-                if (!int.TryParse(tokens[0].Trim(), out int n) || n < 2) return;
-
-                if (tokens.Length < 1 + n + n * n) return;
-
-                var channels = new List<string>();
-                for (int i = 1; i <= n; i++)
-                    channels.Add(tokens[i].Trim());
-
-                var spillover = new float[n, n];
-                int idx = 1 + n;
-                for (int row = 0; row < n; row++)
-                    for (int col = 0; col < n; col++)
-                    {
-                        float.TryParse(tokens[idx++].Trim(),
-                            System.Globalization.NumberStyles.Float,
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            out float v);
-                        spillover[row, col] = v;
-                    }
-
-                file.SpilloverChannels = channels;
-                file.SpilloverMatrix = spillover;
-                file.CompensationMatrix = InvertMatrix(spillover, n);
-                file.BuildSpilloverIndex();  // pre-compute index lookup
-            }
-            catch { /* ignore malformed $SPILLOVER */ }
-        }
-
-        /// <summary>
-        /// Inverts an n×n float matrix using Gauss-Jordan elimination.
-        /// Returns null if the matrix is singular.
-        /// </summary>
-        private static double[,]? InvertMatrix(float[,] m, int n) => InvertMatrixPublic(m, n);
-
-        /// <summary>Public entry point used by CompensationEditorWindow.</summary>
-        public static double[,]? InvertMatrixPublic(float[,] m, int n)
-        {
-            var a = new double[n, n];
-            var inv = new double[n, n];
-            for (int i = 0; i < n; i++) { inv[i, i] = 1.0; for (int j = 0; j < n; j++) a[i, j] = m[i, j]; }
-
-            for (int col = 0; col < n; col++)
-            {
-                int pivot = col;
-                for (int row = col + 1; row < n; row++)
-                    if (Math.Abs(a[row, col]) > Math.Abs(a[pivot, col])) pivot = row;
-                if (Math.Abs(a[pivot, col]) < 1e-12) return null; // singular
-
-                for (int k = 0; k < n; k++) { (a[col, k], a[pivot, k]) = (a[pivot, k], a[col, k]); (inv[col, k], inv[pivot, k]) = (inv[pivot, k], inv[col, k]); }
-
-                double diag = a[col, col];
-                for (int k = 0; k < n; k++) { a[col, k] /= diag; inv[col, k] /= diag; }
-
-                for (int row = 0; row < n; row++)
-                {
-                    if (row == col) continue;
-                    double factor = a[row, col];
-                    for (int k = 0; k < n; k++) { a[row, k] -= factor * a[col, k]; inv[row, k] -= factor * inv[col, k]; }
-                }
-            }
-            return inv;
-        }
-
-        // ── Compensation state ─────────────────────────────────────────────
-        private bool applyCompensation = false;
-
-        /// <summary>
-        /// Returns the (optionally compensated) value for a single event.
-        /// When compensation is active and the parameter is part of the spillover
-        /// matrix, the full n-channel vector is compensated and the requested
-        /// channel is returned.
-        /// </summary>
-        private float GetEventValue(float[] ev, int paramIndex)
-        {
-            if (!applyCompensation || selectedFile == null
-                || selectedFile.CompensationMatrix == null
-                || selectedFile.SpilloverChannels.Count == 0)
-                return ev[paramIndex];
-
-            var file = selectedFile;
-            int n = file.SpilloverChannels.Count;
-            string paramName = file.Parameters[paramIndex].Name;
-
-            int spillIdx = file.SpilloverChannels.IndexOf(paramName);
-            if (spillIdx < 0) return ev[paramIndex]; // not in spill matrix
-
-            // Build raw vector using pre-computed index table (no per-event FindIndex)
-            double compensated = 0;
-            var compMatrix = file.CompensationMatrix;
-            var indices = file.SpilloverIndices;
-            for (int j = 0; j < n; j++)
-            {
-                int pi = indices[j];
-                double raw = pi >= 0 ? ev[pi] : 0;
-                compensated += compMatrix[spillIdx, j] * raw;
-            }
-            return (float)compensated;
-        }
-
-
-
-        // ── Biexponential (Logicle) Transform ────────────────────────────────
-        // Standard parameters matching BD FACSDiva / FlowJo defaults:
-        //   T = 262144  (top of ADC range)
-        //   M = 4.5     (positive decades displayed)
-        //   W = 0.5     (linear region half-width in decades)
-        // The linear region spans roughly ±linLimit around zero, allowing
-        // negative (compensation-created) values to be displayed without clipping.
-
-        private const double BiexT = 262144.0;
-        private const double BiexM = 4.5;
-        private const double BiexW = 0.5;
-
-        // Derived: linear/log boundary in data units
-        private static readonly double BiexLinLimit = BiexT * Math.Pow(10, -(BiexM - BiexW)); // ≈ 26.2
-
-        /// <summary>
-        /// Maps a data value to normalized display space.
-        /// Log region  (v ≥  linLimit): W + log10(v / linLimit)   → [W, M]
-        /// Linear region               : v / linLimit * W          → [-W, W]
-        /// Neg-log region (v ≤ -linLimit): -(W + log10(-v/linLimit))→ [-W-A, -W]
-        /// Normalized to [0,1] over the range [-W, M].
-        /// </summary>
-        private static double BiexForward(double v)
-        {
-            double norm;
-            if (v >= BiexLinLimit)
-                norm = BiexW + Math.Log10(v / BiexLinLimit);
-            else if (v <= -BiexLinLimit)
-                norm = -(BiexW + Math.Log10(-v / BiexLinLimit));
-            else
-                norm = v / BiexLinLimit * BiexW;
-
-            // Map norm ∈ [-BiexW, BiexM] to [0, 1]
-            return (norm + BiexW) / (BiexM + BiexW);
-        }
-
-        /// <summary>Inverse of BiexForward: normalized [0,1] → data value.</summary>
-        private static double BiexInverse(double t)
-        {
-            double norm = t * (BiexM + BiexW) - BiexW;
-            if (norm >= BiexW)
-                return BiexLinLimit * Math.Pow(10, norm - BiexW);
-            if (norm <= -BiexW)
-                return -BiexLinLimit * Math.Pow(10, -norm - BiexW);
-            return norm / BiexW * BiexLinLimit;
-        }
-
-        /// <summary>
-        /// Returns the default display range [xMin, xMax] for a biex axis.
-        /// Negative extent = one log decade below -linLimit (≈ -262).
-        /// </summary>
-        private static (double min, double max) BiexDefaultRange()
-            => (-BiexLinLimit * 10, BiexT);   // ≈ (-262, 262144)
-
-        /// <summary>Standard biex axis tick values (data space).</summary>
-        private static readonly double[] BiexTicks =
-            { -1000, -100, -10, 0, 10, 100, 1000, 10000, 100000 };
+        #region Utility Functions
 
         private double DataToScreenX(double value, double xMin, double xMax)
         {
             double plotLeft = plotMargin.Left;
             double plotRight = plotWidth - plotMargin.Right;
+            double frac;
             if (xBiexScale)
-            {
-                double tMin = BiexForward(xMin);
-                double tMax = BiexForward(xMax);
-                double tVal = BiexForward(value);
-                return plotLeft + (tVal - tMin) / (tMax - tMin) * (plotRight - plotLeft);
-            }
-            if (xLogScale)
+                frac = (BiexForward(value) - BiexForward(xMin)) / (BiexForward(xMax) - BiexForward(xMin));
+            else if (xLogScale)
             {
                 double logMin = Math.Log10(Math.Max(0.1, xMin));
                 double logMax = Math.Log10(xMax);
                 double logVal = Math.Log10(Math.Max(0.1, value));
-                return plotLeft + (logVal - logMin) / (logMax - logMin) * (plotRight - plotLeft);
+                frac = (logVal - logMin) / (logMax - logMin);
             }
-            return plotLeft + (value - xMin) / (xMax - xMin) * (plotRight - plotLeft);
+            else
+                frac = (value - xMin) / (xMax - xMin);
+            return plotLeft + frac * (plotRight - plotLeft);
         }
 
         private double DataToScreenY(double value, double yMin, double yMax)
         {
             double plotTop = plotMargin.Top;
             double plotBottom = plotHeight - plotMargin.Bottom;
+            double frac;
             if (yBiexScale)
-            {
-                double tMin = BiexForward(yMin);
-                double tMax = BiexForward(yMax);
-                double tVal = BiexForward(value);
-                return plotBottom - (tVal - tMin) / (tMax - tMin) * (plotBottom - plotTop);
-            }
-            if (yLogScale)
+                frac = (BiexForward(value) - BiexForward(yMin)) / (BiexForward(yMax) - BiexForward(yMin));
+            else if (yLogScale)
             {
                 double logMin = Math.Log10(Math.Max(0.1, yMin));
                 double logMax = Math.Log10(yMax);
                 double logVal = Math.Log10(Math.Max(0.1, value));
-                return plotBottom - (logVal - logMin) / (logMax - logMin) * (plotBottom - plotTop);
+                frac = (logVal - logMin) / (logMax - logMin);
             }
-            return plotBottom - (value - yMin) / (yMax - yMin) * (plotBottom - plotTop);
+            else
+                frac = (value - yMin) / (yMax - yMin);
+            return plotBottom - frac * (plotBottom - plotTop);
+        }
+
+        // ── Biexponential (logicle-style) transform ──────────────────────
+        // Uses a symmetric-log (symlog) formulation that is continuous everywhere:
+        //   x >= BiexLinLimit   : d = log10(x)              (positive log region)
+        //   |x| < BiexLinLimit  : d = log10(BiexLinLimit)   (linear bridge)
+        //                           * (x / BiexLinLimit)
+        //   x <= -BiexLinLimit  : d = -log10(-x)            (negative log region)
+        //
+        // With BiexLinLimit ≈ 26.2, BiexT = 262144:
+        //   BiexForward(262144)  ≈  5.42   (top of scale)
+        //   BiexForward(0)       =  0       (zero maps to zero)
+        //   BiexForward(-261)    ≈ -2.42   (bottom of default range)
+        //   => 0 appears at ~31% from left, which matches FlowJo appearance.
+
+        private static double BiexForward(double x)
+        {
+            double logL = Math.Log10(BiexLinLimit);   // ≈ 1.4185
+            if (x >= BiexLinLimit)
+                return Math.Log10(x);
+            if (x > -BiexLinLimit)
+                return logL * (x / BiexLinLimit);
+            return -Math.Log10(-x);
+        }
+
+        private static double BiexInverse(double s)
+        {
+            double logL = Math.Log10(BiexLinLimit);
+            if (s >= logL)
+                return Math.Pow(10, s);
+            if (s > -logL)
+                return BiexLinLimit * (s / logL);
+            return -Math.Pow(10, -s);
+        }
+
+        private static (double min, double max) BiexDefaultRange()
+            => (-BiexLinLimit * 10, BiexT);   // ≈ (-262, 262144)
+
+        // ── Compensation value retrieval ──────────────────────────────────
+        private double GetEventValue(float[] ev, int paramIndex)
+        {
+            if (!applyCompensation || selectedFile?.CompensationMatrix == null
+                || selectedFile.SpilloverIndices == null
+                || selectedFile.SpilloverIndices.Length == 0)
+                return ev[paramIndex];
+
+            // Find which compensation channel this paramIndex corresponds to
+            int spillIdx = Array.IndexOf(selectedFile.SpilloverIndices, paramIndex);
+            if (spillIdx < 0) return ev[paramIndex];
+
+            int n = selectedFile.SpilloverChannels.Count;
+            double compensated = 0;
+            for (int j = 0; j < n; j++)
+                compensated += selectedFile.CompensationMatrix[spillIdx, j] * ev[selectedFile.SpilloverIndices[j]];
+            return compensated;
+        }
+
+        // ── Spillover parsing ─────────────────────────────────────────────
+        private static void ParseSpillover(FcsFile file, Dictionary<string, string> meta)
+        {
+            string? raw = meta.GetValueOrDefault("$SPILLOVER")
+                       ?? meta.GetValueOrDefault("SPILLOVER")
+                       ?? meta.GetValueOrDefault("SPILL")
+                       ?? meta.GetValueOrDefault("$COMP");
+            if (string.IsNullOrWhiteSpace(raw)) return;
+            try
+            {
+                var tokens = raw.Split(',');
+                if (!int.TryParse(tokens[0].Trim(), out int n) || n < 2) return;
+                if (tokens.Length < 1 + n + n * n) return;
+
+                var channels = new List<string>();
+                for (int i = 1; i <= n; i++) channels.Add(tokens[i].Trim());
+
+                var spill = new float[n, n];
+                int offset = 1 + n;
+                for (int r = 0; r < n; r++)
+                    for (int c = 0; c < n; c++)
+                        if (float.TryParse(tokens[offset + r * n + c].Trim(),
+                            System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out float v))
+                            spill[r, c] = v;
+
+                file.SpilloverChannels = channels;
+                file.SpilloverMatrix = spill;
+                var normalizedSpill = new float[n, n];
+                for (int row = 0; row < n; row++)
+                    for (int col = 0; col < n; col++)
+                        normalizedSpill[row, col] = spill[row, col] / 100f;
+
+                file.CompensationMatrix = InvertMatrixPublic(normalizedSpill, n);
+                file.BuildSpilloverIndex();
+            }
+            catch { /* malformed $SPILLOVER → skip */ }
+        }
+
+        public static double[,]? InvertMatrixPublic(float[,] spillover, int n)
+        {
+            var m = new double[n, 2 * n];
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++) m[i, j] = spillover[i, j];
+                m[i, n + i] = 1.0;
+            }
+            for (int col = 0; col < n; col++)
+            {
+                int pivot = col;
+                for (int r = col + 1; r < n; r++)
+                    if (Math.Abs(m[r, col]) > Math.Abs(m[pivot, col])) pivot = r;
+                if (pivot != col)
+                    for (int k = 0; k < 2 * n; k++)
+                    { double tmp = m[col, k]; m[col, k] = m[pivot, k]; m[pivot, k] = tmp; }
+                double diag = m[col, col];
+                if (Math.Abs(diag) < 1e-12) return null;
+                for (int k = 0; k < 2 * n; k++) m[col, k] /= diag;
+                for (int r = 0; r < n; r++)
+                {
+                    if (r == col) continue;
+                    double factor = m[r, col];
+                    for (int k = 0; k < 2 * n; k++) m[r, k] -= factor * m[col, k];
+                }
+            }
+            var result = new double[n, n];
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                    result[i, j] = m[i, n + j];
+            return result;
         }
 
         private double HistDataToScreenX(double value, double xMin, double xMax)
@@ -3245,7 +3319,39 @@ namespace BioSAK
             return plotLeft + (value - xMin) / (xMax - xMin) * (plotRight - plotLeft);
         }
 
-        private List<double> GetAxisTicks(double min, double max, bool isLog)
+        /// <summary>Get tick values for any scale mode.</summary>
+        private static List<double> GetScaledAxisTicks(double min, double max, bool isLog, bool isBiex)
+        {
+            if (isBiex)
+            {
+                // Predefined biex canonical ticks (mirrors FlowJo/Cytobank)
+                var candidates = new double[]
+                {
+                    -100000, -10000, -1000, -100, 0, 100, 1000, 10000, 100000, 1000000
+                };
+                return candidates.Where(v => v >= min && v <= max).ToList();
+            }
+            return GetAxisTicksStatic(min, max, isLog);
+        }
+
+        /// <summary>Format tick label for any scale mode.</summary>
+        private static string FormatScaleTick(double value, bool isLog, bool isBiex)
+        {
+            if (isBiex)
+            {
+                if (value == 0) return "0";
+                double abs = Math.Abs(value);
+                string sign = value < 0 ? "-" : "";
+                double log = Math.Log10(abs);
+                int exp = (int)Math.Round(log);
+                if (Math.Abs(log - exp) < 0.01)
+                    return exp <= 2 ? $"{sign}{abs:F0}" : $"{sign}10{SuperScript(exp)}";
+                return $"{sign}{abs:G3}";
+            }
+            return isLog ? FormatLogTick(value) : FormatLinearTick(value);
+        }
+
+        private static List<double> GetAxisTicksStatic(double min, double max, bool isLog)
         {
             var ticks = new List<double>();
             if (isLog)
@@ -3260,59 +3366,83 @@ namespace BioSAK
             }
             else
             {
+                if (max <= min) return ticks;
                 double range = max - min;
                 double step = Math.Pow(10, Math.Floor(Math.Log10(range / 5)));
                 if (range / step > 10) step *= 2;
                 if (range / step < 4) step /= 2;
-                for (double v = Math.Ceiling(min / step) * step; v <= max; v += step) ticks.Add(v);
+                for (double v = Math.Ceiling(min / step) * step; v <= max + step * 0.01; v += step)
+                    ticks.Add(Math.Round(v, 10));
             }
             return ticks;
         }
 
-        private List<double> GetBiexAxisTicks(double min, double max)
+        private List<double> GetAxisTicks(double min, double max, bool isLog)
+            => GetAxisTicksStatic(min, max, isLog);
+
+        /// <summary>Format a value for Log-scale axis ticks: powers of 10 use 10^n notation.</summary>
+        private static string FormatLogTick(double value)
         {
-            var ticks = new List<double>();
-            foreach (double v in BiexTicks)
-                if (v >= min && v <= max) ticks.Add(v);
-            return ticks;
+            if (value <= 0) return "0";
+            double log = Math.Log10(value);
+            int exp = (int)Math.Round(log);
+            if (Math.Abs(log - exp) < 0.01)   // is an exact power of 10
+            {
+                return exp switch
+                {
+                    0 => "1",
+                    1 => "10",
+                    2 => "100",
+                    _ => $"10{SuperScript(exp)}"
+                };
+            }
+            // non-power tick (shouldn't appear in log mode but guard anyway)
+            return FormatLinearTick(value);
         }
 
-        // Label for a biex tick: 0 shows "0", others show as compact number
-        private TextBlock MakeBiexAxisLabel(double value)
+        private static string SuperScript(int n)
         {
-            string text = value == 0 ? "0" : FormatAxisValue(value);
-            return new TextBlock { Text = text, Foreground = Brushes.Black, FontSize = 9 };
+            string s = n.ToString();
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in s)
+            {
+                sb.Append(c switch
+                {
+                    '-' => "\u207B",
+                    '0' => "\u2070",
+                    '1' => "\u00B9",
+                    '2' => "\u00B2",
+                    '3' => "\u00B3",
+                    '4' => "\u2074",
+                    '5' => "\u2075",
+                    '6' => "\u2076",
+                    '7' => "\u2077",
+                    '8' => "\u2078",
+                    '9' => "\u2079",
+                    _ => c.ToString()
+                });
+            }
+            return sb.ToString();
         }
 
+        /// <summary>Format a value for linear axis ticks.</summary>
+        private static string FormatLinearTick(double value)
+        {
+            if (value == 0) return "0";
+            double abs = Math.Abs(value);
+            if (abs >= 1_000_000) return $"{value / 1_000_000:G3}M";
+            if (abs >= 1_000) return $"{value / 1_000:G3}K";
+            if (abs < 0.01 && abs > 0) return $"{value:G2}";
+            return $"{value:G4}";
+        }
+
+        /// <summary>Legacy helper kept for non-axis uses (threshold labels etc.).</summary>
         private string FormatAxisValue(double value)
         {
-            if (value >= 1000000) return $"{value / 1000000:F0}M";
-            if (value >= 1000) return $"{value / 1000:F0}K";
+            if (value >= 1_000_000) return $"{value / 1_000_000:F0}M";
+            if (value >= 1_000) return $"{value / 1_000:F0}K";
             if (value < 1 && value > 0) return $"{value:F1}";
             return $"{value:F0}";
-        }
-
-        // Creates a TextBlock with "10" + superscript exponent for log-scale tick labels.
-        // Falls back to plain text for non-power-of-10 values.
-        private TextBlock MakeLogAxisLabel(double value)
-        {
-            double log = Math.Log10(value);
-            bool isPowerOf10 = Math.Abs(log - Math.Round(log)) < 1e-6;
-
-            if (!isPowerOf10)
-            {
-                return new TextBlock { Text = FormatAxisValue(value), Foreground = Brushes.Black, FontSize = 10 };
-            }
-
-            int exp = (int)Math.Round(log);
-            var tb = new TextBlock { Foreground = Brushes.Black, FontSize = 10 };
-            tb.Inlines.Add(new Run("10") { BaselineAlignment = BaselineAlignment.Baseline });
-            tb.Inlines.Add(new Run(exp.ToString())
-            {
-                BaselineAlignment = BaselineAlignment.Superscript,
-                FontSize = 7
-            });
-            return tb;
         }
 
         private bool PointInPolygon(Point point, List<Point> polygon)
@@ -3320,11 +3450,10 @@ namespace BioSAK
             if (polygon.Count < 3) return false;
             bool inside = false;
             for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
-            {
                 if (((polygon[i].Y > point.Y) != (polygon[j].Y > point.Y)) &&
-                    (point.X < (polygon[j].X - polygon[i].X) * (point.Y - polygon[i].Y) / (polygon[j].Y - polygon[i].Y) + polygon[i].X))
+                    (point.X < (polygon[j].X - polygon[i].X) * (point.Y - polygon[i].Y)
+                               / (polygon[j].Y - polygon[i].Y) + polygon[i].X))
                     inside = !inside;
-            }
             return inside;
         }
 
@@ -3352,40 +3481,24 @@ namespace BioSAK
         public List<float[]> Events { get; set; } = new List<float[]>();
         public int EventCount => Events.Count;
 
-        // ── Compensation / Spillover ───────────────────────────────────────
-        /// <summary>
-        /// Spillover matrix read from $SPILLOVER or $COMP keyword.
-        /// Rows = detector channels receiving spill (same order as SpilloverChannels).
-        /// Columns = source channels (same order).
-        /// SpilloverMatrix[i, j] = fraction of channel j signal that appears in channel i.
-        /// Diagonal is 1.0 (self-compensation = 100%).
-        /// </summary>
+        // Compensation / spillover
         public float[,]? SpilloverMatrix { get; set; }
-
-        /// <summary>Parameter names that are part of the spillover matrix (same order).</summary>
         public List<string> SpilloverChannels { get; set; } = new List<string>();
-
-        /// <summary>
-        /// Inverted compensation matrix (inverse of SpilloverMatrix), computed once.
-        /// Applied to raw fluorescence vectors to yield compensated values.
-        /// </summary>
         public double[,]? CompensationMatrix { get; set; }
-
-        public bool HasCompensationData => SpilloverMatrix != null && SpilloverChannels.Count > 1;
-
-        /// <summary>
-        /// Parameter indices (into Parameters list) for each SpilloverChannels entry.
-        /// Pre-computed by BuildSpilloverIndex() to avoid per-event linear search.
-        /// -1 means the channel was not found in this file's parameter list.
-        /// </summary>
         public int[] SpilloverIndices { get; set; } = Array.Empty<int>();
+        public bool HasCompensationData => SpilloverMatrix != null && SpilloverChannels.Count > 0;
 
-        /// <summary>Builds SpilloverIndices lookup. Call after Parameters and SpilloverChannels are set.</summary>
+        /// <summary>Precomputes parameter indices for each spillover channel (fast lookup).</summary>
         public void BuildSpilloverIndex()
         {
-            SpilloverIndices = SpilloverChannels
-                .Select(ch => Parameters.FindIndex(p => p.Name == ch || p.Label == ch))
-                .ToArray();
+            SpilloverIndices = new int[SpilloverChannels.Count];
+            for (int i = 0; i < SpilloverChannels.Count; i++)
+            {
+                string ch = SpilloverChannels[i];
+                SpilloverIndices[i] = Parameters.FindIndex(
+                    p => p.Name.Equals(ch, StringComparison.OrdinalIgnoreCase)
+                      || p.Label.Equals(ch, StringComparison.OrdinalIgnoreCase));
+            }
         }
     }
 
@@ -3393,7 +3506,6 @@ namespace BioSAK
     {
         public string Name { get; set; } = string.Empty;
         public string Label { get; set; } = string.Empty;
-        /// <summary>Instrument ADC range from $PnR (e.g. 262144). Used as default axis max.</summary>
         public double Range { get; set; } = 262144;
     }
 
@@ -3422,23 +3534,33 @@ namespace BioSAK
 
     #endregion
 
+    #region Extension Methods
+
+    public static class DictionaryExtensions
+    {
+        public static string? GetValueOrDefault(this Dictionary<string, string> dict, string key)
+        {
+            return dict.TryGetValue(key, out string? value) ? value : null;
+        }
+    }
+
+    #endregion
+
     #region Compensation Editor Window
 
     /// <summary>
-    /// Modal window for viewing and editing the spillover/compensation matrix.
-    /// When no $SPILLOVER data exists in the FCS file, allows the user to
-    /// select fluorescence channels and build a matrix from scratch.
+    /// Used when FCS has no $SPILLOVER: lets the user pick channels and
+    /// builds an identity matrix that can be edited.
     /// </summary>
     public class CompensationEditorWindow : Window
     {
         private readonly FcsFile _file;
         private DataGrid? _grid;
-        private StackPanel? _setupPanel;  // shown when no spillover data exists
-        private Border? _gridBorder;  // wraps the DataGrid
-        private List<CheckBox> _channelCheckBoxes = new();
-
-        // Working channel list (may differ from _file.SpilloverChannels if user is building from scratch)
+        private StackPanel? _setupPanel;
+        private Border? _gridBorder;
+        private readonly List<CheckBox> _channelCbs = new();
         private List<string> _activeChannels = new();
+        private readonly List<Dictionary<string, object>> _rows = new();
 
         public CompensationEditorWindow(FcsFile file)
         {
@@ -3453,35 +3575,26 @@ namespace BioSAK
         private void BuildUI()
         {
             var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // info
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // content
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // buttons
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            // ── Info banner ───────────────────────────────────────────────
             var info = new TextBlock
             {
-                Text = "Spillover matrix: rows = detector channel, columns = source dye.\n"
-                     + "Diagonal = 100 (100 % self-signal). Off-diagonal = % spill from source into detector.",
+                Text = "Spillover matrix: rows = detector, columns = source dye.\n"
+                     + "Diagonal = 100 (100% self-signal). Off-diagonal = % spill from source into detector.",
                 Margin = new Thickness(10, 8, 10, 4),
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = System.Windows.Media.Brushes.DimGray,
                 FontSize = 11
             };
-            Grid.SetRow(info, 0);
-            root.Children.Add(info);
+            Grid.SetRow(info, 0); root.Children.Add(info);
 
-            // ── Content area (either channel-picker or DataGrid) ──────────
-            // We use a single-row Grid so both panels live in row 1 and
-            // we toggle Visibility rather than swapping children.
-            var contentHost = new Grid();
-            Grid.SetRow(contentHost, 1);
-            root.Children.Add(contentHost);
+            var host = new Grid();
+            Grid.SetRow(host, 1); root.Children.Add(host);
 
-            // Channel-picker panel (shown when no $SPILLOVER exists)
-            _setupPanel = BuildSetupPanel();
-            contentHost.Children.Add(_setupPanel);
+            _setupPanel = BuildSetupPanel(); host.Children.Add(_setupPanel);
 
-            // DataGrid wrapper
             _gridBorder = new Border { Visibility = Visibility.Collapsed };
             _grid = new DataGrid
             {
@@ -3493,158 +3606,80 @@ namespace BioSAK
                 AlternatingRowBackground = System.Windows.Media.Brushes.AliceBlue,
                 Margin = new Thickness(10, 4, 10, 4)
             };
-            _gridBorder.Child = _grid;
-            contentHost.Children.Add(_gridBorder);
+            _gridBorder.Child = _grid; host.Children.Add(_gridBorder);
 
-            // ── Buttons ───────────────────────────────────────────────────
             var btnBar = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(10, 4, 10, 8)
             };
-
-            var btnBuildMatrix = new Button
-            {
-                Content = "Build Matrix →",
-                Width = 110,
-                Margin = new Thickness(0, 0, 8, 0),
-                ToolTip = "Create an identity matrix from selected channels"
-            };
-            btnBuildMatrix.Click += BtnBuildMatrix_Click;
-
+            var btnBuild = new Button { Content = "Build Matrix →", Width = 110, Margin = new Thickness(0, 0, 8, 0) };
             var btnOk = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
             var btnCancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+            btnBuild.Click += BtnBuild_Click;
             btnOk.Click += BtnOk_Click;
             btnCancel.Click += (_, __) => { DialogResult = false; Close(); };
-
-            btnBar.Children.Add(btnBuildMatrix);
-            btnBar.Children.Add(btnOk);
-            btnBar.Children.Add(btnCancel);
-            Grid.SetRow(btnBar, 2);
-            root.Children.Add(btnBar);
-
+            btnBar.Children.Add(btnBuild); btnBar.Children.Add(btnOk); btnBar.Children.Add(btnCancel);
+            Grid.SetRow(btnBar, 2); root.Children.Add(btnBar);
             Content = root;
 
-            // Decide which panel to show
-            if (_file.HasCompensationData)
-            {
-                ShowMatrix(_file.SpilloverChannels);
-            }
-            // else: channel-picker stays visible
+            if (_file.HasCompensationData) ShowMatrix(_file.SpilloverChannels);
         }
-
-        // ── Channel-picker panel ──────────────────────────────────────────
 
         private StackPanel BuildSetupPanel()
         {
             var panel = new StackPanel { Margin = new Thickness(10, 6, 10, 4) };
-
             panel.Children.Add(new TextBlock
             {
-                Text = "No $SPILLOVER data found in this FCS file.\n"
-                     + "Select the fluorescence channels you want to compensate, then click \"Build Matrix →\" to create an identity matrix you can edit.",
+                Text = "No $SPILLOVER data in this FCS file.\nSelect channels and click \"Build Matrix →\" to create an identity matrix.",
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = System.Windows.Media.Brushes.DarkOrange,
                 FontSize = 11,
                 Margin = new Thickness(0, 0, 0, 10)
             });
-
-            panel.Children.Add(new TextBlock
-            {
-                Text = "Fluorescence channels in this file:",
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 4)
-            });
-
-            // Checkbox list — include only fluorescence-like channels (skip FSC/SSC/Time)
+            panel.Children.Add(new TextBlock { Text = "Fluorescence channels:", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) });
             var scroll = new ScrollViewer { MaxHeight = 280, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
             var cbPanel = new StackPanel();
-            _channelCheckBoxes.Clear();
-
-            bool anyChecked = false;
+            _channelCbs.Clear();
             foreach (var param in _file.Parameters)
             {
                 string n = param.Name.ToUpperInvariant();
-                // Skip scatter and time channels
-                if (n.StartsWith("FSC") || n.StartsWith("SSC") || n == "TIME" || n == "TRIGGER") continue;
-
-                var cb = new CheckBox
-                {
-                    Content = param.Name + (param.Label != param.Name ? $"  ({param.Label})" : ""),
-                    Tag = param.Name,
-                    IsChecked = true,           // default: select all fluorescence channels
-                    Margin = new Thickness(2, 2, 2, 2)
-                };
-                _channelCheckBoxes.Add(cb);
-                cbPanel.Children.Add(cb);
-                anyChecked = true;
+                if (n.StartsWith("FSC") || n.StartsWith("SSC") || n == "TIME") continue;
+                var cb = new CheckBox { Content = param.Name, Tag = param.Name, IsChecked = true, Margin = new Thickness(2) };
+                _channelCbs.Add(cb); cbPanel.Children.Add(cb);
             }
-
-            if (!anyChecked)
-            {
-                cbPanel.Children.Add(new TextBlock
-                {
-                    Text = "(No fluorescence parameters detected in this file.)",
-                    Foreground = System.Windows.Media.Brushes.Gray,
-                    FontStyle = FontStyles.Italic
-                });
-            }
-
-            scroll.Content = cbPanel;
-            panel.Children.Add(scroll);
+            if (_channelCbs.Count == 0)
+                cbPanel.Children.Add(new TextBlock { Text = "(No fluorescence channels detected)", Foreground = System.Windows.Media.Brushes.Gray });
+            scroll.Content = cbPanel; panel.Children.Add(scroll);
             return panel;
         }
 
-        // ── Build Matrix button ───────────────────────────────────────────
-
-        private void BtnBuildMatrix_Click(object sender, RoutedEventArgs e)
+        private void BtnBuild_Click(object sender, RoutedEventArgs e)
         {
-            // Collect selected channels
-            var selected = _channelCheckBoxes
-                .Where(cb => cb.IsChecked == true)
-                .Select(cb => cb.Tag?.ToString() ?? "")
-                .Where(s => s.Length > 0)
-                .ToList();
-
-            if (selected.Count < 2)
-            {
-                MessageBox.Show("Please select at least 2 channels to build a compensation matrix.",
-                    "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // Initialise file spillover with an identity matrix
+            var selected = _channelCbs.Where(cb => cb.IsChecked == true)
+                .Select(cb => cb.Tag?.ToString() ?? "").Where(s => s.Length > 0).ToList();
+            if (selected.Count < 2) { MessageBox.Show("Select at least 2 channels.", "Info", MessageBoxButton.OK, MessageBoxImage.Information); return; }
             int n = selected.Count;
             var identity = new float[n, n];
-            for (int i = 0; i < n; i++) identity[i, i] = 100f;   // 100 % self-signal
+            for (int i = 0; i < n; i++) identity[i, i] = 100f;
+            _file.SpilloverMatrix = identity; // UI 顯示用，保留 100
 
-            _file.SpilloverChannels = selected;
-            _file.SpilloverMatrix = identity;
-            _file.CompensationMatrix = FlowCytometryAnalyzer.InvertMatrixPublic(identity, n);
+            var normalizedIdentity = new float[n, n];
+            for (int i = 0; i < n; i++) normalizedIdentity[i, i] = 1f; // 100/100 = 1.0
+            _file.CompensationMatrix = FlowCytometryAnalyzer.InvertMatrixPublic(normalizedIdentity, n);
             _file.BuildSpilloverIndex();
-
             ShowMatrix(selected);
         }
-
-        // ── Switch to matrix DataGrid view ───────────────────────────────
-
-        private List<Dictionary<string, object>> _rows = new List<Dictionary<string, object>>();
 
         private void ShowMatrix(List<string> channels)
         {
             if (_grid == null || _gridBorder == null || _setupPanel == null) return;
-
             _activeChannels = channels;
             _setupPanel.Visibility = Visibility.Collapsed;
             _gridBorder.Visibility = Visibility.Visible;
-
-            _grid.Columns.Clear();
-            _rows.Clear();
-
+            _grid.Columns.Clear(); _rows.Clear();
             int n = channels.Count;
-
-            // Row-header (read-only)
             _grid.Columns.Add(new DataGridTextColumn
             {
                 Header = "Detector \\ Source",
@@ -3652,19 +3687,13 @@ namespace BioSAK
                 IsReadOnly = true,
                 Width = 130
             });
-
-            // One editable column per source channel
             for (int col = 0; col < n; col++)
-            {
                 _grid.Columns.Add(new DataGridTextColumn
                 {
                     Header = channels[col],
                     Binding = new System.Windows.Data.Binding($"[{channels[col]}]"),
                     Width = new DataGridLength(1, DataGridLengthUnitType.Star)
                 });
-            }
-
-            // Build rows from current SpilloverMatrix
             for (int row = 0; row < n; row++)
             {
                 var dict = new Dictionary<string, object>();
@@ -3676,28 +3705,15 @@ namespace BioSAK
                 }
                 _rows.Add(dict);
             }
-
             _grid.ItemsSource = _rows;
         }
 
-        // ── OK ────────────────────────────────────────────────────────────
-
         private void BtnOk_Click(object sender, RoutedEventArgs e)
         {
-            // If still on setup panel (user didn't build matrix), just close
-            if (_setupPanel?.Visibility == Visibility.Visible)
-            {
-                DialogResult = false;
-                Close();
-                return;
-            }
-
+            if (_setupPanel?.Visibility == Visibility.Visible) { DialogResult = false; Close(); return; }
             _grid?.CommitEdit(DataGridEditingUnit.Row, true);
-
             var channels = _activeChannels;
-            int n = channels.Count;
-            if (n == 0) { DialogResult = false; Close(); return; }
-
+            int n = channels.Count; if (n == 0) { DialogResult = false; Close(); return; }
             var newSpill = new float[n, n];
             for (int row = 0; row < n; row++)
             {
@@ -3706,46 +3722,34 @@ namespace BioSAK
                 {
                     string key = channels[col];
                     if (dict.TryGetValue(key, out var raw) &&
-                        float.TryParse(raw?.ToString(),
-                            System.Globalization.NumberStyles.Float,
+                        float.TryParse(raw?.ToString(), System.Globalization.NumberStyles.Float,
                             System.Globalization.CultureInfo.InvariantCulture, out float v))
                         newSpill[row, col] = v;
-                    else
-                        newSpill[row, col] = row == col ? 100f : 0f;
+                    else newSpill[row, col] = row == col ? 100f : 0f;
                 }
             }
-
-            var compMatrix = FlowCytometryAnalyzer.InvertMatrixPublic(newSpill, n);
-            if (compMatrix == null)
+            var comp = FlowCytometryAnalyzer.InvertMatrixPublic(newSpill, n);
+            if (comp == null)
             {
-                MessageBox.Show("The matrix is singular and cannot be inverted.\n"
-                    + "Ensure the diagonal values are non-zero and the matrix is not degenerate.",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Matrix is singular — check values.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
             _file.SpilloverChannels = channels;
             _file.SpilloverMatrix = newSpill;
-            _file.CompensationMatrix = compMatrix;
+
+            var normalizedSpill = new float[n, n];
+            for (int row = 0; row < n; row++)
+                for (int col = 0; col < n; col++)
+                    normalizedSpill[row, col] = newSpill[row, col] / 100f;
+
+            var compMatrix = FlowCytometryAnalyzer.InvertMatrixPublic(normalizedSpill, n);  // ✅
+
+            if (compMatrix == null)
+                _file.CompensationMatrix = compMatrix;
             _file.BuildSpilloverIndex();
-
-            DialogResult = true;
-            Close();
+            DialogResult = true; Close();
         }
     }
 
     #endregion
-
-    #region Data Classes Extension Methods
-
-    public static class DictionaryExtensions
-    {
-        public static string? GetValueOrDefault(this Dictionary<string, string> dict, string key)
-        {
-            return dict.TryGetValue(key, out string? value) ? value : null;
-        }
-    }
-
-    #endregion
-
 }

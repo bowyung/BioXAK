@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <None Remove="Data\common_enzymes.txt" />
+    <None Remove="Data\Demo\Specimen_001_4color.fcs" />
     <None Remove="Data\GeneDB\human_genes.json" />
     <None Remove="Data\GeneDB\mouse_genes.json" />
     <None Remove="Data\GeneDB\rat_genes.json" />
@@ -424,6 +425,9 @@
 	</ItemGroup>
   <ItemGroup>
     <Resource Include="Data\common_enzymes.txt" />
+    <EmbeddedResource Include="Data\Demo\Specimen_001_4color.fcs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
     <Resource Include="Fig\NAME.png" />
   </ItemGroup>
 

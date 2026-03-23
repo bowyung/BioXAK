@@ -52,23 +52,7 @@ namespace BioSAK
         // ===== Graphs =====
         private void GraphsGenerator_Click(object sender, RoutedEventArgs e)
         {
-            var selector = new GraphTypeSelector();
-            selector.Owner = this;
-            if (selector.ShowDialog() == true)
-            {
-                if (selector.SelectedType == "XY")
-                {
-                    MainFrame.Navigate(new GraphGen());
-                }
-                else if (selector.SelectedType == "Column")
-                {
-                    MainFrame.Navigate(new GraphGen());
-                }
-                else if (selector.SelectedType == "Grouped")
-                {
-                    MainFrame.Navigate(new GraphGen());
-                }
-            }
+            MainFrame.Navigate(new GraphGen());
         }
 
         // ===== DNA Tools =====

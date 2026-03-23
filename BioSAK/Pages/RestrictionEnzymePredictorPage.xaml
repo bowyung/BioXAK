@@ -45,9 +45,9 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Title -->
+        <!-- Title (fix #4: Detcetor → Detector) -->
         <TextBlock Grid.Row="0" 
-                   Text="RE Cutting Site Detcetor" 
+                   Text="RE Cutting Site Detector" 
                    FontSize="20" 
                    FontWeight="Bold" 
                    Margin="0,0,0,15"/>
@@ -93,58 +93,68 @@
                                  Content="Circular"/>
                 </StackPanel>
 
-                <!-- Enzyme Filter -->
+                <!-- Enzyme Filter (fix #2: add Click="Filter_Changed") -->
                 <TextBlock Text="Enzyme Filter:" Style="{StaticResource HeaderStyle}"/>
                 <WrapPanel Margin="0,0,0,10">
                     <ToggleButton x:Name="Filter4Cutter" 
                                   Content="4-cutter" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                     <ToggleButton x:Name="Filter6Cutter" 
                                   Content="6-cutter" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                     <ToggleButton x:Name="Filter8Cutter" 
                                   Content="8-cutter" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                     <ToggleButton x:Name="FilterOther" 
                                   Content="Other" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                 </WrapPanel>
 
-                <!-- Overhang Filter -->
+                <!-- Overhang Filter (fix #2: add Click="Filter_Changed") -->
                 <TextBlock Text="End Type Filter:" Style="{StaticResource HeaderStyle}"/>
                 <WrapPanel Margin="0,0,0,10">
                     <ToggleButton x:Name="Filter5Prime" 
                                   Content="5' overhang" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                     <ToggleButton x:Name="Filter3Prime" 
                                   Content="3' overhang" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                     <ToggleButton x:Name="FilterBlunt" 
                                   Content="Blunt" 
                                   Style="{StaticResource FilterButtonStyle}"
-                                  IsChecked="True"/>
+                                  IsChecked="True"
+                                  Click="Filter_Changed"/>
                 </WrapPanel>
 
-                <!-- Cut Count Filter -->
+                <!-- Cut Count Filter (fix #2: add Click="Filter_Changed") -->
                 <TextBlock Text="Show enzymes with:" Style="{StaticResource HeaderStyle}"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                     <CheckBox x:Name="ShowNoCutters" 
                               Content="No cuts (0)" 
                               IsChecked="False"
-                              Margin="0,0,15,0"/>
+                              Margin="0,0,15,0"
+                              Click="Filter_Changed"/>
                     <CheckBox x:Name="ShowSingleCutters" 
                               Content="Single cut (1)" 
                               IsChecked="True"
-                              Margin="0,0,15,0"/>
+                              Margin="0,0,15,0"
+                              Click="Filter_Changed"/>
                     <CheckBox x:Name="ShowMultiCutters" 
                               Content="Multiple cuts (2+)" 
-                              IsChecked="True"/>
+                              IsChecked="True"
+                              Click="Filter_Changed"/>
                 </StackPanel>
 
                 <!-- Analyze Button -->

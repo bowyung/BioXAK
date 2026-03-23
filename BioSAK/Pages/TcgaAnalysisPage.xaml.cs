@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 using BioSAK.Services;
+using System.Text.Json;
 
 namespace BioSAK.Pages
 {
@@ -1892,6 +1893,207 @@ namespace BioSAK.Pages
         }
 
         #endregion
+        #region .xak Save/Load
+
+        private void SaveXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var tcga = new TcgaData
+                {
+                    GeneSymbol = BoxPlotGeneIdTextBox?.Text?.Trim() ?? "",
+                    SelectedCancerTypes = _selectedCancers?.Select(c => c.project_id).ToList() ?? new List<string>(),
+                    ActiveTabIndex = AnalysisTabControl?.SelectedIndex ?? 0,
+
+                    // Scatter settings
+                    Scatter = new TcgaScatterSettings
+                    {
+                        GeneX = _currentGeneX ?? "",
+                        GeneY = _currentGeneY ?? "",
+                        CancerType = _currentCancer ?? ""
+                    },
+
+                    // KM settings
+                    KaplanMeier = new TcgaKMSettings
+                    {
+                        CancerType = _currentKMCancer ?? ""
+                    },
+
+                    // Volcano settings
+                    Volcano = new TcgaVolcanoSettings
+                    {
+                        CancerType = _currentVolcanoCancer ?? "",
+                        FdrThreshold = double.TryParse(VolcanoFdrTextBox?.Text, out double fdr) ? fdr : 0.05,
+                        FcThreshold = double.TryParse(VolcanoFcTextBox?.Text, out double fc) ? fc : 1.0,
+                        HighlightedGenes = _volcanoFullList?
+                            .Where(p => p.IsHighlighted)
+                            .Select(p => p.GeneName)
+                            .ToList() ?? new List<string>()
+                    },
+
+                    // Co-Expression settings
+                    CoExpression = new TcgaCoExprSettings
+                    {
+                        TargetGene = CoExprGeneTextBox?.Text?.Trim() ?? "",
+                        CancerType = _currentCoExprCancer ?? "",
+                        FdrThreshold = double.TryParse(CoExprFdrTextBox?.Text, out double ceFdr) ? ceFdr : 0.05,
+                        MinAbsR = double.TryParse(CoExprMinRTextBox?.Text, out double ceR) ? ceR : 0.3
+                    }
+                };
+
+                // Cache: Box Plot stats
+                if (_currentBoxPlotStats != null && _currentBoxPlotStats.Count > 0)
+                {
+                    tcga.BoxPlotCache = new TcgaBoxPlotCache
+                    {
+                        Rows = _currentBoxPlotStats.Select(s => new TcgaBoxPlotRow
+                        {
+                            CancerCode = s.CancerCode,
+                            GeneName = s.GeneName,
+                            TumorMean = s.TumorMean,
+                            NormalMean = s.NormalMean,
+                            PValue = s.PValue,
+                            TumorN = s.TumorN,
+                            NormalN = s.NormalN
+                        }).ToList()
+                    };
+                }
+
+                // Cache: Scatter
+                if (_currentScatterPoints != null && _currentScatterPoints.Count > 0)
+                {
+                    tcga.ScatterCache = new TcgaScatterCache
+                    {
+                        XValues = _currentScatterPoints.Select(p => p.X).ToList(),
+                        YValues = _currentScatterPoints.Select(p => p.Y).ToList(),
+                        R = _scatterR,
+                        R2 = _scatterR2,
+                        PValue = _scatterPValue,
+                        Slope = _scatterSlope,
+                        Intercept = _scatterIntercept,
+                        N = _scatterN
+                    };
+                }
+
+                // Cache: KM
+                if (_currentKMResult != null)
+                {
+                    tcga.KMCache = new TcgaKMCache
+                    {
+                        LogRankP = _currentKMResult.LogRankPValue,
+                        LogRankChiSq = _currentKMResult.LogRankChiSquare,
+                        HighCurve = _currentKMResult.HighExpression?.Curve?
+                            .Select(p => new TcgaKMPoint { Time = p.Time, Survival = p.Survival, AtRisk = p.AtRisk })
+                            .ToList() ?? new(),
+                        LowCurve = _currentKMResult.LowExpression?.Curve?
+                            .Select(p => new TcgaKMPoint { Time = p.Time, Survival = p.Survival, AtRisk = p.AtRisk })
+                            .ToList() ?? new()
+                    };
+                }
+
+                // Cache: Volcano (top 500 significant genes)
+                if (_volcanoFullList != null && _volcanoFullList.Count > 0)
+                {
+                    tcga.VolcanoCache = new TcgaVolcanoCache
+                    {
+                        Points = _volcanoFullList
+                            .Where(p => p.FDR < (tcga.Volcano.FdrThreshold * 2))
+                            .OrderBy(p => p.PValue)
+                            .Take(500)
+                            .Select(p => new TcgaVolcanoPoint
+                            {
+                                GeneId = p.GeneId,
+                                GeneName = p.GeneName,
+                                Log2FC = p.Log2FoldChange,
+                                PValue = p.PValue,
+                                FDR = p.FDR
+                            }).ToList()
+                    };
+                }
+
+                // Cache: Co-Expression (top 200)
+                if (_currentCoExprDisplayRows != null && _currentCoExprDisplayRows.Count > 0)
+                {
+                    tcga.CoExprCache = new TcgaCoExprCache
+                    {
+                        Results = _currentCoExprDisplayRows
+                            .Take(200)
+                            .Select(r => new TcgaCoExprRow
+                            {
+                                GeneId = r.GeneId,
+                                GeneName = r.GeneName,
+                                PearsonR = r.PearsonR,
+                                PValue = r.PValue,
+                                FDR = r.FDR
+                            }).ToList()
+                    };
+                }
+
+                var doc = new XakDocument
+                {
+                    Module = "TcgaAnalysis",
+                    TcgaAnalysis = tcga,
+                    Description = $"Gene: {tcga.GeneSymbol}, Cancers: {tcga.SelectedCancerTypes.Count}"
+                };
+
+                XakFileManager.Save(doc, $"tcga_{tcga.GeneSymbol}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save:\n{ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var doc = XakFileManager.Open("TcgaAnalysis");
+                if (doc?.TcgaAnalysis == null) return;
+
+                var t = doc.TcgaAnalysis;
+
+                // Restore gene input
+                if (BoxPlotGeneIdTextBox != null && !string.IsNullOrEmpty(t.GeneSymbol))
+                    BoxPlotGeneIdTextBox.Text = t.GeneSymbol;
+
+                // Restore cancer selection
+                if (_allProjects != null && t.SelectedCancerTypes.Count > 0)
+                {
+                    _selectedCancers.Clear();
+                    foreach (var projId in t.SelectedCancerTypes)
+                    {
+                        var proj = _allProjects.FirstOrDefault(p => p.project_id == projId);
+                        if (proj != null) _selectedCancers.Add(proj);
+                    }
+                }
+
+                // Restore Volcano thresholds
+                if (VolcanoFdrTextBox != null) VolcanoFdrTextBox.Text = t.Volcano.FdrThreshold.ToString();
+                if (VolcanoFcTextBox != null) VolcanoFcTextBox.Text = t.Volcano.FcThreshold.ToString();
+
+                // Restore Co-Expression settings
+                if (CoExprGeneTextBox != null && !string.IsNullOrEmpty(t.CoExpression.TargetGene))
+                    CoExprGeneTextBox.Text = t.CoExpression.TargetGene;
+                if (CoExprFdrTextBox != null) CoExprFdrTextBox.Text = t.CoExpression.FdrThreshold.ToString();
+                if (CoExprMinRTextBox != null) CoExprMinRTextBox.Text = t.CoExpression.MinAbsR.ToString();
+
+                // Restore active tab
+                if (AnalysisTabControl != null && t.ActiveTabIndex >= 0)
+                    AnalysisTabControl.SelectedIndex = t.ActiveTabIndex;
+
+                // NOTE: Cached data is stored but not auto-rendered.
+                // User clicks "Generate"/"Analyze" to recompute, or a future
+                // enhancement could use cache to render immediately.
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load:\n{ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
         #region Helper Methods
 
         /// <summary>

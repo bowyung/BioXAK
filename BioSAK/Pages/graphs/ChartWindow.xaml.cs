@@ -39,11 +39,21 @@ namespace BioSAK
         private Point dragStart;
         private Point elementStart;
         private Point selectionStart;
+        private bool selectionPending = false;
         private string currentResizeHandle = "";
         private Canvas? currentLineCanvas = null;
-
+        private bool showConnectLines = false;
+        private bool showRegression = false;
+        private int regressionDegree = 1;
+        private bool showRegressionEquation = true;
         // Clipboard for annotations
         private List<AnnotationClipboardItem> clipboardItems = new List<AnnotationClipboardItem>();
+        // Axis settings
+        private bool xAutoScale = true, yAutoScale = true;
+        private double? userXMin, userXMax, userYMin, userYMax;
+        private double? userXInterval, userYInterval;
+        private bool xLogScale = false, yLogScale = false;
+        private double xLogBase = 10, yLogBase = 10;
 
         // Chart data points for alignment
         private List<Point> chartDataPoints = new List<Point>();
@@ -253,6 +263,22 @@ namespace BioSAK
                 return;
             }
 
+            // Double-click on empty area opens settings (check BEFORE starting selection)
+            if ((now - lastClickTime).TotalMilliseconds < 300 && lastClickedElement == null)
+            {
+                // Clean up all mouse states before opening dialog
+                isSelecting = false;
+                selectionPending = false;
+                isDragging = false;
+                SelectionRect.Visibility = Visibility.Collapsed;
+                ChartCanvas.ReleaseMouseCapture();
+
+                lastClickTime = DateTime.MinValue;
+                lastClickedElement = null;
+                OpenSettingsDialog();
+                return;
+            }
+
             // Start selection rectangle
             ClearSelection();
             isSelecting = true;
@@ -264,11 +290,6 @@ namespace BioSAK
             SelectionRect.Height = 0;
             ChartCanvas.CaptureMouse();
 
-            // Double-click on empty area opens settings
-            if ((now - lastClickTime).TotalMilliseconds < 300 && lastClickedElement == null)
-            {
-                OpenSettingsDialog();
-            }
             lastClickTime = now;
             lastClickedElement = null;
         }
@@ -1087,13 +1108,30 @@ namespace BioSAK
 
         private void OpenSettingsDialog()
         {
-            var dialog = new ChartSettingsWindow(dataSeries, chartTitle, xAxisTitle, yAxisTitle, chartType);
+            var dialog = new ChartSettingsWindow(dataSeries, chartTitle, xAxisTitle, yAxisTitle, chartType,
+                showConnectLines, showRegression, regressionDegree, showRegressionEquation,
+                xAutoScale, userXMin, userXMax, userXInterval, xLogScale, xLogBase,
+                yAutoScale, userYMin, userYMax, userYInterval, yLogScale, yLogBase);
             dialog.Owner = this;
             if (dialog.ShowDialog() == true)
             {
                 chartTitle = dialog.ChartTitle;
                 xAxisTitle = dialog.XAxisTitle;
                 yAxisTitle = dialog.YAxisTitle;
+                chartType = dialog.SelectedChartType;
+                showConnectLines = dialog.ShowConnectLines;
+                showRegression = dialog.ShowRegression;
+                regressionDegree = dialog.RegressionDegree;
+                showRegressionEquation = dialog.ShowRegressionEquation;
+
+                // Axis
+                xAutoScale = dialog.IsXAutoScale;
+                userXMin = dialog.XMin; userXMax = dialog.XMax; userXInterval = dialog.XInterval;
+                xLogScale = dialog.XLogScaleEnabled; xLogBase = dialog.XLogBaseValue;
+                yAutoScale = dialog.IsYAutoScale;
+                userYMin = dialog.YMin; userYMax = dialog.YMax; userYInterval = dialog.YInterval;
+                yLogScale = dialog.YLogScaleEnabled; yLogBase = dialog.YLogBaseValue;
+
                 DrawChart();
             }
         }
@@ -1128,6 +1166,18 @@ namespace BioSAK
             if (xPad == 0) xPad = 1; if (yPad == 0) yPad = 1;
             xMin -= xPad; xMax += xPad; yMax += yPad;
 
+            // Apply user axis overrides
+            if (!xAutoScale)
+            {
+                if (userXMin.HasValue) xMin = userXMin.Value;
+                if (userXMax.HasValue) xMax = userXMax.Value;
+            }
+            if (!yAutoScale)
+            {
+                if (userYMin.HasValue) yMin = userYMin.Value;
+                if (userYMax.HasValue) yMax = userYMax.Value;
+            }
+
             if (errorType != "None")
             {
                 foreach (var s in dataSeries)
@@ -1161,7 +1211,6 @@ namespace BioSAK
             Canvas.SetLeft(ChartCanvas.Children[0], marginLeft);
             Canvas.SetTop(ChartCanvas.Children[0], marginTop);
 
-            DrawGridLines(plotWidth, plotHeight);
             DrawAxes(plotWidth, plotHeight, xMin, xMax, yMin, yMax);
 
             foreach (var series in dataSeries)
@@ -1205,39 +1254,89 @@ namespace BioSAK
             }
         }
 
-        private void DrawGridLines(double plotWidth, double plotHeight)
-        {
-            var brush = new SolidColorBrush(Color.FromRgb(240, 240, 240));
-            for (int i = 0; i <= 5; i++)
-            {
-                double y = marginTop + plotHeight - (plotHeight * i / 5);
-                ChartCanvas.Children.Add(new Line { X1 = marginLeft, Y1 = y, X2 = marginLeft + plotWidth, Y2 = y, Stroke = brush, StrokeThickness = 1 });
-                double x = marginLeft + (plotWidth * i / 5);
-                ChartCanvas.Children.Add(new Line { X1 = x, Y1 = marginTop, X2 = x, Y2 = marginTop + plotHeight, Stroke = brush, StrokeThickness = 1 });
-            }
-        }
 
         private void DrawAxes(double plotWidth, double plotHeight, double xMin, double xMax, double yMin, double yMax)
         {
-            for (int i = 0; i <= 5; i++)
+            var gridBrush = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+
+            // Calculate intervals
+            double yInterval = userYInterval.HasValue && userYInterval.Value > 0
+                ? userYInterval.Value
+                : CalculateNiceInterval(yMax - yMin);
+            double xInterval = userXInterval.HasValue && userXInterval.Value > 0
+                ? userXInterval.Value
+                : CalculateNiceInterval(xMax - xMin);
+
+            // Snap auto min/max to interval boundaries
+            if (yAutoScale)
             {
-                double yVal = yMin + (yMax - yMin) * i / 5;
-                double y = marginTop + plotHeight - (plotHeight * i / 5);
-                var lbl = new TextBlock { Text = yVal.ToString("F1"), FontSize = 10, Foreground = Brushes.Black };
+                yMin = Math.Floor(yMin / yInterval) * yInterval;
+                yMax = Math.Ceiling(yMax / yInterval) * yInterval;
+            }
+            if (xAutoScale)
+            {
+                xMin = Math.Floor(xMin / xInterval) * xInterval;
+                xMax = Math.Ceiling(xMax / xInterval) * xInterval;
+            }
+
+            double yRange = yMax - yMin;
+            double xRange = xMax - xMin;
+            if (yRange <= 0) yRange = 1;
+            if (xRange <= 0) xRange = 1;
+
+            // Y axis ticks + grid lines
+            for (double yVal = yMin; yVal <= yMax + yInterval * 0.01; yVal += yInterval)
+            {
+                double frac = (yVal - yMin) / yRange;
+                double y = marginTop + plotHeight - frac * plotHeight;
+
+                // Grid line
+                ChartCanvas.Children.Add(new Line
+                {
+                    X1 = marginLeft,
+                    Y1 = y,
+                    X2 = marginLeft + plotWidth,
+                    Y2 = y,
+                    Stroke = gridBrush,
+                    StrokeThickness = 1
+                });
+
+                // Label
+                string labelText = FormatAxisLabel(yVal, yInterval);
+                var lbl = new TextBlock { Text = labelText, FontSize = 10, Foreground = Brushes.Black };
                 lbl.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 Canvas.SetLeft(lbl, marginLeft - lbl.DesiredSize.Width - 5);
                 Canvas.SetTop(lbl, y - lbl.DesiredSize.Height / 2);
                 ChartCanvas.Children.Add(lbl);
+            }
 
-                double xVal = xMin + (xMax - xMin) * i / 5;
-                double x = marginLeft + (plotWidth * i / 5);
-                var xlbl = new TextBlock { Text = xVal.ToString("F1"), FontSize = 10, Foreground = Brushes.Black };
+            // X axis ticks + grid lines
+            for (double xVal = xMin; xVal <= xMax + xInterval * 0.01; xVal += xInterval)
+            {
+                double frac = (xVal - xMin) / xRange;
+                double x = marginLeft + frac * plotWidth;
+
+                // Grid line
+                ChartCanvas.Children.Add(new Line
+                {
+                    X1 = x,
+                    Y1 = marginTop,
+                    X2 = x,
+                    Y2 = marginTop + plotHeight,
+                    Stroke = gridBrush,
+                    StrokeThickness = 1
+                });
+
+                // Label
+                string labelText = FormatAxisLabel(xVal, xInterval);
+                var xlbl = new TextBlock { Text = labelText, FontSize = 10, Foreground = Brushes.Black };
                 xlbl.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 Canvas.SetLeft(xlbl, x - xlbl.DesiredSize.Width / 2);
                 Canvas.SetTop(xlbl, marginTop + plotHeight + 5);
                 ChartCanvas.Children.Add(xlbl);
             }
 
+            // Axis titles
             var xt = new TextBlock { Text = xAxisTitle, FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.Black };
             xt.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Canvas.SetLeft(xt, marginLeft + (plotWidth - xt.DesiredSize.Width) / 2);
@@ -1258,6 +1357,45 @@ namespace BioSAK
             ChartCanvas.Children.Add(yt);
         }
 
+        /// <summary>
+        /// Calculate a "nice" interval that is a multiple of 1, 2, or 5 × 10^n.
+        /// Auto mode prefers multiples of 5 when possible.
+        /// </summary>
+        private static double CalculateNiceInterval(double range, int targetTicks = 5)
+        {
+            if (range <= 0) return 1;
+
+            double roughInterval = range / targetTicks;
+            double magnitude = Math.Pow(10, Math.Floor(Math.Log10(roughInterval)));
+            double normalized = roughInterval / magnitude;
+
+            // Prefer 5-multiples: snap to 1, 2, 5, 10
+            double nice;
+            if (normalized <= 1) nice = 1;
+            else if (normalized <= 2) nice = 2;
+            else if (normalized <= 5) nice = 5;
+            else nice = 10;
+
+            return nice * magnitude;
+        }
+
+        /// <summary>
+        /// Smart formatting: show integers when interval is integer, otherwise appropriate decimals.
+        /// </summary>
+        private static string FormatAxisLabel(double value, double interval)
+        {
+            // Near-zero cleanup
+            if (Math.Abs(value) < interval * 1e-9) value = 0;
+
+            if (interval >= 1 && interval == Math.Floor(interval))
+                return value.ToString("F0");
+            else if (interval >= 0.1)
+                return value.ToString("F1");
+            else if (interval >= 0.01)
+                return value.ToString("F2");
+            else
+                return value.ToString("G4");
+        }
         private void DrawSeries(ChartDataSeries series, double plotWidth, double plotHeight, double xMin, double xMax, double yMin, double yMax)
         {
             if (series.XValues.Count == 0 || series.YValues.Count == 0) return;
@@ -1273,7 +1411,7 @@ namespace BioSAK
                 chartDataPoints.Add(new Point(x, y)); // Store for alignment
             }
 
-            if (chartType == "Line" && points.Count > 1)
+            if (chartType == "Scatter" && showConnectLines && points.Count > 1)
             {
                 for (int i = 0; i < points.Count - 1; i++)
                     ChartCanvas.Children.Add(new Line
@@ -1283,8 +1421,16 @@ namespace BioSAK
                         X2 = points[i + 1].X,
                         Y2 = points[i + 1].Y,
                         Stroke = brush,
-                        StrokeThickness = series.LineThickness
+                        StrokeThickness = series.LineThickness * 0.5,
+                        StrokeDashArray = new DoubleCollection { 4, 2 },
+                        Opacity = 0.6
                     });
+            }
+
+            // Regression line
+            if (showRegression && series.XValues.Count >= 2)
+            {
+                DrawRegressionLine(series, xMin, xMax, yMin, yMax, plotWidth, plotHeight, brush);
             }
 
             if (errorType != "None")
@@ -1389,6 +1535,250 @@ namespace BioSAK
                 sp.Children.Add(new TextBlock { Text = s.Name, VerticalAlignment = VerticalAlignment.Center });
                 LegendPanel.Children.Add(sp);
             }
+        }
+
+        #endregion
+        #region Regression
+
+        /// <summary>
+        /// Draw polynomial regression line for a series.
+        /// Uses least-squares polynomial fitting via normal equations.
+        /// </summary>
+        private void DrawRegressionLine(ChartDataSeries series, double xMin, double xMax,
+            double yMin, double yMax, double plotWidth, double plotHeight, Brush seriesBrush)
+        {
+            int n = Math.Min(series.XValues.Count, series.YValues.Count);
+            if (n < 2) return;
+
+            int degree = Math.Min(regressionDegree, n - 1);
+
+            double[] xData = series.XValues.Take(n).ToArray();
+            double[] yData = series.YValues.Take(n).ToArray();
+
+            double[]? coeffs = FitPolynomial(xData, yData, degree);
+            if (coeffs == null) return;
+
+            // Calculate R²
+            double ssRes = 0, ssTot = 0;
+            double yMean = yData.Average();
+            for (int i = 0; i < n; i++)
+            {
+                double predicted = EvalPolynomial(coeffs, xData[i]);
+                ssRes += Math.Pow(yData[i] - predicted, 2);
+                ssTot += Math.Pow(yData[i] - yMean, 2);
+            }
+            double rSquared = ssTot > 1e-10 ? 1 - ssRes / ssTot : 0;
+
+            // Draw regression curve (sample 200 points across data X range)
+            double dataXMin = xData.Min();
+            double dataXMax = xData.Max();
+            int numPoints = 200;
+            var regressionPoints = new List<Point>();
+
+            for (int i = 0; i <= numPoints; i++)
+            {
+                double dataX = dataXMin + (dataXMax - dataXMin) * i / numPoints;
+                double dataY = EvalPolynomial(coeffs, dataX);
+
+                // Clamp Y to prevent extreme values
+                dataY = Math.Max(yMin - (yMax - yMin), Math.Min(yMax + (yMax - yMin), dataY));
+
+                double screenX = marginLeft + ((dataX - xMin) / (xMax - xMin)) * plotWidth;
+                double screenY = marginTop + plotHeight - ((dataY - yMin) / (yMax - yMin)) * plotHeight;
+
+                if (screenX >= marginLeft && screenX <= marginLeft + plotWidth)
+                    regressionPoints.Add(new Point(screenX, screenY));
+            }
+
+            // Draw as connected line segments
+            if (regressionPoints.Count > 1)
+            {
+                var color = (seriesBrush as SolidColorBrush)?.Color ?? Colors.Gray;
+                var regressionBrush = new SolidColorBrush(color);
+
+                for (int i = 0; i < regressionPoints.Count - 1; i++)
+                {
+                    ChartCanvas.Children.Add(new Line
+                    {
+                        X1 = regressionPoints[i].X,
+                        Y1 = regressionPoints[i].Y,
+                        X2 = regressionPoints[i + 1].X,
+                        Y2 = regressionPoints[i + 1].Y,
+                        Stroke = regressionBrush,
+                        StrokeThickness = 1.5,
+                        StrokeDashArray = new DoubleCollection { 6, 3 }
+                    });
+                }
+            }
+
+            // Draw equation and R² label
+            if (showRegressionEquation)
+            {
+                string equation = FormatPolynomialEquation(coeffs);
+                string label = $"{equation}\nR² = {rSquared:F4}";
+
+                var textBlock = new TextBlock
+                {
+                    Text = label,
+                    FontSize = 10,
+                    Foreground = seriesBrush,
+                    Background = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
+                    Padding = new Thickness(4, 2, 4, 2)
+                };
+
+                // Position: upper-left, offset per series to avoid overlap
+                int seriesIdx = dataSeries.IndexOf(series);
+                double labelX = marginLeft + plotWidth * 0.02;
+                double labelY = marginTop + 5 + seriesIdx * 32;
+                Canvas.SetLeft(textBlock, labelX);
+                Canvas.SetTop(textBlock, labelY);
+                ChartCanvas.Children.Add(textBlock);
+            }
+        }
+
+        /// <summary>
+        /// Fit polynomial of given degree using least-squares (normal equations).
+        /// Returns coefficients [a0, a1, ..., aDegree] where y = a0 + a1*x + a2*x² + ...
+        /// </summary>
+        private double[]? FitPolynomial(double[] x, double[] y, int degree)
+        {
+            int n = x.Length;
+            int m = degree + 1;
+
+            double[,] xtx = new double[m, m];
+            double[] xty = new double[m];
+
+            for (int i = 0; i < m; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    double sum = 0;
+                    for (int k = 0; k < n; k++)
+                        sum += Math.Pow(x[k], i + j);
+                    xtx[i, j] = sum;
+                }
+
+                double sumY = 0;
+                for (int k = 0; k < n; k++)
+                    sumY += Math.Pow(x[k], i) * y[k];
+                xty[i] = sumY;
+            }
+
+            return SolveLinearSystem(xtx, xty, m);
+        }
+
+        /// <summary>
+        /// Gaussian elimination with partial pivoting.
+        /// </summary>
+        private double[]? SolveLinearSystem(double[,] a, double[] b, int n)
+        {
+            double[,] aug = new double[n, n + 1];
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++) aug[i, j] = a[i, j];
+                aug[i, n] = b[i];
+            }
+
+            for (int col = 0; col < n; col++)
+            {
+                int maxRow = col;
+                double maxVal = Math.Abs(aug[col, col]);
+                for (int row = col + 1; row < n; row++)
+                {
+                    if (Math.Abs(aug[row, col]) > maxVal)
+                    {
+                        maxVal = Math.Abs(aug[row, col]);
+                        maxRow = row;
+                    }
+                }
+
+                if (maxVal < 1e-12) return null; // Singular matrix
+
+                if (maxRow != col)
+                {
+                    for (int j = 0; j <= n; j++)
+                    {
+                        double tmp = aug[col, j];
+                        aug[col, j] = aug[maxRow, j];
+                        aug[maxRow, j] = tmp;
+                    }
+                }
+
+                for (int row = col + 1; row < n; row++)
+                {
+                    double factor = aug[row, col] / aug[col, col];
+                    for (int j = col; j <= n; j++)
+                        aug[row, j] -= factor * aug[col, j];
+                }
+            }
+
+            double[] result = new double[n];
+            for (int i = n - 1; i >= 0; i--)
+            {
+                result[i] = aug[i, n];
+                for (int j = i + 1; j < n; j++)
+                    result[i] -= aug[i, j] * result[j];
+                result[i] /= aug[i, i];
+            }
+
+            return result;
+        }
+
+        private double EvalPolynomial(double[] coeffs, double x)
+        {
+            double result = 0;
+            for (int i = 0; i < coeffs.Length; i++)
+                result += coeffs[i] * Math.Pow(x, i);
+            return result;
+        }
+
+        private string FormatPolynomialEquation(double[] coeffs)
+        {
+            if (coeffs.Length == 0) return "";
+
+            var parts = new List<string>();
+
+            for (int i = coeffs.Length - 1; i >= 0; i--)
+            {
+                double c = coeffs[i];
+                if (Math.Abs(c) < 1e-10) continue;
+
+                string sign = c >= 0 && parts.Count > 0 ? " + " : (c < 0 && parts.Count > 0 ? " - " : (c < 0 ? "-" : ""));
+                string absC = Math.Abs(c).ToString("G4");
+
+                if (i == 0)
+                    parts.Add($"{sign}{absC}");
+                else if (i == 1)
+                    parts.Add($"{sign}{absC}x");
+                else
+                    parts.Add($"{sign}{absC}x{ToSuperscript(i)}");
+            }
+
+            return parts.Count > 0 ? "y = " + string.Join("", parts) : "y = 0";
+        }
+
+        private string ToSuperscript(int n)
+        {
+            string normal = n.ToString();
+            string super = "";
+            foreach (char c in normal)
+            {
+                super += c switch
+                {
+                    '0' => "⁰",
+                    '1' => "¹",
+                    '2' => "²",
+                    '3' => "³",
+                    '4' => "⁴",
+                    '5' => "⁵",
+                    '6' => "⁶",
+                    '7' => "⁷",
+                    '8' => "⁸",
+                    '9' => "⁹",
+                    _ => c.ToString()
+                };
+            }
+            return super;
         }
 
         #endregion

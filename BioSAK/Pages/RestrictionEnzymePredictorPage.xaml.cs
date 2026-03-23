@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using BioSAK.Models;
@@ -52,9 +53,9 @@ namespace BioSAK.Pages
         }
 
         /// <summary>
-        /// 分析按鈕點擊
+        /// 分析按鈕點擊 (fix #3: async 非同步處理)
         /// </summary>
-        private void AnalyzeButton_Click(object sender, RoutedEventArgs e)
+        private async void AnalyzeButton_Click(object sender, RoutedEventArgs e)
         {
             string sequence = CleanSequence(SequenceTextBox.Text);
             
@@ -67,12 +68,19 @@ namespace BioSAK.Pages
 
             bool isCircular = CircularRadio.IsChecked == true;
 
+            // 防止重複點擊並提示使用者
+            AnalyzeButton.IsEnabled = false;
+            AnalyzeButton.Content = "Analyzing...";
+            ResultsSummaryText.Text = "Analyzing sequence, please wait...";
+
             try
             {
-                // 分析所有酶
-                _allResults = _cutter.AnalyzeAllEnzymes(sequence, _allEnzymes, isCircular);
+                // 將繁重的運算丟到背景執行緒
+                _allResults = await Task.Run(() => 
+                    _cutter.AnalyzeAllEnzymes(sequence, _allEnzymes, isCircular)
+                );
                 
-                // 套用篩選
+                // 運算完成後，回到 UI 執行緒套用篩選
                 ApplyFilters();
             }
             catch (Exception ex)
@@ -80,10 +88,27 @@ namespace BioSAK.Pages
                 MessageBox.Show($"Error during analysis: {ex.Message}", 
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                // 恢復按鈕狀態
+                AnalyzeButton.IsEnabled = true;
+                AnalyzeButton.Content = "Analyze All Enzymes";
+            }
         }
 
         /// <summary>
-        /// 套用篩選條件
+        /// 篩選器狀態改變時即時更新 (fix #2)
+        /// </summary>
+        private void Filter_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_allResults != null)
+            {
+                ApplyFilters();
+            }
+        }
+
+        /// <summary>
+        /// 套用篩選條件 (fix #1: 修正「全不選」漏洞)
         /// </summary>
         private void ApplyFilters()
         {
@@ -96,42 +121,25 @@ namespace BioSAK.Pages
 
             var filtered = _allResults.AsEnumerable();
 
-            // 篩選識別序列長度
+            // --- 修正長度篩選：直接套用 Where，全不選時自然為 0 筆 ---
             var allowedLengths = new List<int>();
             if (Filter4Cutter.IsChecked == true) allowedLengths.Add(4);
             if (Filter6Cutter.IsChecked == true) allowedLengths.Add(6);
             if (Filter8Cutter.IsChecked == true) allowedLengths.Add(8);
+            bool allowOther = FilterOther.IsChecked == true;
 
-            if (allowedLengths.Count > 0)
-            {
-                if (FilterOther.IsChecked == true)
-                {
-                    filtered = filtered.Where(r => 
-                        allowedLengths.Contains(r.Enzyme.RecognitionSequence.Length) ||
-                        !new[] { 4, 6, 8 }.Contains(r.Enzyme.RecognitionSequence.Length));
-                }
-                else
-                {
-                    filtered = filtered.Where(r => 
-                        allowedLengths.Contains(r.Enzyme.RecognitionSequence.Length));
-                }
-            }
-            else if (FilterOther.IsChecked == true)
-            {
-                filtered = filtered.Where(r => 
-                    !new[] { 4, 6, 8 }.Contains(r.Enzyme.RecognitionSequence.Length));
-            }
+            filtered = filtered.Where(r =>
+                allowedLengths.Contains(r.Enzyme.RecognitionSequence.Length) ||
+                (allowOther && !new[] { 4, 6, 8 }.Contains(r.Enzyme.RecognitionSequence.Length))
+            );
 
-            // 篩選末端類型
+            // --- 修正末端類型篩選：直接套用 Where，全不選時自然為 0 筆 ---
             var allowedOverhangs = new List<OverhangType>();
             if (Filter5Prime.IsChecked == true) allowedOverhangs.Add(OverhangType.FivePrime);
             if (Filter3Prime.IsChecked == true) allowedOverhangs.Add(OverhangType.ThreePrime);
             if (FilterBlunt.IsChecked == true) allowedOverhangs.Add(OverhangType.Blunt);
 
-            if (allowedOverhangs.Count > 0 && allowedOverhangs.Count < 3)
-            {
-                filtered = filtered.Where(r => allowedOverhangs.Contains(r.Enzyme.OverhangType));
-            }
+            filtered = filtered.Where(r => allowedOverhangs.Contains(r.Enzyme.OverhangType));
 
             // 篩選切割次數
             filtered = filtered.Where(r =>

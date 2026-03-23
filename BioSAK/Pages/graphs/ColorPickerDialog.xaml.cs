@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -10,58 +12,21 @@ namespace BioSAK
     {
         public Color SelectedColor { get; private set; }
 
-        private readonly Color[] paletteColors = new Color[]
+        // 7 rows × 6 columns: each row goes from white to target color
+        private static readonly Color[] TargetColors =
         {
-            // Row 1 - Reds
-            Color.FromRgb(244, 67, 54),
-            Color.FromRgb(233, 30, 99),
-            Color.FromRgb(156, 39, 176),
-            Color.FromRgb(103, 58, 183),
-            Color.FromRgb(63, 81, 181),
-            Color.FromRgb(33, 150, 243),
-            Color.FromRgb(3, 169, 244),
-            Color.FromRgb(0, 188, 212),
-
-            // Row 2 - Greens/Yellows
-            Color.FromRgb(0, 150, 136),
-            Color.FromRgb(76, 175, 80),
-            Color.FromRgb(139, 195, 74),
-            Color.FromRgb(205, 220, 57),
-            Color.FromRgb(255, 235, 59),
-            Color.FromRgb(255, 193, 7),
-            Color.FromRgb(255, 152, 0),
-            Color.FromRgb(255, 87, 34),
-
-            // Row 3 - Browns/Grays
-            Color.FromRgb(121, 85, 72),
-            Color.FromRgb(158, 158, 158),
-            Color.FromRgb(96, 125, 139),
-            Color.FromRgb(0, 0, 0),
-            Color.FromRgb(66, 66, 66),
-            Color.FromRgb(117, 117, 117),
-            Color.FromRgb(189, 189, 189),
-            Color.FromRgb(255, 255, 255),
-
-            // Row 4 - Dark variants
-            Color.FromRgb(183, 28, 28),
-            Color.FromRgb(136, 14, 79),
-            Color.FromRgb(74, 20, 140),
-            Color.FromRgb(49, 27, 146),
-            Color.FromRgb(26, 35, 126),
-            Color.FromRgb(13, 71, 161),
-            Color.FromRgb(1, 87, 155),
-            Color.FromRgb(0, 96, 100),
-
-            // Row 5 - Light variants
-            Color.FromRgb(255, 205, 210),
-            Color.FromRgb(248, 187, 208),
-            Color.FromRgb(225, 190, 231),
-            Color.FromRgb(209, 196, 233),
-            Color.FromRgb(197, 202, 233),
-            Color.FromRgb(187, 222, 251),
-            Color.FromRgb(179, 229, 252),
-            Color.FromRgb(178, 235, 242),
+            Color.FromRgb(0,   0,   0),     // Grayscale: white → black
+            Color.FromRgb(255, 0,   0),     // Red
+            Color.FromRgb(255, 165, 0),     // Orange
+            Color.FromRgb(255, 255, 0),     // Yellow
+            Color.FromRgb(0,   128, 0),     // Green
+            Color.FromRgb(0,   0,   139),   // Dark Blue / Navy
+            Color.FromRgb(128, 0,   128),   // Purple
         };
+
+        private const int Columns = 6;
+        private const double CellWidth = 55;
+        private const double CellHeight = 42;
 
         public ColorPickerDialog(Color initialColor)
         {
@@ -78,25 +43,58 @@ namespace BioSAK
 
         private void BuildPalette()
         {
-            foreach (var color in paletteColors)
-            {
-                var rect = new Rectangle
-                {
-                    Width = 32,
-                    Height = 32,
-                    Fill = new SolidColorBrush(color),
-                    Margin = new Thickness(2),
-                    Cursor = Cursors.Hand,
-                    Stroke = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
-                    StrokeThickness = 1,
-                    RadiusX = 3,
-                    RadiusY = 3,
-                    Tag = color
-                };
+            ColorGrid.Children.Clear();
 
-                rect.MouseLeftButtonDown += ColorRect_Click;
-                ColorPalette.Children.Add(rect);
+            foreach (var target in TargetColors)
+            {
+                for (int col = 0; col < Columns; col++)
+                {
+                    // Interpolate from white (col=0) to target (col=Columns-1)
+                    double t = (double)col / (Columns - 1);
+                    Color color = Lerp(Colors.White, target, t);
+
+                    var rect = new Rectangle
+                    {
+                        Width = CellWidth,
+                        Height = CellHeight,
+                        Fill = new SolidColorBrush(color),
+                        Cursor = Cursors.Hand,
+                        Tag = color,
+                        // No margin — continuous blocks
+                        Margin = new Thickness(0)
+                    };
+
+                    rect.MouseLeftButtonDown += ColorRect_Click;
+
+                    // Highlight on hover
+                    rect.MouseEnter += (s, e) =>
+                    {
+                        if (s is Rectangle r) r.StrokeThickness = 2;
+                    };
+                    rect.MouseLeave += (s, e) =>
+                    {
+                        if (s is Rectangle r) r.StrokeThickness = 0;
+                    };
+                    rect.Stroke = Brushes.White;
+                    rect.StrokeThickness = 0;
+
+                    ColorGrid.Children.Add(rect);
+                }
             }
+        }
+
+        /// <summary>
+        /// Linear interpolation between two colors.
+        /// t=0 returns 'from', t=1 returns 'to'.
+        /// </summary>
+        private static Color Lerp(Color from, Color to, double t)
+        {
+            t = Math.Clamp(t, 0, 1);
+            return Color.FromRgb(
+                (byte)(from.R + (to.R - from.R) * t),
+                (byte)(from.G + (to.G - from.G) * t),
+                (byte)(from.B + (to.B - from.B) * t)
+            );
         }
 
         private void ColorRect_Click(object sender, MouseButtonEventArgs e)

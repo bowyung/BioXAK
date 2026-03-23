@@ -410,6 +410,19 @@
                 <Border Grid.Row="2" Padding="10,8" BorderBrush="#E0E0E0"
                         BorderThickness="0,1,0,0" Background="#FAFAFA">
                     <StackPanel>
+                        <!-- .xak Save/Load -->
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="📂 Open .xak" Padding="8,6" FontSize="12" FontFamily="Arial"
+                                    Margin="0,0,3,0" Background="#607D8B" Foreground="White" BorderThickness="0"
+                                    Cursor="Hand" Click="OpenXak_Click" ToolTip="Open saved WB layout (Ctrl+O)"/>
+                            <Button Grid.Column="1" Content="💾 Save .xak" Padding="8,6" FontSize="12" FontFamily="Arial"
+                                    Margin="3,0,0,0" Background="#00897B" Foreground="White" BorderThickness="0"
+                                    Cursor="Hand" Click="SaveXak_Click" ToolTip="Save WB layout (Ctrl+S)"/>
+                        </Grid>
                         <Button Content="Refresh Preview" Padding="8,6" FontSize="12" FontFamily="Arial"
                                 Margin="0,0,0,6" Background="#EAF2FF" BorderBrush="#85C1E9"
                                 Click="BtnUpdatePreview_Click"/>

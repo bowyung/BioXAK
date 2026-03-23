@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Win32;
 
 namespace BioSAK
 {
@@ -18,15 +21,23 @@ namespace BioSAK
         private int currentYReplicates = 1;
         private int currentXReplicates = 1;
         private int currentDataMode = 0;
-        private string currentChartType = ""; // Track current chart type
+        private string currentChartType = "XY"; // Track current chart type (default XY)
         private List<TextBox> columnTitleBoxes = new List<TextBox>();
 
         private const int DEFAULT_ROWS = 50;
 
+        // Track last-applied settings for auto-apply dirty detection
+        private int _lastAppliedYColumns = 3;
+        private int _lastAppliedYReplicates = 1;
+        private int _lastAppliedXReplicates = 1;
+        private int _lastAppliedDataMode = 0;
+        private bool _lastAppliedXHasRepeat = false;
+
         public GraphGen()
         {
             InitializeComponent();
-            InitializeDataGrid();
+            // Default to XY tab
+            SwitchTab("XY");
         }
 
         private void InitializeDataGrid()
@@ -34,12 +45,304 @@ namespace BioSAK
             ApplySettings_Click(null, null);
         }
 
-        private void BackToSelection_Click(object sender, RoutedEventArgs e)
+        #region Tab Switching
+
+        private void TabXY_Click(object sender, RoutedEventArgs e) => SwitchTab("XY");
+        private void TabColumn_Click(object sender, RoutedEventArgs e) => SwitchTab("Column");
+        private void TabMultiGroup_Click(object sender, RoutedEventArgs e) => SwitchTab("MultiGroup");
+
+        /// <summary>
+        /// Switch chart type tab. Updates visuals, enables/disables X column settings,
+        /// sets appropriate defaults for each mode, and optionally loads sample data.
+        /// </summary>
+        private void SwitchTab(string chartType)
         {
-            var selector = new GraphTypeSelector();
-            selector.Owner = Window.GetWindow(this);
-            selector.ShowDialog();
+            currentChartType = chartType;
+            UpdateTabVisuals(chartType);
+
+            // Re-enable X column settings first (Column mode disables them)
+            if (XNoRepeat != null) XNoRepeat.IsEnabled = true;
+            if (XHasRepeat != null) XHasRepeat.IsEnabled = true;
+            if (XRepeatCount != null) XRepeatCount.IsEnabled = XHasRepeat.IsChecked == true;
+
+            switch (chartType)
+            {
+                case "Column":
+                    // Disable X column settings for Column chart
+                    if (XNoRepeat != null) XNoRepeat.IsEnabled = false;
+                    if (XHasRepeat != null) XHasRepeat.IsEnabled = false;
+                    if (XRepeatCount != null) XRepeatCount.IsEnabled = false;
+                    // Reset Y data mode to Single Value
+                    if (YDataMode != null) YDataMode.SelectedIndex = 0;
+                    if (YRepeatCount != null) YRepeatCount.IsEnabled = false;
+                    break;
+
+                case "MultiGroup":
+                    // Auto-set Enter Replicates mode for Multi Factors
+                    if (YDataMode != null) YDataMode.SelectedIndex = 1;
+                    if (YRepeatCount != null) YRepeatCount.IsEnabled = true;
+                    break;
+
+                case "XY":
+                default:
+                    // Default settings for XY
+                    break;
+            }
+
+            ApplySettings_Click(null, null);
         }
+
+        /// <summary>
+        /// Update tab button visuals to indicate active tab.
+        /// Active tab: white background, dark text, blue left/right/top border.
+        /// Inactive tabs: gray background, muted text.
+        /// </summary>
+        private void UpdateTabVisuals(string activeTab)
+        {
+            var activeBackground = new SolidColorBrush(Colors.White);
+            var activeForeground = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+            var activeBorder = new SolidColorBrush(Color.FromRgb(79, 195, 247)); // #4FC3F7
+
+            var inactiveBackground = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+            var inactiveForeground = new SolidColorBrush(Color.FromRgb(136, 136, 136));
+            var inactiveBorder = new SolidColorBrush(Color.FromRgb(224, 224, 224));
+
+            // XY Tab
+            TabXY.Background = activeTab == "XY" ? activeBackground : inactiveBackground;
+            TabXY.Foreground = activeTab == "XY" ? activeForeground : inactiveForeground;
+            TabXY.BorderBrush = activeTab == "XY" ? activeBorder : inactiveBorder;
+
+            // Column Tab
+            TabColumn.Background = activeTab == "Column" ? activeBackground : inactiveBackground;
+            TabColumn.Foreground = activeTab == "Column" ? activeForeground : inactiveForeground;
+            TabColumn.BorderBrush = activeTab == "Column" ? activeBorder : inactiveBorder;
+
+            // MultiGroup Tab
+            TabMultiGroup.Background = activeTab == "MultiGroup" ? activeBackground : inactiveBackground;
+            TabMultiGroup.Foreground = activeTab == "MultiGroup" ? activeForeground : inactiveForeground;
+            TabMultiGroup.BorderBrush = activeTab == "MultiGroup" ? activeBorder : inactiveBorder;
+        }
+
+        #endregion
+
+        #region .xak Save/Load
+
+        private void SaveXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DataGridMain.CommitEdit(DataGridEditingUnit.Row, true);
+                DataGridMain.CommitEdit(DataGridEditingUnit.Cell, true);
+
+                var graphData = new GraphGenData
+                {
+                    ChartType = currentChartType,
+                    YColumns = currentYColumns,
+                    YDataMode = currentDataMode,
+                    YReplicates = currentYReplicates,
+                    XHasRepeat = XHasRepeat.IsChecked == true,
+                    XReplicates = currentXReplicates
+                };
+
+                // Save column titles (only user-typed names, not placeholder defaults)
+                foreach (var tb in columnTitleBoxes)
+                {
+                    string tag = tb.Tag?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(tag)) continue;
+                    string placeholder = tb.DataContext as string ?? "";
+                    bool isPlaceholder = IsShowingPlaceholder(tb, placeholder);
+                    if (!isPlaceholder && !string.IsNullOrWhiteSpace(tb.Text))
+                        graphData.ColumnTitles[tag] = tb.Text;
+                }
+
+                // Save data rows (only non-empty rows)
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    bool hasData = false;
+                    var rowDict = new Dictionary<string, string>();
+                    for (int c = 0; c < dataTable.Columns.Count; c++)
+                    {
+                        string colName = dataTable.Columns[c].ColumnName;
+                        string val = row[c]?.ToString()?.Trim() ?? "";
+                        if (!string.IsNullOrEmpty(val)) { hasData = true; rowDict[colName] = val; }
+                    }
+                    if (hasData) graphData.Data.Add(rowDict);
+                }
+
+                if (graphData.Data.Count == 0)
+                {
+                    MessageBox.Show("No data to save.", "Empty Data", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var doc = new XakDocument
+                {
+                    Module = "GraphGen",
+                    GraphGen = graphData
+                };
+
+                XakFileManager.Save(doc, $"graph_{currentChartType.ToLower()}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save:\n{ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var doc = XakFileManager.Open("GraphGen");
+                if (doc?.GraphGen == null) return;
+
+                var g = doc.GraphGen;
+
+                // Restore settings UI
+                if (YColumnCount != null) YColumnCount.Text = g.YColumns.ToString();
+                if (YDataMode != null) YDataMode.SelectedIndex = g.YDataMode;
+                if (YRepeatCount != null)
+                {
+                    YRepeatCount.Text = g.YReplicates.ToString();
+                    YRepeatCount.IsEnabled = g.YDataMode == 1;
+                }
+                if (g.XHasRepeat)
+                {
+                    if (XHasRepeat != null) XHasRepeat.IsChecked = true;
+                    if (XRepeatCount != null) { XRepeatCount.Text = g.XReplicates.ToString(); XRepeatCount.IsEnabled = true; }
+                }
+                else
+                {
+                    if (XNoRepeat != null) XNoRepeat.IsChecked = true;
+                    if (XRepeatCount != null) XRepeatCount.IsEnabled = false;
+                }
+
+                SwitchTab(g.ChartType);
+
+                // Restore column titles
+                foreach (var kvp in g.ColumnTitles)
+                {
+                    var tb = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == kvp.Key);
+                    if (tb != null && !string.IsNullOrWhiteSpace(kvp.Value))
+                    {
+                        tb.Text = kvp.Value;
+                        tb.Foreground = ActiveTextBrush;
+                        tb.FontStyle = FontStyles.Normal;
+                    }
+                }
+
+                // Restore data
+                foreach (DataRow row in dataTable.Rows)
+                    for (int i = 0; i < dataTable.Columns.Count; i++) row[i] = DBNull.Value;
+
+                while (dataTable.Rows.Count < g.Data.Count)
+                    dataTable.Rows.Add(dataTable.NewRow());
+
+                for (int r = 0; r < g.Data.Count; r++)
+                    foreach (var kvp in g.Data[r])
+                        if (dataTable.Columns.Contains(kvp.Key))
+                            dataTable.Rows[r][kvp.Key] = kvp.Value;
+
+                DataGridMain.Items.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load:\n{ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
+
+        #region Auto-Apply Settings & Keyboard Shortcuts
+
+        /// <summary>
+        /// When keyboard focus leaves the settings panel, check if any settings changed
+        /// and auto-apply if needed. This eliminates the need for an "Apply Settings" button.
+        /// </summary>
+        private void SettingsPanel_FocusChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            // Only trigger when focus leaves the settings panel (not when entering)
+            if ((bool)e.NewValue == false)
+            {
+                TryAutoApplySettings();
+            }
+        }
+
+        /// <summary>
+        /// Compare current UI values against last-applied values.
+        /// If anything changed, rebuild the DataGrid.
+        /// </summary>
+        private void TryAutoApplySettings()
+        {
+            if (YColumnCount == null || YDataMode == null || YRepeatCount == null || XRepeatCount == null)
+                return;
+
+            int newYColumns = int.TryParse(YColumnCount.Text, out int yc) && yc >= 1 ? yc : currentYColumns;
+            int newYReplicates = int.TryParse(YRepeatCount.Text, out int yr) && yr >= 1 ? yr : currentYReplicates;
+            int newXReplicates = int.TryParse(XRepeatCount.Text, out int xr) && xr >= 1 ? xr : currentXReplicates;
+            int newDataMode = YDataMode.SelectedIndex;
+            bool newXHasRepeat = XHasRepeat.IsChecked == true;
+
+            bool changed = newYColumns != _lastAppliedYColumns
+                        || newYReplicates != _lastAppliedYReplicates
+                        || newXReplicates != _lastAppliedXReplicates
+                        || newDataMode != _lastAppliedDataMode
+                        || newXHasRepeat != _lastAppliedXHasRepeat;
+
+            if (changed)
+            {
+                ApplySettings_Click(null, null);
+            }
+        }
+
+        /// <summary>
+        /// Global keyboard shortcut handler for the page.
+        /// Ctrl+S = Save .xak, Ctrl+O = Open .xak
+        /// </summary>
+        private void Page_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                switch (e.Key)
+                {
+                    case Key.S:
+                        SaveXak_Click(sender, e);
+                        e.Handled = true;
+                        break;
+                    case Key.O:
+                        OpenXak_Click(sender, e);
+                        e.Handled = true;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Load sample data button click - shows confirmation dialog first.
+        /// </summary>
+        private void LoadSampleData_Click(object sender, RoutedEventArgs e)
+        {
+            string chartTypeDisplay = currentChartType switch
+            {
+                "Column" => "Column",
+                "MultiGroup" => "Multi Factors",
+                _ => "X-Y Graph"
+            };
+
+            var result = MessageBox.Show(
+                $"Load sample data for \"{chartTypeDisplay}\"?\n\nThis will clear all current data.",
+                "Load Sample Data",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                LoadSampleData(currentChartType);
+            }
+        }
+
+        #endregion
+
+        #region Settings & Grid Setup
 
         private void XRepeatChanged(object sender, RoutedEventArgs e)
         {
@@ -68,22 +371,11 @@ namespace BioSAK
         }
 
         /// <summary>
-        /// Set chart type to control X column behavior
+        /// Set chart type to control X column behavior (kept for backward compatibility)
         /// </summary>
         public void SetChartType(string chartType)
         {
-            currentChartType = chartType;
-            
-            // For Column chart, disable X input section
-            if (chartType == "Column")
-            {
-                // Disable X column settings
-                if (XNoRepeat != null) XNoRepeat.IsEnabled = false;
-                if (XHasRepeat != null) XHasRepeat.IsEnabled = false;
-                if (XRepeatCount != null) XRepeatCount.IsEnabled = false;
-            }
-            
-            ApplySettings_Click(null, null);
+            SwitchTab(chartType);
         }
 
         private void ApplySettings_Click(object? sender, RoutedEventArgs? e)
@@ -94,6 +386,13 @@ namespace BioSAK
             if (XNoRepeat.IsChecked == true) currentXReplicates = 1;
             currentDataMode = YDataMode.SelectedIndex;
             BuildDataGrid();
+
+            // Update tracking fields for dirty detection
+            _lastAppliedYColumns = currentYColumns;
+            _lastAppliedYReplicates = currentYReplicates;
+            _lastAppliedXReplicates = currentXReplicates;
+            _lastAppliedDataMode = currentDataMode;
+            _lastAppliedXHasRepeat = XHasRepeat.IsChecked == true;
         }
 
         private void BuildDataGrid()
@@ -116,7 +415,7 @@ namespace BioSAK
             {
                 string colName = $"X_{i}";
                 dataTable.Columns.Add(colName, typeof(string));
-                
+
                 var xColumn = new DataGridTextColumn
                 {
                     Header = xSubCols > 1 ? $"X{i + 1}" : "X",
@@ -124,7 +423,7 @@ namespace BioSAK
                     Width = 70,
                     IsReadOnly = isColumnChart
                 };
-                
+
                 // Set gray background for Column chart X column
                 if (isColumnChart)
                 {
@@ -133,7 +432,7 @@ namespace BioSAK
                     style.Setters.Add(new Setter(DataGridCell.ForegroundProperty, new SolidColorBrush(Color.FromRgb(150, 150, 150))));
                     xColumn.CellStyle = style;
                 }
-                
+
                 DataGridMain.Columns.Add(xColumn);
             }
 
@@ -185,8 +484,8 @@ namespace BioSAK
             {
                 BorderBrush = new SolidColorBrush(Color.FromRgb(224, 224, 224)),
                 BorderThickness = new Thickness(1),
-                Background = isDisabled 
-                    ? new SolidColorBrush(Color.FromRgb(220, 220, 220))  // Gray for Column chart
+                Background = isDisabled
+                    ? new SolidColorBrush(Color.FromRgb(220, 220, 220))
                     : new SolidColorBrush(Color.FromRgb(230, 245, 255)),
                 Margin = new Thickness(0, 0, 2, 0),
                 Width = 70 * subColumns + (subColumns > 1 ? (subColumns - 1) * 2 : 0)
@@ -199,28 +498,32 @@ namespace BioSAK
             {
                 Text = "X",
                 FontWeight = FontWeights.Bold,
-                Foreground = isDisabled 
+                Foreground = isDisabled
                     ? new SolidColorBrush(Color.FromRgb(150, 150, 150))
                     : new SolidColorBrush(Color.FromRgb(33, 150, 243)),
                 Margin = new Thickness(0, 0, 5, 0)
             });
 
-            var titleBox = new TextBox
+            TextBox titleBox;
+            if (isDisabled)
             {
-                Text = isDisabled ? "(Not used)" : "X",
-                Width = isDisabled ? 70 : 50,
-                FontSize = 10,
-                BorderThickness = new Thickness(1),
-                Padding = new Thickness(2),
-                Tag = "X",
-                IsEnabled = !isDisabled,
-                Background = isDisabled 
-                    ? new SolidColorBrush(Color.FromRgb(200, 200, 200)) 
-                    : Brushes.White,
-                Foreground = isDisabled 
-                    ? new SolidColorBrush(Color.FromRgb(120, 120, 120))
-                    : Brushes.Black
-            };
+                titleBox = new TextBox
+                {
+                    Text = "(Not used)",
+                    Width = 70,
+                    FontSize = 10,
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(2),
+                    Tag = "X",
+                    IsEnabled = false,
+                    Background = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                    Foreground = new SolidColorBrush(Color.FromRgb(120, 120, 120))
+                };
+            }
+            else
+            {
+                titleBox = CreatePlaceholderTextBox("X", "X", 50);
+            }
             columnTitleBoxes.Add(titleBox);
             headerPanel.Children.Add(titleBox);
 
@@ -251,15 +554,8 @@ namespace BioSAK
                 Margin = new Thickness(0, 0, 5, 0)
             });
 
-            var titleBox = new TextBox
-            {
-                Text = $"Series {yIndex + 1}",
-                Width = 70,
-                FontSize = 10,
-                BorderThickness = new Thickness(1),
-                Padding = new Thickness(2),
-                Tag = $"Y{yIndex}"
-            };
+            string placeholder = $"Series {yIndex + 1}";
+            var titleBox = CreatePlaceholderTextBox(placeholder, $"Y{yIndex}", 70);
             columnTitleBoxes.Add(titleBox);
             headerPanel.Children.Add(titleBox);
 
@@ -268,6 +564,106 @@ namespace BioSAK
             return border;
         }
 
+        #region Placeholder TextBox
+
+        // Gray color used for placeholder state
+        private static readonly SolidColorBrush PlaceholderBrush = new SolidColorBrush(Color.FromRgb(180, 180, 180));
+        private static readonly SolidColorBrush ActiveTextBrush = new SolidColorBrush(Colors.Black);
+
+        /// <summary>
+        /// Create a TextBox with placeholder (watermark) behavior.
+        /// - Starts with gray placeholder text
+        /// - On focus: clears if still showing placeholder, selects all if user text
+        /// - On blur: restores placeholder if empty
+        /// - Tag stores the column key (e.g. "X", "Y0")
+        /// - DataContext stores the placeholder string for retrieval
+        /// </summary>
+        private TextBox CreatePlaceholderTextBox(string placeholder, string tag, double width)
+        {
+            var tb = new TextBox
+            {
+                Text = placeholder,
+                Width = width,
+                FontSize = 10,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(2),
+                Tag = tag,
+                DataContext = placeholder, // Store placeholder text for reference
+                Foreground = PlaceholderBrush,
+                FontStyle = FontStyles.Italic
+            };
+
+            tb.GotFocus += PlaceholderTextBox_GotFocus;
+            tb.LostFocus += PlaceholderTextBox_LostFocus;
+
+            return tb;
+        }
+
+        private void PlaceholderTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox tb && tb.DataContext is string placeholder)
+            {
+                if (IsShowingPlaceholder(tb, placeholder))
+                {
+                    // Clear placeholder — user starts with empty box
+                    tb.Text = "";
+                    tb.Foreground = ActiveTextBrush;
+                    tb.FontStyle = FontStyles.Normal;
+                }
+                else
+                {
+                    // User has real text — select all for easy replacement
+                    tb.SelectAll();
+                }
+            }
+        }
+
+        private void PlaceholderTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox tb && tb.DataContext is string placeholder)
+            {
+                if (string.IsNullOrWhiteSpace(tb.Text))
+                {
+                    // Restore placeholder
+                    tb.Text = placeholder;
+                    tb.Foreground = PlaceholderBrush;
+                    tb.FontStyle = FontStyles.Italic;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Check if a TextBox is currently showing its placeholder text.
+        /// </summary>
+        private bool IsShowingPlaceholder(TextBox tb, string placeholder)
+        {
+            return tb.Text == placeholder && tb.Foreground == PlaceholderBrush;
+        }
+
+        /// <summary>
+        /// Get the effective display text of a column title TextBox.
+        /// Returns the user-typed text, or the placeholder (default name) if empty.
+        /// </summary>
+        private string GetColumnTitle(string tag)
+        {
+            var tb = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == tag);
+            if (tb == null) return "";
+
+            string placeholder = tb.DataContext as string ?? "";
+
+            // If showing placeholder or empty, return the placeholder as the display name
+            if (IsShowingPlaceholder(tb, placeholder) || string.IsNullOrWhiteSpace(tb.Text))
+                return placeholder;
+
+            return tb.Text;
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Data Operations
+
         private void SortXAscending_Click(object sender, RoutedEventArgs e) => SortByX(true);
         private void SortXDescending_Click(object sender, RoutedEventArgs e) => SortByX(false);
 
@@ -275,7 +671,7 @@ namespace BioSAK
         {
             DataGridMain.CommitEdit(DataGridEditingUnit.Row, true);
             DataGridMain.CommitEdit(DataGridEditingUnit.Cell, true);
-            
+
             var rowsWithData = new List<(double xValue, DataRow row)>();
 
             foreach (DataRow row in dataTable.Rows)
@@ -441,11 +837,6 @@ namespace BioSAK
             PasteFromClipboard(false);
         }
 
-        private void TransposePaste_Click(object sender, RoutedEventArgs e)
-        {
-            PasteFromClipboard(true);
-        }
-
         // Context menu handlers
         private void ContextCopy_Click(object sender, RoutedEventArgs e) => CopySelectedToClipboard();
         private void ContextPaste_Click(object sender, RoutedEventArgs e) => PasteFromClipboard(false);
@@ -453,11 +844,11 @@ namespace BioSAK
         private void ContextDelete_Click(object sender, RoutedEventArgs e) => DeleteSelectedCells();
         private void ContextSelectAll_Click(object sender, RoutedEventArgs e) => DataGridMain.SelectAll();
 
-        private void ClearAll_Click(object sender, RoutedEventArgs e)
+        private void ClearAll_Click(object? sender, RoutedEventArgs? e)
         {
             DataGridMain.CommitEdit(DataGridEditingUnit.Row, true);
             DataGridMain.CommitEdit(DataGridEditingUnit.Cell, true);
-            
+
             foreach (DataRow row in dataTable.Rows)
                 for (int i = 0; i < dataTable.Columns.Count; i++) row[i] = DBNull.Value;
             DataGridMain.Items.Refresh();
@@ -467,6 +858,10 @@ namespace BioSAK
         {
             HeaderScrollViewer.ScrollToHorizontalOffset(e.HorizontalOffset);
         }
+
+        #endregion
+
+        #region Data Parsing
 
         /// <summary>
         /// Parse data based on Y Data Mode:
@@ -486,7 +881,7 @@ namespace BioSAK
             {
                 return ParseDataColumnChart();
             }
-            
+
             if (currentDataMode == 0)
             {
                 // Single Value Mode: Group rows by X value, treat as replicates
@@ -505,13 +900,13 @@ namespace BioSAK
         private List<ChartDataSeries> ParseDataColumnChart()
         {
             var seriesList = new List<ChartDataSeries>();
-            
+
             for (int y = 0; y < currentYColumns; y++)
             {
                 var series = new ChartDataSeries();
-                string yTitle = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == $"Y{y}")?.Text ?? $"Y{y + 1}";
+                string yTitle = GetColumnTitle($"Y{y}");
                 series.Name = yTitle;
-                
+
                 // Collect all values for this Y column (replicates)
                 var yVals = new List<double>();
                 for (int row = 0; row < dataTable.Rows.Count; row++)
@@ -520,13 +915,13 @@ namespace BioSAK
                     if (double.TryParse(cellVal, out double val))
                         yVals.Add(val);
                 }
-                
+
                 if (yVals.Count > 0)
                 {
                     double mean = yVals.Average();
                     double sd = CalculateSD(yVals);
                     double sem = yVals.Count > 1 ? sd / Math.Sqrt(yVals.Count) : 0;
-                    
+
                     series.XLabels.Add(yTitle);  // Use Y series name as X label
                     series.XValues.Add(y);
                     series.YValues.Add(mean);
@@ -535,10 +930,10 @@ namespace BioSAK
                     series.NValues.Add(yVals.Count);
                     series.RawReplicates.Add(yVals);
                 }
-                
+
                 seriesList.Add(series);
             }
-            
+
             return seriesList;
         }
 
@@ -548,11 +943,10 @@ namespace BioSAK
         private List<ChartDataSeries> ParseDataSingleValueMode(bool allowTextX, int xSubCols)
         {
             var seriesList = new List<ChartDataSeries>();
-            
+
             // Group data by X value for each Y series
-            // Structure: yIndex -> xLabel -> list of Y values (replicates)
             var groupedData = new Dictionary<int, Dictionary<string, List<double>>>();
-            
+
             for (int y = 0; y < currentYColumns; y++)
                 groupedData[y] = new Dictionary<string, List<double>>();
 
@@ -571,21 +965,18 @@ namespace BioSAK
                 }
 
                 string xLabel;
-                double xNumeric;
-                
+
                 if (xVals.Count > 0)
                 {
-                    xNumeric = xVals.Average();
                     xLabel = firstXVal;
                 }
                 else if (allowTextX)
                 {
-                    xNumeric = 0; // Will be set later
                     xLabel = firstXVal;
                 }
                 else
                 {
-                    continue; // Skip non-numeric X for charts requiring numeric X
+                    continue;
                 }
 
                 // Collect Y values for each series
@@ -606,7 +997,7 @@ namespace BioSAK
             {
                 var series = new ChartDataSeries
                 {
-                    Name = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == $"Y{y}")?.Text ?? $"Series {y + 1}",
+                    Name = GetColumnTitle($"Y{y}"),
                     XValues = new List<double>(),
                     XLabels = new List<string>(),
                     YValues = new List<double>(),
@@ -621,15 +1012,14 @@ namespace BioSAK
                 {
                     string xLabel = kvp.Key;
                     List<double> yVals = kvp.Value;
-                    
+
                     if (yVals.Count == 0) continue;
 
-                    // Try to parse X as number
                     if (double.TryParse(xLabel, out double xNum))
                         series.XValues.Add(xNum);
                     else
                         series.XValues.Add(xIndex);
-                    
+
                     series.XLabels.Add(xLabel);
 
                     double mean = yVals.Average();
@@ -738,14 +1128,7 @@ namespace BioSAK
             {
                 var series = new ChartDataSeries
                 {
-                    Name = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == $"Y{y}")?.Text ?? $"Series {y + 1}",
-                    XValues = new List<double>(),
-                    XLabels = new List<string>(),
-                    YValues = new List<double>(),
-                    YErrors = new List<double>(),
-                    SEMValues = new List<double>(),
-                    NValues = new List<int>(),
-                    RawReplicates = new List<List<double>>()
+                    Name = GetColumnTitle($"Y{y}")
                 };
 
                 for (int i = 0; i < validRowIndices.Count; i++)
@@ -754,6 +1137,7 @@ namespace BioSAK
 
                     if (currentDataMode == 2)
                     {
+                        // Mean/SD/N mode
                         string meanStr = dataTable.Rows[row][$"Y{y}_Mean"]?.ToString() ?? "";
                         string sdStr = dataTable.Rows[row][$"Y{y}_SD"]?.ToString() ?? "";
                         string nStr = dataTable.Rows[row][$"Y{y}_N"]?.ToString() ?? "";
@@ -763,9 +1147,8 @@ namespace BioSAK
                             series.XValues.Add(xValues[i]);
                             series.XLabels.Add(xLabels[i]);
                             series.YValues.Add(mean);
-                            double.TryParse(sdStr, out double sd);
-                            int.TryParse(nStr, out int n);
-                            if (n < 1) n = 1;
+                            double sd = double.TryParse(sdStr, out double s) ? s : 0;
+                            int n = int.TryParse(nStr, out int nn) ? nn : 1;
                             series.YErrors.Add(sd);
                             series.SEMValues.Add(n > 1 ? sd / Math.Sqrt(n) : 0);
                             series.NValues.Add(n);
@@ -774,10 +1157,11 @@ namespace BioSAK
                     }
                     else
                     {
+                        // Replicates mode
                         var yVals = new List<double>();
                         for (int s = 0; s < ySubCols; s++)
                         {
-                            string val = dataTable.Rows[row][$"Y{y}_{s}"]?.ToString() ?? "";
+                            string val = dataTable.Rows[row][$"Y{y}_{s}"]?.ToString()?.Trim() ?? "";
                             if (double.TryParse(val, out double d)) yVals.Add(d);
                         }
 
@@ -811,6 +1195,10 @@ namespace BioSAK
             return Math.Sqrt(values.Sum(v => Math.Pow(v - mean, 2)) / (values.Count - 1));
         }
 
+        #endregion
+
+        #region Chart Generation
+
         private void GenerateLineChart_Click(object sender, RoutedEventArgs e) => GenerateChart("Line");
         private void GenerateScatterPlot_Click(object sender, RoutedEventArgs e) => GenerateChart("Scatter");
         private void GenerateVolcanoPlot_Click(object sender, RoutedEventArgs e) => GenerateChart("Volcano");
@@ -822,7 +1210,7 @@ namespace BioSAK
             // Commit any pending edits
             DataGridMain.CommitEdit(DataGridEditingUnit.Row, true);
             DataGridMain.CommitEdit(DataGridEditingUnit.Cell, true);
-            
+
             var data = ParseData(allowTextX: false);
             if (data.Count == 0 || data.All(s => s.YValues.Count == 0))
             {
@@ -835,7 +1223,7 @@ namespace BioSAK
             errorDialog.Owner = Window.GetWindow(this);
             if (errorDialog.ShowDialog() != true) return;
 
-            string xTitle = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == "X")?.Text ?? "X";
+            string xTitle = GetColumnTitle("X");
             var chartWindow = new ChartWindow(data, chartType, errorDialog.SelectedErrorType, xTitle);
             chartWindow.Owner = Window.GetWindow(this);
             chartWindow.Show();
@@ -846,7 +1234,7 @@ namespace BioSAK
             // Commit any pending edits
             DataGridMain.CommitEdit(DataGridEditingUnit.Row, true);
             DataGridMain.CommitEdit(DataGridEditingUnit.Cell, true);
-            
+
             var data = ParseData(allowTextX: true);
             if (data.Count == 0 || data.All(s => s.YValues.Count == 0))
             {
@@ -859,29 +1247,31 @@ namespace BioSAK
             errorDialog.Owner = Window.GetWindow(this);
             if (errorDialog.ShowDialog() != true) return;
 
-            string xTitle = columnTitleBoxes.FirstOrDefault(t => t.Tag?.ToString() == "X")?.Text ?? "X";
-            var barChartWindow = new BarChartWindow(data, chartType, errorDialog.SelectedErrorType, xTitle, 
+            string xTitle = GetColumnTitle("X");
+            var barChartWindow = new BarChartWindow(data, chartType, errorDialog.SelectedErrorType, xTitle,
                 errorDialog.SelectedDirection);
             barChartWindow.Owner = Window.GetWindow(this);
             barChartWindow.Show();
         }
 
+        #endregion
+
+        #region Sample Data
+
         // Load sample data
         public void LoadSampleData(string chartType)
         {
             ClearAll_Click(null, null);
-            
+
             // Helper to safely set cell value
             void SetCell(int row, string col, string val)
             {
                 if (dataTable.Columns.Contains(col) && row < dataTable.Rows.Count)
                     dataTable.Rows[row][col] = val;
             }
-            
+
             if (chartType == "MultiGroup")
             {
-                // Multi Factors uses Enter Replicates mode (Y0_0, Y0_1, Y0_2 are replicates)
-                // Each row is one X value with 3 replicates per Y series
                 SetCell(0, "X_0", "Control");
                 SetCell(0, "Y0_0", "10"); SetCell(0, "Y0_1", "12"); SetCell(0, "Y0_2", "11");
                 SetCell(0, "Y1_0", "15"); SetCell(0, "Y1_1", "14"); SetCell(0, "Y1_2", "16");
@@ -899,16 +1289,12 @@ namespace BioSAK
             }
             else if (chartType == "Column")
             {
-                // Column chart: X is not used, each Y series is a bar
-                // Multiple rows are replicates for each Y series
-                // Y1 replicates
                 SetCell(0, "Y0_0", "10"); SetCell(0, "Y1_0", "15"); SetCell(0, "Y2_0", "12");
                 SetCell(1, "Y0_0", "12"); SetCell(1, "Y1_0", "14"); SetCell(1, "Y2_0", "11");
                 SetCell(2, "Y0_0", "11"); SetCell(2, "Y1_0", "16"); SetCell(2, "Y2_0", "13");
             }
             else
             {
-                // Sample X-Y data
                 SetCell(0, "X_0", "1"); SetCell(0, "Y0_0", "2.1"); SetCell(0, "Y1_0", "1.8");
                 SetCell(1, "X_0", "2"); SetCell(1, "Y0_0", "4.2"); SetCell(1, "Y1_0", "3.5");
                 SetCell(2, "X_0", "3"); SetCell(2, "Y0_0", "5.8"); SetCell(2, "Y1_0", "5.2");
@@ -918,6 +1304,8 @@ namespace BioSAK
 
             DataGridMain.Items.Refresh();
         }
+
+        #endregion
     }
 
     public class ChartDataSeries

@@ -1289,7 +1289,209 @@ namespace BioSAK.Pages
             }
             return result;
         }
+        #region .xak Save/Load
 
+        private void SaveXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var wb = new WesternBlotData
+                {
+                    BlotWidth = BlotW,
+                    LabelWidth = LabelW,
+                    RowSpacing = Gap,
+                    FontSize = FSize,
+                    LaneCount = Cols,
+                    LaneXFractions = new List<double>(_vm.LaneXFractions),
+                    LeftBoundFrac = _vm.LeftBoundFrac,
+                    RightBoundFrac = _vm.RightBoundFrac
+                };
+
+                // Blot images → Base64
+                foreach (var blot in _vm.Blots)
+                {
+                    wb.Blots.Add(new WBBlotEntry
+                    {
+                        Name = blot.Name,
+                        Prefix = blot.Prefix,
+                        Index = blot.Index,
+                        OriginalPath = blot.FilePath,
+                        ImageBase64 = XakFileManager.ImageToBase64(blot.Image)
+                    });
+                }
+
+                // Condition rows (use RowLabel, not Label)
+                foreach (var row in _vm.ConditionRows)
+                {
+                    wb.ConditionRows.Add(new WBConditionRow
+                    {
+                        RowLabel = row.RowLabel,
+                        CellValues = row.Cells.Select(c => c.Value).ToList(),
+                        PatternCycle = row.PatternCycle
+                    });
+                }
+
+                // Top labels
+                foreach (var lbl in _vm.TopLabels)
+                {
+                    wb.TopLabels.Add(new WBTopLabel
+                    {
+                        Text = lbl.Text,
+                        StartLane = lbl.StartLane,
+                        EndLane = lbl.EndLane
+                    });
+                }
+
+                // Markers
+                foreach (var mk in _vm.Markers)
+                {
+                    wb.Markers.Add(new WBMarker
+                    {
+                        Label = mk.Label,
+                        YFraction = mk.YFraction
+                    });
+                }
+
+                // Editor state
+                if (_editorSourceImage != null)
+                {
+                    wb.EditorState = new WBEditorState
+                    {
+                        Rotation = _edRotation,
+                        CropL = _edCropL,
+                        CropR = _edCropR,
+                        CropT = _edCropT,
+                        CropB = _edCropB,
+                        LevelMin = _edLvMin,
+                        LevelMax = _edLvMax,
+                        Grayscale = _edGrayscale
+                    };
+                }
+
+                var doc = new XakDocument
+                {
+                    Module = "WesternBlot",
+                    WesternBlot = wb,
+                    Description = $"{_vm.Blots.Count} blots, {Cols} lanes"
+                };
+
+                string name = _vm.Blots.Count > 0 ? $"wb_{_vm.Blots[0].Name}" : "western_blot";
+                XakFileManager.Save(doc, name);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save:\n{ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var doc = XakFileManager.Open("WesternBlot");
+                if (doc?.WesternBlot == null) return;
+
+                var wb = doc.WesternBlot;
+
+                // Clear current state
+                _vm.Blots.Clear();
+                _vm.ConditionRows.Clear();
+                _vm.TopLabels.Clear();
+                _vm.Markers.Clear();
+                _vm.LaneXFractions.Clear();
+
+                // Restore layout settings
+                if (TxtBlotWidth != null) TxtBlotWidth.Text = wb.BlotWidth.ToString();
+                if (TxtLabelWidth != null) TxtLabelWidth.Text = wb.LabelWidth.ToString();
+                if (TxtRowSpacing != null) TxtRowSpacing.Text = wb.RowSpacing.ToString();
+                if (TxtFontSize != null) TxtFontSize.Text = wb.FontSize.ToString();
+                if (TxtColumnCount != null) TxtColumnCount.Text = wb.LaneCount.ToString();
+
+                // Restore blot images from Base64
+                foreach (var blotData in wb.Blots)
+                {
+                    var image = XakFileManager.Base64ToImage(blotData.ImageBase64);
+                    if (image != null)
+                    {
+                        _vm.Blots.Add(new BlotEntry
+                        {
+                            Name = blotData.Name,
+                            Prefix = blotData.Prefix,
+                            Index = blotData.Index,
+                            FilePath = blotData.OriginalPath,
+                            Image = image
+                        });
+                    }
+                }
+
+                // Restore lane positions
+                foreach (var frac in wb.LaneXFractions)
+                    _vm.LaneXFractions.Add(frac);
+                _vm.LeftBoundFrac = wb.LeftBoundFrac;
+                _vm.RightBoundFrac = wb.RightBoundFrac;
+
+                // Restore condition rows
+                // Use SyncCells (page method) to init cells, then fill values
+                foreach (var rowData in wb.ConditionRows)
+                {
+                    var row = new ConditionRow { RowLabel = rowData.RowLabel };
+
+                    // SyncCells adds ConditionCell objects to row.Cells
+                    SyncCells(row, wb.LaneCount);
+
+                    // Fill cell values
+                    for (int i = 0; i < Math.Min(rowData.CellValues.Count, row.Cells.Count); i++)
+                        row.Cells[i].Value = rowData.CellValues[i];
+
+                    WireRow(row);
+                    _vm.ConditionRows.Add(row);
+                }
+
+                // Restore top labels
+                foreach (var lblData in wb.TopLabels)
+                {
+                    var tl = new TopLabelEntry
+                    {
+                        Text = lblData.Text,
+                        StartLane = lblData.StartLane,
+                        EndLane = lblData.EndLane
+                    };
+                    tl.PropertyChanged += (s, ev) => UpdatePreview();
+                    _vm.TopLabels.Add(tl);
+                }
+
+                // Restore markers
+                foreach (var mkData in wb.Markers)
+                {
+                    _vm.Markers.Add(new MarkerEntry
+                    {
+                        Label = mkData.Label,
+                        YFraction = mkData.YFraction
+                    });
+                }
+
+                // Restore editor state
+                if (wb.EditorState != null)
+                {
+                    _edRotation = wb.EditorState.Rotation;
+                    _edCropL = wb.EditorState.CropL;
+                    _edCropR = wb.EditorState.CropR;
+                    _edCropT = wb.EditorState.CropT;
+                    _edCropB = wb.EditorState.CropB;
+                    _edLvMin = wb.EditorState.LevelMin;
+                    _edLvMax = wb.EditorState.LevelMax;
+                    _edGrayscale = wb.EditorState.Grayscale;
+                }
+
+                UpdatePreview();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load:\n{ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
         // ── Index helpers ─────────────────────────────────────
 
         private static int NearestIndex(List<double> list, double val)

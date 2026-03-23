@@ -18,26 +18,91 @@
             <Setter Property="SelectionMode" Value="Extended"/>
             <Setter Property="SelectionUnit" Value="Cell"/>
         </Style>
+
+        <!-- Tab Button Style -->
+        <Style x:Key="TabButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="1,1,1,0"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Foreground" Value="#888"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8,8,0,0" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E8F4FD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Page.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="20" PreviewKeyDown="Page_PreviewKeyDown">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-            <TextBlock Text="📊 Graph Generator" FontSize="24" FontWeight="Bold" Foreground="#333"/>
-            <Button Content="← Back to Selection" Margin="20,0,0,0" Padding="10,5"
-                    Background="Transparent" BorderThickness="0" Foreground="#4FC3F7"
-                    Cursor="Hand" Click="BackToSelection_Click"/>
-        </StackPanel>
+        <!-- Row 0: Title + File Buttons -->
+        <Grid Grid.Row="0" Margin="0,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- Settings Panel -->
-        <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="15" Margin="0,0,0,15">
+            <TextBlock Grid.Column="0" Text="📊 Graph Generator" FontSize="24" FontWeight="Bold" 
+                       Foreground="#333" VerticalAlignment="Center"/>
+
+            <!-- File Operations -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="📂 Open .xak" Padding="12,6" Margin="0,0,5,0"
+                        Background="#607D8B" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="OpenXak_Click" ToolTip="Open saved graph data (Ctrl+O)"/>
+                <Button Content="💾 Save .xak" Padding="12,6" Margin="0,0,5,0"
+                        Background="#00897B" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="SaveXak_Click" ToolTip="Save current graph data (Ctrl+S)"/>
+                <Button Content="📋 Load Sample Data" Padding="12,6" Margin="10,0,0,0"
+                        Background="#78909C" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" Click="LoadSampleData_Click" ToolTip="Load sample data for current chart type"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 1: Tab Buttons -->
+        <Border Grid.Row="1" Margin="0,10,0,0" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="TabXY" Content="📈  X-Y Graph" 
+                        Style="{StaticResource TabButtonStyle}" Click="TabXY_Click"
+                        Background="White" Foreground="#333" BorderBrush="#4FC3F7"/>
+                <Button x:Name="TabColumn" Content="📊  Column" 
+                        Style="{StaticResource TabButtonStyle}" Click="TabColumn_Click"/>
+                <Button x:Name="TabMultiGroup" Content="📊  Multi Factors" 
+                        Style="{StaticResource TabButtonStyle}" Click="TabMultiGroup_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Row 2: Settings Panel -->
+        <Border x:Name="SettingsPanel" Grid.Row="2" Background="White" CornerRadius="0,10,10,10" Padding="15" Margin="0,0,0,15"
+                BorderBrush="#E0E0E0" BorderThickness="1"
+                IsKeyboardFocusWithinChanged="SettingsPanel_FocusChanged">
             <Border.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
             </Border.Effect>
@@ -85,15 +150,15 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Apply Button -->
-                <Button Grid.Column="3" Content="Apply Settings" HorizontalAlignment="Left"
-                        Padding="15,8" Background="#4CAF50" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="ApplySettings_Click"/>
+                <!-- Auto-apply hint -->
+                <TextBlock Grid.Column="3" Text="⚡ Settings auto-apply on click outside" 
+                           HorizontalAlignment="Left" VerticalAlignment="Center"
+                           Foreground="#BDBDBD" FontSize="11" FontStyle="Italic"/>
             </Grid>
         </Border>
 
-        <!-- Data Grid Section -->
-        <Border Grid.Row="2" Background="White" CornerRadius="10" Padding="10">
+        <!-- Row 3: Data Grid Section -->
+        <Border Grid.Row="3" Background="White" CornerRadius="10" Padding="10">
             <Border.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
             </Border.Effect>
@@ -146,8 +211,8 @@
             </Grid>
         </Border>
 
-        <!-- Bottom Buttons -->
-        <Border Grid.Row="3" Margin="0,15,0,0">
+        <!-- Row 4: Bottom Buttons -->
+        <Border Grid.Row="4" Margin="0,15,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

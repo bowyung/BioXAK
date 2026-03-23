@@ -15,8 +15,30 @@ namespace BioSAK
         public string XAxisTitle { get; private set; } = "";
         public string YAxisTitle { get; private set; } = "";
         public string SelectedChartType { get; private set; } = "Line";
+        public bool ShowConnectLines { get; private set; } = false;
+        public bool ShowRegression { get; private set; } = false;
+        public int RegressionDegree { get; private set; } = 1;
+        public bool ShowRegressionEquation { get; private set; } = true;
 
-        public ChartSettingsWindow(List<ChartDataSeries> series, string chartTitle, string xTitle, string yTitle, string chartType)
+        // Axis settings
+        public bool IsXAutoScale { get; private set; } = true;
+        public double? XMin { get; private set; }
+        public double? XMax { get; private set; }
+        public double? XInterval { get; private set; }
+        public bool XLogScaleEnabled { get; private set; } = false;
+        public double XLogBaseValue { get; private set; } = 10;
+
+        public bool IsYAutoScale { get; private set; } = true;
+        public double? YMin { get; private set; }
+        public double? YMax { get; private set; }
+        public double? YInterval { get; private set; }
+        public bool YLogScaleEnabled { get; private set; } = false;
+        public double YLogBaseValue { get; private set; } = 10;
+
+        public ChartSettingsWindow(List<ChartDataSeries> series, string chartTitle, string xTitle, string yTitle, string chartType,
+            bool showConnectLines = false, bool showRegression = false, int regressionDegree = 1, bool showRegressionEquation = true,
+            bool xAutoScale = true, double? xMin = null, double? xMax = null, double? xInterval = null, bool xLog = false, double xLogBase = 10,
+            bool yAutoScale = true, double? yMin = null, double? yMax = null, double? yInterval = null, bool yLog = false, double yLogBase = 10)
         {
             InitializeComponent();
 
@@ -25,6 +47,14 @@ namespace BioSAK
             XAxisTitle = xTitle;
             YAxisTitle = yTitle;
             SelectedChartType = chartType;
+            ShowConnectLines = showConnectLines;
+            ShowRegression = showRegression;
+            RegressionDegree = regressionDegree;
+            ShowRegressionEquation = showRegressionEquation;
+            IsXAutoScale = xAutoScale; XMin = xMin; XMax = xMax; XInterval = xInterval;
+            XLogScaleEnabled = xLog; XLogBaseValue = xLogBase;
+            IsYAutoScale = yAutoScale; YMin = yMin; YMax = yMax; YInterval = yInterval;
+            YLogScaleEnabled = yLog; YLogBaseValue = yLogBase;
 
             // Initialize UI after loading
             this.Loaded += (s, e) =>
@@ -50,6 +80,36 @@ namespace BioSAK
                         VolcanoTypeRadio.IsChecked = true;
                         break;
                 }
+
+                // Scatter connect lines
+                ConnectLinesCheck.IsChecked = showConnectLines;
+
+                // Regression settings
+                RegressionCheck.IsChecked = showRegression;
+                RegressionOptions.IsEnabled = showRegression;
+                DegreeSlider.Value = regressionDegree;
+                DegreeLabel.Text = regressionDegree.ToString();
+                ShowEquationCheck.IsChecked = showRegressionEquation;
+                UpdateDegreeHint(regressionDegree);
+
+                // Axis settings
+                XAutoScale.IsChecked = xAutoScale;
+                XMinBox.IsEnabled = !xAutoScale; XMaxBox.IsEnabled = !xAutoScale; XIntervalBox.IsEnabled = !xAutoScale;
+                if (xMin.HasValue) XMinBox.Text = xMin.Value.ToString("G6");
+                if (xMax.HasValue) XMaxBox.Text = xMax.Value.ToString("G6");
+                if (xInterval.HasValue) XIntervalBox.Text = xInterval.Value.ToString("G6");
+                XLogScale.IsChecked = xLog;
+                XLogBase.Text = xLogBase.ToString();
+                XLogBase.IsEnabled = xLog;
+
+                YAutoScale.IsChecked = yAutoScale;
+                YMinBox.IsEnabled = !yAutoScale; YMaxBox.IsEnabled = !yAutoScale; YIntervalBox.IsEnabled = !yAutoScale;
+                if (yMin.HasValue) YMinBox.Text = yMin.Value.ToString("G6");
+                if (yMax.HasValue) YMaxBox.Text = yMax.Value.ToString("G6");
+                if (yInterval.HasValue) YIntervalBox.Text = yInterval.Value.ToString("G6");
+                YLogScale.IsChecked = yLog;
+                YLogBase.Text = yLogBase.ToString();
+                YLogBase.IsEnabled = yLog;
 
                 // Populate series selector
                 SeriesSelector.Items.Clear();
@@ -179,6 +239,26 @@ namespace BioSAK
             else if (VolcanoTypeRadio.IsChecked == true)
                 SelectedChartType = "Volcano";
 
+            ShowConnectLines = ConnectLinesCheck.IsChecked == true;
+            ShowRegression = RegressionCheck.IsChecked == true;
+            RegressionDegree = (int)DegreeSlider.Value;
+            ShowRegressionEquation = ShowEquationCheck.IsChecked == true;
+
+            // Axis settings
+            IsXAutoScale = XAutoScale.IsChecked == true;
+            XMin = double.TryParse(XMinBox.Text, out double xmin) ? xmin : null;
+            XMax = double.TryParse(XMaxBox.Text, out double xmax) ? xmax : null;
+            XInterval = double.TryParse(XIntervalBox.Text, out double xint) ? xint : null;
+            XLogScaleEnabled = XLogScale.IsChecked == true;
+            XLogBaseValue = double.TryParse(XLogBase.Text, out double xlb) && xlb > 1 ? xlb : 10;
+
+            IsYAutoScale = YAutoScale.IsChecked == true;
+            YMin = double.TryParse(YMinBox.Text, out double ymin) ? ymin : null;
+            YMax = double.TryParse(YMaxBox.Text, out double ymax) ? ymax : null;
+            YInterval = double.TryParse(YIntervalBox.Text, out double yint) ? yint : null;
+            YLogScaleEnabled = YLogScale.IsChecked == true;
+            YLogBaseValue = double.TryParse(YLogBase.Text, out double ylb) && ylb > 1 ? ylb : 10;
+
             DialogResult = true;
             Close();
         }
@@ -187,6 +267,54 @@ namespace BioSAK
         {
             DialogResult = false;
             Close();
+        }
+
+        private void RegressionCheck_Changed(object sender, RoutedEventArgs e)
+        {
+            if (RegressionOptions != null)
+                RegressionOptions.IsEnabled = RegressionCheck.IsChecked == true;
+        }
+
+        private void Degree_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (DegreeLabel == null) return;
+            int deg = (int)DegreeSlider.Value;
+            DegreeLabel.Text = deg.ToString();
+            UpdateDegreeHint(deg);
+        }
+
+        private void UpdateDegreeHint(int degree)
+        {
+            if (DegreeHint == null) return;
+            DegreeHint.Text = degree switch
+            {
+                1 => "(Linear)",
+                2 => "(Quadratic)",
+                3 => "(Cubic)",
+                _ => $"(Degree {degree})"
+            };
+        }
+
+        private void AxisAuto_Changed(object sender, RoutedEventArgs e)
+        {
+            if (XMinBox == null || YMinBox == null) return; // Not loaded yet
+
+            bool xAuto = XAutoScale.IsChecked == true;
+            XMinBox.IsEnabled = !xAuto;
+            XMaxBox.IsEnabled = !xAuto;
+            XIntervalBox.IsEnabled = !xAuto;
+
+            bool yAuto = YAutoScale.IsChecked == true;
+            YMinBox.IsEnabled = !yAuto;
+            YMaxBox.IsEnabled = !yAuto;
+            YIntervalBox.IsEnabled = !yAuto;
+        }
+
+        private void LogScale_Changed(object sender, RoutedEventArgs e)
+        {
+            if (XLogBase == null) return; // Not loaded yet
+            XLogBase.IsEnabled = XLogScale.IsChecked == true;
+            YLogBase.IsEnabled = YLogScale.IsChecked == true;
         }
     }
 }

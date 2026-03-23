@@ -1157,7 +1157,8 @@ namespace BioSAK
             yAxisClickArea.MouseLeftButtonDown += (s, e) =>
             {
                 if (e.ClickCount == 2)
-                    OpenAxisSettings(true);
+                    e.Handled = true; 
+                OpenAxisSettings(true);
             };
             yAxisClickArea.ToolTip = "Double-click to edit Y axis settings";
             Canvas.SetLeft(yAxisClickArea, 0);
@@ -1176,7 +1177,8 @@ namespace BioSAK
             xt.MouseLeftButtonDown += (s, e) => 
             {
                 if (e.ClickCount == 2)
-                    OpenAxisSettings(false);
+                    e.Handled = true;
+                OpenAxisSettings(false);
             };
             xt.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Canvas.SetLeft(xt, marginLeft + (plotWidth - xt.DesiredSize.Width) / 2);
@@ -1196,7 +1198,9 @@ namespace BioSAK
             yt.MouseLeftButtonDown += (s, e) => 
             {
                 if (e.ClickCount == 2)
-                    OpenAxisSettings(true);
+                    e.Handled = true;
+
+                OpenAxisSettings(true);
             };
             yt.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Canvas.SetLeft(yt, 10);
@@ -1277,33 +1281,42 @@ namespace BioSAK
             currentMax = CalculateNiceYMax(currentMax * 1.1);
 
             var dialog = new AxisSettingsDialog(
-                isYAxis, 
+                isYAxis,
                 isYAxis ? yAxisTitle : xAxisTitle,
                 yMin, autoScale ? currentMax : yMax,
-                showGridLines, gridLineStyle, gridLineColor, 
+                showGridLines, gridLineStyle, gridLineColor,
                 mainScaleInterval, showSubScale, subScaleDivisions, logScale);
             dialog.Owner = this;
-            
-            if (dialog.ShowDialog() == true)
+            bool? result = dialog.ShowDialog();
+
+            // Force cleanup on next dispatcher frame — absorbs phantom mouse events from dialog close
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                isSelecting = false;
+                isDragging = false;
+                isResizing = false;
+                SelectionRect.Visibility = Visibility.Collapsed;
+                ChartCanvas.ReleaseMouseCapture();
+            }), System.Windows.Threading.DispatcherPriority.Input);
+
+            if (result == true)
             {
                 if (isYAxis)
                 {
                     yAxisTitle = dialog.AxisTitle;
                     autoScale = dialog.AutoScale;
                     logScale = dialog.LogScale;
-                    
+
                     if (!dialog.AutoScale)
                     {
                         yMin = dialog.MinValue;
                         yMax = dialog.MaxValue;
                     }
-                    
-                    // Tick mark settings
+
                     mainScaleInterval = dialog.MainScaleInterval;
                     showSubScale = dialog.ShowSubScale;
                     subScaleDivisions = dialog.SubScaleDivisions;
-                    
-                    // Store axis break settings
+
                     enableAxisBreak = dialog.EnableBreak;
                     axisBreakStart = dialog.BreakStart;
                     axisBreakEnd = dialog.BreakEnd;
@@ -1312,15 +1325,14 @@ namespace BioSAK
                 {
                     xAxisTitle = dialog.AxisTitle;
                 }
-                
+
                 showGridLines = dialog.ShowGridLines;
                 gridLineStyle = dialog.GridLineStyle;
                 gridLineColor = dialog.GridLineColor;
-                
+
                 DrawChart();
             }
         }
-
         private void DrawTitle()
         {
             double width = ChartCanvas.ActualWidth;
@@ -1508,7 +1520,12 @@ namespace BioSAK
             var dialog = new BarChartSettingsWindow(dataSeries, chartTitle, xAxisTitle, yAxisTitle,
                 errorBarThickness, showDataPoints, dataPointSize);
             dialog.Owner = this;
-            if (dialog.ShowDialog() == true)
+            bool? result = dialog.ShowDialog();
+            isSelecting = false;
+            isDragging = false;
+            SelectionRect.Visibility = Visibility.Collapsed;
+            ChartCanvas.ReleaseMouseCapture();
+            if (result == true)
             {
                 chartTitle = dialog.ChartTitle;
                 xAxisTitle = dialog.XAxisTitle;

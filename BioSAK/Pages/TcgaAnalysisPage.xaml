@@ -198,8 +198,23 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="TCGA Database Analysis" 
-                           FontSize="22" FontWeight="Bold" Foreground="#1976D2" Margin="0,0,0,15"/>
+                <Grid Grid.Row="0" Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="TCGA Database Analysis" 
+                               FontSize="22" FontWeight="Bold" Foreground="#1976D2"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="📂 Open .xak" Padding="10,5" Margin="0,0,5,0"
+                                Background="#607D8B" Foreground="White" BorderThickness="0"
+                                Cursor="Hand" Click="OpenXak_Click" ToolTip="Open saved analysis (Ctrl+O)"/>
+                        <Button Content="💾 Save .xak" Padding="10,5"
+                                Background="#00897B" Foreground="White" BorderThickness="0"
+                                Cursor="Hand" Click="SaveXak_Click" ToolTip="Save analysis state (Ctrl+S)"/>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Cancer Selection -->
                 <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15">

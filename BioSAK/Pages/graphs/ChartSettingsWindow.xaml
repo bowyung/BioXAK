@@ -2,13 +2,15 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Chart Settings" 
-        Height="550" Width="480"
+        Height="820" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#F5F5F5">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -49,15 +51,98 @@
 
         <!-- Chart Type -->
         <GroupBox Grid.Row="1" Header="Chart Type" Margin="0,0,0,15" Padding="10">
-            <StackPanel Orientation="Horizontal">
-                <RadioButton x:Name="LineTypeRadio" Content="Line" Margin="0,0,20,0"/>
-                <RadioButton x:Name="ScatterTypeRadio" Content="Scatter" Margin="0,0,20,0"/>
-                <RadioButton x:Name="VolcanoTypeRadio" Content="Volcano"/>
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="LineTypeRadio" Content="Line" Margin="0,0,20,0"/>
+                    <RadioButton x:Name="ScatterTypeRadio" Content="Scatter" Margin="0,0,20,0"/>
+                    <RadioButton x:Name="VolcanoTypeRadio" Content="Volcano"/>
+                </StackPanel>
+                <CheckBox x:Name="ConnectLinesCheck" Content="Connect scatter points with lines" 
+                          Margin="0,8,0,0" Foreground="#555"/>
             </StackPanel>
         </GroupBox>
 
+        <!-- Regression / Trendline -->
+        <GroupBox Grid.Row="2" Header="Regression / Trendline" Margin="0,0,0,15" Padding="10">
+            <StackPanel>
+                <CheckBox x:Name="RegressionCheck" Content="Show regression line" Margin="0,0,0,8"
+                          Checked="RegressionCheck_Changed" Unchecked="RegressionCheck_Changed"/>
+                <StackPanel x:Name="RegressionOptions" Orientation="Vertical" Margin="20,0,0,0"
+                            IsEnabled="False">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="Polynomial Degree:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider x:Name="DegreeSlider" Width="120" Minimum="1" Maximum="6" 
+                                Value="1" TickFrequency="1" IsSnapToTickEnabled="True"
+                                ValueChanged="Degree_Changed"/>
+                        <TextBlock x:Name="DegreeLabel" Text="1" Margin="8,0,0,0" 
+                                   VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="DegreeHint" Text="(Linear)" Margin="5,0,0,0" 
+                                   VerticalAlignment="Center" Foreground="#999" FontSize="11"/>
+                    </StackPanel>
+                    <CheckBox x:Name="ShowEquationCheck" Content="Show equation &amp; R² on chart" 
+                              IsChecked="True" Margin="0,3,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Axis Settings -->
+        <GroupBox Grid.Row="3" Header="Axis Settings" Margin="0,0,0,15" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- X Axis -->
+                <GroupBox Grid.Row="0" Header="X Axis" Margin="0,0,0,8" Padding="8" FontSize="11">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <CheckBox x:Name="XAutoScale" Content="Auto" IsChecked="True" 
+                                      Checked="AxisAuto_Changed" Unchecked="AxisAuto_Changed" 
+                                      VerticalAlignment="Center" Margin="0,0,15,0"/>
+                            <TextBlock Text="Min:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="XMinBox" Text="" Width="60" Margin="0,0,10,0" IsEnabled="False"/>
+                            <TextBlock Text="Max:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="XMaxBox" Text="" Width="60" Margin="0,0,10,0" IsEnabled="False"/>
+                            <TextBlock Text="Interval:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="XIntervalBox" Text="" Width="50" IsEnabled="False"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="XLogScale" Content="Log Scale" Margin="0,0,10,0"
+                                      Checked="LogScale_Changed" Unchecked="LogScale_Changed"/>
+                            <TextBlock Text="Base:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="XLogBase" Text="10" Width="40" IsEnabled="False"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Y Axis -->
+                <GroupBox Grid.Row="1" Header="Y Axis" Padding="8" FontSize="11">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <CheckBox x:Name="YAutoScale" Content="Auto" IsChecked="True" 
+                                      Checked="AxisAuto_Changed" Unchecked="AxisAuto_Changed"
+                                      VerticalAlignment="Center" Margin="0,0,15,0"/>
+                            <TextBlock Text="Min:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="YMinBox" Text="" Width="60" Margin="0,0,10,0" IsEnabled="False"/>
+                            <TextBlock Text="Max:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="YMaxBox" Text="" Width="60" Margin="0,0,10,0" IsEnabled="False"/>
+                            <TextBlock Text="Interval:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="YIntervalBox" Text="" Width="50" IsEnabled="False"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="YLogScale" Content="Log Scale" Margin="0,0,10,0"
+                                      Checked="LogScale_Changed" Unchecked="LogScale_Changed"/>
+                            <TextBlock Text="Base:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="YLogBase" Text="10" Width="40" IsEnabled="False"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+        </GroupBox>
+
         <!-- Series Settings -->
-        <GroupBox Grid.Row="2" Header="Series Settings" Padding="10">
+        <GroupBox Grid.Row="4" Header="Series Settings" Padding="10">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -119,7 +204,7 @@
         </GroupBox>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <Button Content="Cancel" Width="80" Padding="5,8" Margin="0,0,10,0"
                     Background="#EEE" BorderThickness="0" Cursor="Hand"
                     Click="Cancel_Click"/>

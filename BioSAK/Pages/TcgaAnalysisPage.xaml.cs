@@ -89,7 +89,18 @@ namespace BioSAK.Pages
             e.Handled = true;
             e.Column.SortDirection = null;
 
-            string header = e.Column.Header?.ToString() ?? "";
+            // 用 Binding 路徑判斷欄位，避免 UI 語言切換後排序失效
+            string header = e.Column.SortMemberPath switch
+            {
+                "GeneName" => "Gene",
+                "GeneId" => "Gene ID",
+                "PearsonR" => "Pearson r",
+                "AbsR" => "|r|",
+                "PValueDisplay" => "P-value",
+                "FDRDisplay" => "FDR",
+                "Direction" => "Direction",
+                _ => e.Column.Header?.ToString() ?? ""
+            };
 
             if (_coExprSortColumn == header)
             {
@@ -1899,11 +1910,33 @@ namespace BioSAK.Pages
         {
             try
             {
+                // Determine which tabs have analysis results
+                var analyzedTabs = new List<int>();
+                if (_currentBoxPlotStats != null && _currentBoxPlotStats.Count > 0) analyzedTabs.Add(0);
+                if (_currentCorrelationMatrix != null) analyzedTabs.Add(1);
+                if (_currentScatterPoints != null && _currentScatterPoints.Count > 0) analyzedTabs.Add(2);
+                if (_currentSurvivalData != null && _currentSurvivalData.TotalSamples > 0) analyzedTabs.Add(3);
+                if (_currentVolcanoData != null && _currentVolcanoData.Points.Count > 0) analyzedTabs.Add(4);
+                if (_currentCoExprData != null) analyzedTabs.Add(5);
+
+                // Collect Heatmap gene list
+                var heatmapGenes = CorrelationGenesTextBox?.Text?
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(g => g.Trim()).Where(g => !string.IsNullOrEmpty(g)).Distinct().ToList()
+                    ?? new List<string>();
+
+                // Determine condition
+                string condition = GetSelectedCondition();
+
                 var tcga = new TcgaData
                 {
                     GeneSymbol = BoxPlotGeneIdTextBox?.Text?.Trim() ?? "",
                     SelectedCancerTypes = _selectedCancers?.Select(c => c.project_id).ToList() ?? new List<string>(),
                     ActiveTabIndex = AnalysisTabControl?.SelectedIndex ?? 0,
+                    IsMultiSelect = MultiSelectRadio?.IsChecked == true,
+                    Condition = condition,
+                    HeatmapGenes = heatmapGenes,
+                    AnalyzedTabs = analyzedTabs,
 
                     // Scatter settings
                     Scatter = new TcgaScatterSettings
@@ -1916,7 +1949,9 @@ namespace BioSAK.Pages
                     // KM settings
                     KaplanMeier = new TcgaKMSettings
                     {
-                        CancerType = _currentKMCancer ?? ""
+                        GeneId = KMGeneIdTextBox?.Text?.Trim() ?? "",
+                        CancerType = _currentKMCancer ?? "",
+                        Percentile = KMPercentileSlider?.Value ?? 50
                     },
 
                     // Volcano settings
@@ -1941,8 +1976,8 @@ namespace BioSAK.Pages
                     }
                 };
 
-                // Cache: Box Plot stats
-                if (_currentBoxPlotStats != null && _currentBoxPlotStats.Count > 0)
+                // Cache data (keep existing cache logic if any)
+                if (_currentBoxPlotStats != null)
                 {
                     tcga.BoxPlotCache = new TcgaBoxPlotCache
                     {
@@ -1959,73 +1994,18 @@ namespace BioSAK.Pages
                     };
                 }
 
-                // Cache: Scatter
-                if (_currentScatterPoints != null && _currentScatterPoints.Count > 0)
-                {
-                    tcga.ScatterCache = new TcgaScatterCache
-                    {
-                        XValues = _currentScatterPoints.Select(p => p.X).ToList(),
-                        YValues = _currentScatterPoints.Select(p => p.Y).ToList(),
-                        R = _scatterR,
-                        R2 = _scatterR2,
-                        PValue = _scatterPValue,
-                        Slope = _scatterSlope,
-                        Intercept = _scatterIntercept,
-                        N = _scatterN
-                    };
-                }
-
-                // Cache: KM
-                if (_currentKMResult != null)
-                {
-                    tcga.KMCache = new TcgaKMCache
-                    {
-                        LogRankP = _currentKMResult.LogRankPValue,
-                        LogRankChiSq = _currentKMResult.LogRankChiSquare,
-                        HighCurve = _currentKMResult.HighExpression?.Curve?
-                            .Select(p => new TcgaKMPoint { Time = p.Time, Survival = p.Survival, AtRisk = p.AtRisk })
-                            .ToList() ?? new(),
-                        LowCurve = _currentKMResult.LowExpression?.Curve?
-                            .Select(p => new TcgaKMPoint { Time = p.Time, Survival = p.Survival, AtRisk = p.AtRisk })
-                            .ToList() ?? new()
-                    };
-                }
-
-                // Cache: Volcano (top 500 significant genes)
-                if (_volcanoFullList != null && _volcanoFullList.Count > 0)
-                {
-                    tcga.VolcanoCache = new TcgaVolcanoCache
-                    {
-                        Points = _volcanoFullList
-                            .Where(p => p.FDR < (tcga.Volcano.FdrThreshold * 2))
-                            .OrderBy(p => p.PValue)
-                            .Take(500)
-                            .Select(p => new TcgaVolcanoPoint
-                            {
-                                GeneId = p.GeneId,
-                                GeneName = p.GeneName,
-                                Log2FC = p.Log2FoldChange,
-                                PValue = p.PValue,
-                                FDR = p.FDR
-                            }).ToList()
-                    };
-                }
-
-                // Cache: Co-Expression (top 200)
-                if (_currentCoExprDisplayRows != null && _currentCoExprDisplayRows.Count > 0)
+                if (_currentCoExprData != null)
                 {
                     tcga.CoExprCache = new TcgaCoExprCache
                     {
-                        Results = _currentCoExprDisplayRows
-                            .Take(200)
-                            .Select(r => new TcgaCoExprRow
-                            {
-                                GeneId = r.GeneId,
-                                GeneName = r.GeneName,
-                                PearsonR = r.PearsonR,
-                                PValue = r.PValue,
-                                FDR = r.FDR
-                            }).ToList()
+                        Results = _currentCoExprDisplayRows?.Select(r => new TcgaCoExprRow
+                        {
+                            GeneId = r.GeneId,
+                            GeneName = r.GeneName,
+                            PearsonR = r.PearsonR,
+                            PValue = r.PValue,
+                            FDR = r.FDR
+                        }).ToList() ?? new List<TcgaCoExprRow>()
                     };
                 }
 
@@ -2033,7 +2013,7 @@ namespace BioSAK.Pages
                 {
                     Module = "TcgaAnalysis",
                     TcgaAnalysis = tcga,
-                    Description = $"Gene: {tcga.GeneSymbol}, Cancers: {tcga.SelectedCancerTypes.Count}"
+                    Description = $"Gene: {tcga.GeneSymbol}, Cancers: {tcga.SelectedCancerTypes.Count}, Analyzed: {analyzedTabs.Count} tabs"
                 };
 
                 XakFileManager.Save(doc, $"tcga_{tcga.GeneSymbol}");
@@ -2043,7 +2023,6 @@ namespace BioSAK.Pages
                 MessageBox.Show($"Failed to save:\n{ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void OpenXak_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -2053,38 +2032,109 @@ namespace BioSAK.Pages
 
                 var t = doc.TcgaAnalysis;
 
-                // Restore gene input
-                if (BoxPlotGeneIdTextBox != null && !string.IsNullOrEmpty(t.GeneSymbol))
-                    BoxPlotGeneIdTextBox.Text = t.GeneSymbol;
+                // ── 1. Restore selection mode ──
+                if (t.IsMultiSelect)
+                {
+                    if (MultiSelectRadio != null) MultiSelectRadio.IsChecked = true;
+                }
+                else
+                {
+                    if (SingleSelectRadio != null) SingleSelectRadio.IsChecked = true;
+                }
 
-                // Restore cancer selection
+                // ── 2. Restore cancer selection ──
                 if (_allProjects != null && t.SelectedCancerTypes.Count > 0)
                 {
                     _selectedCancers.Clear();
-                    foreach (var projId in t.SelectedCancerTypes)
+                    _availableCancers.Clear();
+
+                    var selectedSet = new HashSet<string>(t.SelectedCancerTypes);
+                    foreach (var proj in _allProjects)
                     {
-                        var proj = _allProjects.FirstOrDefault(p => p.project_id == projId);
-                        if (proj != null) _selectedCancers.Add(proj);
+                        if (selectedSet.Contains(proj.project_id))
+                            _selectedCancers.Add(proj);
+                        else
+                            _availableCancers.Add(proj);
                     }
+
+                    // Sync Single-Select ComboBox
+                    if (!t.IsMultiSelect && SingleCancerComboBox != null && _selectedCancers.Count > 0)
+                    {
+                        var firstId = _selectedCancers.First().project_id;
+                        for (int i = 0; i < SingleCancerComboBox.Items.Count; i++)
+                        {
+                            if (SingleCancerComboBox.Items[i] is TcgaProjectIndex p && p.project_id == firstId)
+                            {
+                                SingleCancerComboBox.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (SelectedCountText != null)
+                        SelectedCountText.Text = $" ({_selectedCancers.Count})";
                 }
 
-                // Restore Volcano thresholds
+                // ── 3. Restore condition ──
+                switch (t.Condition)
+                {
+                    case "Tumor":
+                        if (ConditionTumorOnly != null) ConditionTumorOnly.IsChecked = true;
+                        break;
+                    case "Normal":
+                        if (ConditionNormalOnly != null) ConditionNormalOnly.IsChecked = true;
+                        break;
+                    default:
+                        if (ConditionBoth != null) ConditionBoth.IsChecked = true;
+                        break;
+                }
+
+                // ── 4. Restore gene input (Box Plot) ──
+                if (BoxPlotGeneIdTextBox != null && !string.IsNullOrEmpty(t.GeneSymbol))
+                    BoxPlotGeneIdTextBox.Text = t.GeneSymbol;
+
+                // ── 5. Restore Heatmap gene list ──
+                if (CorrelationGenesTextBox != null && t.HeatmapGenes.Count > 0)
+                    CorrelationGenesTextBox.Text = string.Join("\n", t.HeatmapGenes);
+
+                // ── 6. Restore Scatter settings ──
+                if (ScatterGeneXTextBox != null && !string.IsNullOrEmpty(t.Scatter.GeneX))
+                    ScatterGeneXTextBox.Text = t.Scatter.GeneX;
+                if (ScatterGeneYTextBox != null && !string.IsNullOrEmpty(t.Scatter.GeneY))
+                    ScatterGeneYTextBox.Text = t.Scatter.GeneY;
+
+                // ── 7. Restore KM settings ──
+                if (KMGeneIdTextBox != null && !string.IsNullOrEmpty(t.KaplanMeier.GeneId))
+                    KMGeneIdTextBox.Text = t.KaplanMeier.GeneId;
+                if (KMPercentileSlider != null && t.KaplanMeier.Percentile >= 10 && t.KaplanMeier.Percentile <= 90)
+                    KMPercentileSlider.Value = t.KaplanMeier.Percentile;
+
+                // ── 8. Restore Volcano thresholds ──
                 if (VolcanoFdrTextBox != null) VolcanoFdrTextBox.Text = t.Volcano.FdrThreshold.ToString();
                 if (VolcanoFcTextBox != null) VolcanoFcTextBox.Text = t.Volcano.FcThreshold.ToString();
 
-                // Restore Co-Expression settings
+                // ── 9. Restore Co-Expression settings ──
                 if (CoExprGeneTextBox != null && !string.IsNullOrEmpty(t.CoExpression.TargetGene))
                     CoExprGeneTextBox.Text = t.CoExpression.TargetGene;
                 if (CoExprFdrTextBox != null) CoExprFdrTextBox.Text = t.CoExpression.FdrThreshold.ToString();
                 if (CoExprMinRTextBox != null) CoExprMinRTextBox.Text = t.CoExpression.MinAbsR.ToString();
 
-                // Restore active tab
+                // ── 10. Restore active tab ──
                 if (AnalysisTabControl != null && t.ActiveTabIndex >= 0)
                     AnalysisTabControl.SelectedIndex = t.ActiveTabIndex;
 
-                // NOTE: Cached data is stored but not auto-rendered.
-                // User clicks "Generate"/"Analyze" to recompute, or a future
-                // enhancement could use cache to render immediately.
+                // ── 11. Auto-trigger analyses for tabs that had results ──
+                if (t.AnalyzedTabs.Count > 0)
+                {
+                    var tabsToAnalyze = new Queue<int>(t.AnalyzedTabs);
+                    int savedActiveTab = t.ActiveTabIndex;
+
+                    // Use Dispatcher to run after UI restore completes
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        RunNextAnalysis(tabsToAnalyze, savedActiveTab);
+                    }), System.Windows.Threading.DispatcherPriority.Background);
+                }
             }
             catch (Exception ex)
             {
@@ -2092,6 +2142,53 @@ namespace BioSAK.Pages
             }
         }
 
+        /// <summary>
+        /// Sequentially trigger analysis for each tab that had results.
+        /// Waits for ProgressOverlay to become Collapsed before firing the next one.
+        /// </summary>
+        private void RunNextAnalysis(Queue<int> remaining, int finalTabIndex)
+        {
+            if (remaining.Count == 0)
+            {
+                // All done — switch back to the saved active tab
+                if (AnalysisTabControl != null)
+                    AnalysisTabControl.SelectedIndex = finalTabIndex;
+                return;
+            }
+
+            int tabIdx = remaining.Dequeue();
+
+            // Switch to the tab first so the analysis targets the right UI
+            if (AnalysisTabControl != null)
+                AnalysisTabControl.SelectedIndex = tabIdx;
+
+            // Fire the analysis
+            switch (tabIdx)
+            {
+                case 0: AnalyzeGeneExpression_Click(this, new RoutedEventArgs()); break;
+                case 1: CalculateCorrelation_Click(this, new RoutedEventArgs()); break;
+                case 2: PlotScatter_Click(this, new RoutedEventArgs()); break;
+                case 3: LoadSurvivalData_Click(this, new RoutedEventArgs()); break;
+                case 4: GenerateVolcano_Click(this, new RoutedEventArgs()); break;
+                case 5: AnalyzeCoExpression_Click(this, new RoutedEventArgs()); break;
+            }
+
+            // Poll for ProgressOverlay to finish, then run the next
+            var timer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            timer.Tick += (s, args) =>
+            {
+                // Check if the progress overlay is hidden (analysis complete)
+                if (ProgressOverlay.Visibility == Visibility.Collapsed)
+                {
+                    timer.Stop();
+                    RunNextAnalysis(remaining, finalTabIndex);
+                }
+            };
+            timer.Start();
+        }        
         #endregion
 
         #region Helper Methods

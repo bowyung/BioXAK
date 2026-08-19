@@ -1,7 +1,8 @@
-<Window x:Class="BioSAK.StatisticsWindow"
+﻿<Window x:Class="BioSAK.StatisticsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Statistical Analysis" 
+        xmlns:loc="clr-namespace:BioSAK.Localization"
+        Title="{loc:L Statistical_Analysis}" 
         Height="700" Width="850"
         WindowStartupLocation="CenterOwner"
         Background="#F5F5F5">
@@ -14,7 +15,7 @@
         </Grid.RowDefinitions>
 
         <!-- Title -->
-        <TextBlock Grid.Row="0" Text="📊 Statistical Analysis" FontSize="22" FontWeight="Bold" 
+        <TextBlock Grid.Row="0" Text="{loc:L Statistical_Analysis_2}" FontSize="22" FontWeight="Bold" 
                    Foreground="#333" Margin="0,0,0,15"/>
 
         <!-- Main Content - Switches between Setup and Results -->
@@ -25,58 +26,58 @@
                     <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.1"/>
                 </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="Step 1: Select Statistical Method" FontSize="16" FontWeight="SemiBold" 
+                    <TextBlock Text="{loc:L Step_1_Select_Statistical_Method}" FontSize="16" FontWeight="SemiBold" 
                                Foreground="#333" Margin="0,0,0,20"/>
 
                     <RadioButton x:Name="MethodRegression" GroupName="Method" Margin="0,5" FontSize="14">
                         <StackPanel>
-                            <TextBlock Text="📈 Linear Regression" FontWeight="SemiBold"/>
-                            <TextBlock Text="R², Pearson correlation, slope significance for each series" 
+                            <TextBlock Text="{loc:L Linear_Regression}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:L R_Pearson_correlation_slope_significance_for}" 
                                        Foreground="#666" FontSize="12" Margin="20,2,0,0"/>
                         </StackPanel>
                     </RadioButton>
 
                     <RadioButton x:Name="MethodTTest" GroupName="Method" Margin="0,10" FontSize="14">
                         <StackPanel>
-                            <TextBlock Text="🔬 T-Test (Two Groups)" FontWeight="SemiBold"/>
-                            <TextBlock Text="Compare two series at a specific X value using replicate data" 
+                            <TextBlock Text="{loc:L T_Test_Two_Groups}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:L Compare_two_series_at_a_specific_X_value_usi}" 
                                        Foreground="#666" FontSize="12" Margin="20,2,0,0"/>
                         </StackPanel>
                     </RadioButton>
 
                     <RadioButton x:Name="MethodOneWayAnovaSameX" GroupName="Method" Margin="0,10" FontSize="14">
                         <StackPanel>
-                            <TextBlock Text="📐 One-Way ANOVA (Same X)" FontWeight="SemiBold"/>
-                            <TextBlock Text="Compare multiple series at a specific X value" 
+                            <TextBlock Text="{loc:L One_Way_ANOVA_Same_X}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:L Compare_multiple_series_at_a_specific_X_valu}" 
                                        Foreground="#666" FontSize="12" Margin="20,2,0,0"/>
                         </StackPanel>
                     </RadioButton>
 
                     <RadioButton x:Name="MethodOneWayAnovaSameRow" GroupName="Method" Margin="0,10" FontSize="14">
                         <StackPanel>
-                            <TextBlock Text="📐 One-Way ANOVA (Same Series)" FontWeight="SemiBold"/>
-                            <TextBlock Text="Compare different X values within one series" 
+                            <TextBlock Text="{loc:L One_Way_ANOVA_Same_Series}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:L Compare_different_X_values_within_one_series}" 
                                        Foreground="#666" FontSize="12" Margin="20,2,0,0"/>
                         </StackPanel>
                     </RadioButton>
 
                     <RadioButton x:Name="MethodTwoWayAnova" GroupName="Method" Margin="0,10" FontSize="14">
                         <StackPanel>
-                            <TextBlock Text="📊 Two-Way ANOVA" FontWeight="SemiBold"/>
-                            <TextBlock Text="Analyze effects of Series and X value (requires multiple rows)" 
+                            <TextBlock Text="{loc:L Two_Way_ANOVA}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:L Analyze_effects_of_Series_and_X_value_requir}" 
                                        Foreground="#666" FontSize="12" Margin="20,2,0,0"/>
                         </StackPanel>
                     </RadioButton>
 
                     <RadioButton x:Name="MethodDescriptive" GroupName="Method" Margin="0,10" FontSize="14">
                         <StackPanel>
-                            <TextBlock Text="📋 Descriptive Statistics" FontWeight="SemiBold"/>
-                            <TextBlock Text="Mean, SD, SEM, Min, Max, Median for each series" 
+                            <TextBlock Text="{loc:L Descriptive_Statistics}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:L Mean_SD_SEM_Min_Max_Median_for_each_series}" 
                                        Foreground="#666" FontSize="12" Margin="20,2,0,0"/>
                         </StackPanel>
                     </RadioButton>
 
-                    <Button Content="Next →" HorizontalAlignment="Right" Margin="0,25,0,0" Padding="25,10"
+                    <Button Content="{loc:L Next}" HorizontalAlignment="Right" Margin="0,25,0,0" Padding="25,10"
                             Background="#2196F3" Foreground="White" BorderThickness="0" FontSize="14"
                             Cursor="Hand" Click="NextToSetup_Click"/>
                 </StackPanel>
@@ -95,7 +96,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0">
-                        <TextBlock x:Name="SetupTitle" Text="Step 2: Configure Analysis" FontSize="16" FontWeight="SemiBold" 
+                        <TextBlock x:Name="SetupTitle" Text="{loc:L Step_2_Configure_Analysis}" FontSize="16" FontWeight="SemiBold" 
                                    Foreground="#333" Margin="0,0,0,15"/>
                     </StackPanel>
 
@@ -105,10 +106,10 @@
                     </ScrollViewer>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="← Back" Margin="0,0,10,0" Padding="20,10"
+                        <Button Content="{loc:L Back}" Margin="0,0,10,0" Padding="20,10"
                                 Background="#9E9E9E" Foreground="White" BorderThickness="0" FontSize="14"
                                 Cursor="Hand" Click="BackToMethodSelection_Click"/>
-                        <Button Content="Run Analysis" Padding="25,10"
+                        <Button Content="{loc:L Run_Analysis}" Padding="25,10"
                                 Background="#4CAF50" Foreground="White" BorderThickness="0" FontSize="14"
                                 Cursor="Hand" Click="RunAnalysis_Click"/>
                     </StackPanel>
@@ -128,11 +129,11 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock x:Name="ResultsTitle" Grid.Row="0" Text="Results" FontSize="16" FontWeight="SemiBold" 
+                    <TextBlock x:Name="ResultsTitle" Grid.Row="0" Text="{loc:L Results_2}" FontSize="16" FontWeight="SemiBold" 
                                Foreground="#333" Margin="0,0,0,10"/>
 
                     <!-- 新增: 複製提示 -->
-                    <TextBlock Grid.Row="1" Text="💡 Tip: Select cells and press Ctrl+C to copy, or use the Copy Results button to copy all" 
+                    <TextBlock Grid.Row="1" Text="{loc:L Tip_Select_cells_and_press_Ctrl_C_to_copy_or}" 
                                Foreground="#666" FontSize="11" FontStyle="Italic" Margin="0,0,0,10"/>
 
                     <!-- 修改: 添加 SelectionUnit 和 SelectionMode 支援單元格選擇 -->
@@ -148,10 +149,10 @@
                               PreviewKeyDown="ResultsGrid_PreviewKeyDown"/>
 
                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-                        <Button Content="← New Analysis" Margin="0,0,10,0" Padding="20,10"
+                        <Button Content="{loc:L New_Analysis}" Margin="0,0,10,0" Padding="20,10"
                                 Background="#FF9800" Foreground="White" BorderThickness="0" FontSize="14"
                                 Cursor="Hand" Click="BackToMethodSelection_Click"/>
-                        <Button Content="📋 Copy Results" Padding="20,10"
+                        <Button Content="{loc:L Copy_Results}" Padding="20,10"
                                 Background="#4CAF50" Foreground="White" BorderThickness="0" FontSize="14"
                                 Cursor="Hand" Click="CopyResults_Click"/>
                     </StackPanel>
@@ -161,7 +162,7 @@
 
         <!-- Footer -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Close" Padding="20,10"
+            <Button Content="{loc:L Close}" Padding="20,10"
                     Background="#757575" Foreground="White" BorderThickness="0"
                     Cursor="Hand" Click="Close_Click"/>
         </StackPanel>

@@ -18,7 +18,7 @@ namespace BioSAK
         public GraphGenData? GraphGen { get; set; }
         public TcgaData? TcgaAnalysis { get; set; }
         public WesternBlotData? WesternBlot { get; set; }
-
+        public FlowCytometryData? FlowCytometry { get; set; }
         // Shared chart settings (applicable to GraphGen and TCGA)
         public List<ChartSnapshot> Charts { get; set; } = new();
     }
@@ -55,6 +55,10 @@ namespace BioSAK
         public string GeneSymbol { get; set; } = "";
         public List<string> SelectedCancerTypes { get; set; } = new();
         public int ActiveTabIndex { get; set; } = 0;
+        public bool IsMultiSelect { get; set; } = false;
+        public string Condition { get; set; } = "Both";
+        public List<string> HeatmapGenes { get; set; } = new();
+        public List<int> AnalyzedTabs { get; set; } = new();
 
         // Per-tab settings & cache
         public TcgaBoxPlotCache? BoxPlotCache { get; set; }
@@ -105,10 +109,11 @@ namespace BioSAK
 
     public class TcgaKMSettings
     {
+        public string GeneId { get; set; } = "";
         public string CancerType { get; set; } = "";
         public string CutoffType { get; set; } = "Median";
+        public double Percentile { get; set; } = 50;
     }
-
     public class TcgaKMCache
     {
         public double LogRankP { get; set; }
@@ -290,5 +295,111 @@ namespace BioSAK
         public string BorderColor { get; set; } = "#000000";
         public double BorderThickness { get; set; } = 1;
         public string Pattern { get; set; } = "Solid";
+    }
+    // ════════════════════════════════════════════════════════════
+    //  FLOW CYTOMETRY MODULE
+    // ════════════════════════════════════════════════════════════
+
+    public class FlowCytometryData
+    {
+        // File references
+        public List<FlowFcsFileEntry> Files { get; set; } = new();
+        public int SelectedFileIndex { get; set; } = 0;
+        public int OverlayFileIndex { get; set; } = -1;
+        public bool OverlayEnabled { get; set; } = false;
+
+        // View state
+        public string CurrentView { get; set; } = "scatter";
+        public string PlotType { get; set; } = "dot";
+
+        // Scatter parameters (by name, not index)
+        public string XParamName { get; set; } = "";
+        public string YParamName { get; set; } = "";
+        public string XScaleMode { get; set; } = "Log";
+        public string YScaleMode { get; set; } = "Log";
+
+        // Histogram parameters
+        public string HistParamName { get; set; } = "";
+        public bool HistLogScale { get; set; } = true;
+
+        // Compensation
+        public bool ApplyCompensation { get; set; } = false;
+        public string GlobalCompSourceFilename { get; set; } = "";
+        public FlowCompensationOverride? CompensationOverride { get; set; }
+
+        // Colormaps
+        public string DotColormap { get; set; } = "Turbo";
+        public string ContourColormap { get; set; } = "YlOrRd";
+        public string HistColor { get; set; } = "Blue";
+
+        // Axis range
+        public double? CustomXMin { get; set; }
+        public double? CustomXMax { get; set; }
+        public double? CustomYMin { get; set; }
+        public double? CustomYMax { get; set; }
+
+        // Parent gate selections (by name)
+        public string ScatterParentGateName { get; set; } = "";
+        public string HistParentGateName { get; set; } = "";
+
+        // Gate templates
+        public List<FlowGateData> Gates { get; set; } = new();
+
+        // Statistics records
+        public List<FlowStatsRecord> Stats { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Stores both file path (for full reload) and embedded subsampled data (fallback).
+    /// </summary>
+    public class FlowFcsFileEntry
+    {
+        public string FilePath { get; set; } = "";
+        public string Filename { get; set; } = "";
+
+        // Embedded subsampled data (for portability when original file is missing)
+        public List<FlowFcsParam> Parameters { get; set; } = new();
+        public int OriginalEventCount { get; set; } = 0;
+        public int EmbeddedEventCount { get; set; } = 0;
+        /// <summary>Base64-encoded Deflate-compressed float[] (row-major: events × params)</summary>
+        public string? CompressedEvents { get; set; }
+    }
+
+    public class FlowFcsParam
+    {
+        public string Name { get; set; } = "";
+        public string Label { get; set; } = "";
+        public double Range { get; set; } = 262144;
+    }
+
+    public class FlowGateData
+    {
+        public string Name { get; set; } = "";
+        public string GateType { get; set; } = "Polygon";
+        public List<double[]> Points { get; set; } = new();
+        public string XParamName { get; set; } = "";
+        public string YParamName { get; set; } = "";
+        public string ParentGateName { get; set; } = "";
+        public double RangeMin { get; set; }
+        public double RangeMax { get; set; }
+    }
+
+    public class FlowStatsRecord
+    {
+        public string SampleName { get; set; } = "";
+        public string ViewType { get; set; } = "";
+        public string Parameters { get; set; } = "";
+        public string GateRegion { get; set; } = "";
+        public string Count { get; set; } = "";
+        public string Percentage { get; set; } = "";
+        public string ParentGate { get; set; } = "";
+        public string Details { get; set; } = "";
+    }
+
+    public class FlowCompensationOverride
+    {
+        public List<string> Channels { get; set; } = new();
+        /// <summary>Row-major spillover matrix values [n][n]</summary>
+        public List<List<float>> Matrix { get; set; } = new();
     }
 }

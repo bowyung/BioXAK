@@ -370,7 +370,7 @@ namespace BioSAK
             txtVolume.Text = "";
             txtMass.Text = "";
             txtConcentration.Text = "";
-            txtResult.Text = "Enter values and click Calculate";
+            txtResult.Text = BioSAK.Localization.L.T("Enter_values_and_click_Calculate");
             SetResultStyle(true);
         }
     }

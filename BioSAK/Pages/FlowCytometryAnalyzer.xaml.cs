@@ -14,6 +14,8 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Reflection;
 using Microsoft.Win32;
+using System.IO.Compression;
+
 
 namespace BioSAK
 {
@@ -580,7 +582,533 @@ namespace BioSAK
         }
 
         #endregion
+        #region .xak Save/Load
 
+        private const int XakMaxEmbedEvents = 50_000;
+
+        private void SaveXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var fc = new FlowCytometryData
+                {
+                    // Files (path + embedded subsampled data)
+                    Files = fcsFiles.Select(f => BuildFcsFileEntry(f)).ToList(),
+                    SelectedFileIndex = cboFiles.SelectedIndex,
+                    OverlayFileIndex = cboOverlay.SelectedIndex,
+                    OverlayEnabled = chkOverlay.IsChecked == true,
+
+                    // View
+                    CurrentView = currentView,
+                    PlotType = plotType,
+
+                    // Scatter params (store by name)
+                    XParamName = selectedFile != null && cboXParam.SelectedIndex >= 0
+                        ? selectedFile.Parameters[cboXParam.SelectedIndex].Label : "",
+                    YParamName = selectedFile != null && cboYParam.SelectedIndex >= 0
+                        ? selectedFile.Parameters[cboYParam.SelectedIndex].Label : "",
+                    XScaleMode = xScaleMode,
+                    YScaleMode = yScaleMode,
+
+                    // Histogram
+                    HistParamName = selectedFile != null && cboHistParam.SelectedIndex >= 0
+                        ? selectedFile.Parameters[cboHistParam.SelectedIndex].Label : "",
+                    HistLogScale = histLogScale,
+
+                    // Compensation
+                    ApplyCompensation = applyCompensation,
+                    GlobalCompSourceFilename = _globalCompSource?.Filename ?? "",
+                    CompensationOverride = GetCompensationOverride(),
+
+                    // Colormaps
+                    DotColormap = dotColormap,
+                    ContourColormap = contourColormap,
+                    HistColor = histColor,
+
+                    // Axis range
+                    CustomXMin = customXMin,
+                    CustomXMax = customXMax,
+                    CustomYMin = customYMin,
+                    CustomYMax = customYMax,
+
+                    // Parent gates (by name)
+                    ScatterParentGateName = parentGateIndex >= 0 && parentGateIndex < gateTemplates.Count
+                        ? gateTemplates[parentGateIndex].Name : "",
+                    HistParentGateName = histParentGateIndex >= 0 && histParentGateIndex < gateTemplates.Count
+                        ? gateTemplates[histParentGateIndex].Name : "",
+
+                    // Gates
+                    Gates = gateTemplates.Select(g => new FlowGateData
+                    {
+                        Name = g.Name,
+                        GateType = g.GateType.ToString(),
+                        Points = g.Points.Select(p => new double[] { p.X, p.Y }).ToList(),
+                        XParamName = g.XParamName,
+                        YParamName = g.YParamName,
+                        ParentGateName = g.ParentGateName,
+                        RangeMin = g.RangeMin,
+                        RangeMax = g.RangeMax
+                    }).ToList(),
+
+                    // Stats
+                    Stats = statsRecords.Select(s => new FlowStatsRecord
+                    {
+                        SampleName = s.SampleName,
+                        ViewType = s.ViewType,
+                        Parameters = s.Parameters,
+                        GateRegion = s.GateRegion,
+                        Count = s.Count,
+                        Percentage = s.Percentage,
+                        ParentGate = s.ParentGate,
+                        Details = s.Details
+                    }).ToList()
+                };
+
+                var doc = new XakDocument
+                {
+                    Module = "FlowCytometry",
+                    FlowCytometry = fc,
+                    Description = $"Files: {fc.Files.Count}, Gates: {fc.Gates.Count}"
+                };
+
+                XakFileManager.Save(doc, "flow_cytometry");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save:\n{ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void OpenXak_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var doc = XakFileManager.Open("FlowCytometry");
+                if (doc?.FlowCytometry == null) return;
+
+                var fc = doc.FlowCytometry;
+                var warnings = new List<string>();
+
+                // ── 1. Clear current state ──
+                fcsFiles.Clear();
+                cboFiles.Items.Clear();
+                cboOverlay.Items.Clear();
+                selectedFile = null;
+                overlayFile = null;
+                _globalCompSource = null;
+                gateTemplates.Clear();
+                fileGateResults.Clear();
+
+                progressBar.Visibility = Visibility.Visible;
+                txtStatus.Text = "Loading FCS files from .xak...";
+
+                // ── 2. Load FCS files (path-first, embedded-fallback) ──
+                foreach (var entry in fc.Files)
+                {
+                    FcsFile? fcs = null;
+
+                    // Try original path first
+                    if (!string.IsNullOrEmpty(entry.FilePath) && File.Exists(entry.FilePath))
+                    {
+                        try
+                        {
+                            fcs = await Task.Run(() => ParseFcsFile(entry.FilePath));
+                        }
+                        catch { /* fall through to embedded */ }
+                    }
+
+                    // Fallback: reconstruct from embedded data
+                    if (fcs == null && !string.IsNullOrEmpty(entry.CompressedEvents))
+                    {
+                        fcs = ReconstructFromEmbedded(entry);
+                        if (fcs != null)
+                        {
+                            warnings.Add($"'{entry.Filename}': original not found, using embedded data " +
+                                         $"({entry.EmbeddedEventCount:N0}/{entry.OriginalEventCount:N0} events)");
+                        }
+                    }
+
+                    // Neither worked
+                    if (fcs == null)
+                    {
+                        warnings.Add($"'{entry.Filename}': could not load (file missing, no embedded data)");
+                        continue;
+                    }
+
+                    fcsFiles.Add(fcs);
+                    cboFiles.Items.Add(fcs.Filename);
+                    cboOverlay.Items.Add(fcs.Filename);
+                }
+
+                progressBar.Visibility = Visibility.Collapsed;
+
+                if (warnings.Count > 0)
+                {
+                    MessageBox.Show(
+                        string.Join("\n\n", warnings.Select(w => $"• {w}")),
+                        "File Loading Warnings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+
+                if (fcsFiles.Count == 0)
+                {
+                    txtStatus.Text = "No FCS files could be loaded from .xak";
+                    return;
+                }
+
+                // ── 3. Select file ──
+                int selIdx = Math.Min(fc.SelectedFileIndex, fcsFiles.Count - 1);
+                if (selIdx >= 0) cboFiles.SelectedIndex = selIdx;
+
+                // ── 4. Restore global comp source ──
+                if (!string.IsNullOrEmpty(fc.GlobalCompSourceFilename))
+                {
+                    _globalCompSource = fcsFiles.FirstOrDefault(f =>
+                        f.Filename.Equals(fc.GlobalCompSourceFilename, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // ── 5. Restore compensation (override matrix if saved) ──
+                if (fc.CompensationOverride != null && fc.CompensationOverride.Channels.Count > 0)
+                {
+                    ApplyCompensationOverride(fc.CompensationOverride);
+                }
+
+                applyCompensation = fc.ApplyCompensation;
+                if (chkApplyCompensation != null)
+                    chkApplyCompensation.IsChecked = fc.ApplyCompensation;
+
+                BuildCompensationSliders();
+                UpdateCompensationUI();
+
+                // ── 6. Restore gate templates ──
+                foreach (var gd in fc.Gates)
+                {
+                    var gate = new GateTemplate
+                    {
+                        Name = gd.Name,
+                        GateType = gd.GateType == "Range" ? GateType.Range : GateType.Polygon,
+                        Points = gd.Points.Select(p => new Point(p[0], p[1])).ToList(),
+                        XParamName = gd.XParamName,
+                        YParamName = gd.YParamName,
+                        ParentGateName = gd.ParentGateName,
+                        RangeMin = gd.RangeMin,
+                        RangeMax = gd.RangeMax
+                    };
+
+                    if (selectedFile != null)
+                    {
+                        gate.XParamIndex = FindParameterIndex(selectedFile, gd.XParamName);
+                        gate.YParamIndex = FindParameterIndex(selectedFile, gd.YParamName);
+                    }
+
+                    gateTemplates.Add(gate);
+                }
+
+                // Apply gates to all loaded files
+                foreach (var file in fcsFiles)
+                    ApplyAllGatesToFile(file);
+
+                UpdateGateDisplayNames();
+                UpdateParentGateComboBoxes();
+
+                // ── 7. Restore view state ──
+                if (fc.CurrentView == "histogram")
+                { if (rbHistogram != null) rbHistogram.IsChecked = true; }
+                else
+                { if (rbScatter != null) rbScatter.IsChecked = true; }
+
+                if (fc.PlotType == "contour")
+                { if (rbContourPlot != null) rbContourPlot.IsChecked = true; }
+                else
+                { if (rbDotPlot != null) rbDotPlot.IsChecked = true; }
+
+                // ── 8. Restore scale modes ──
+                SetComboBoxByContent(cboXScale, fc.XScaleMode);
+                SetComboBoxByContent(cboYScale, fc.YScaleMode);
+                if (cboHistScale != null)
+                    cboHistScale.SelectedIndex = fc.HistLogScale ? 1 : 0;
+
+                // ── 9. Restore parameter selections (by name) ──
+                if (selectedFile != null)
+                {
+                    SetParamComboByName(cboXParam, fc.XParamName);
+                    SetParamComboByName(cboYParam, fc.YParamName);
+                    SetParamComboByName(cboHistParam, fc.HistParamName);
+                }
+
+                // ── 10. Restore colormaps ──
+                SetComboBoxByContent(cboDotColormap, fc.DotColormap);
+                SetComboBoxByContent(cboContourColormap, fc.ContourColormap);
+                SetComboBoxByContent(cboHistColor, fc.HistColor);
+
+                // ── 11. Restore axis range ──
+                customXMin = fc.CustomXMin;
+                customXMax = fc.CustomXMax;
+                customYMin = fc.CustomYMin;
+                customYMax = fc.CustomYMax;
+
+                // ── 12. Restore overlay ──
+                if (fc.OverlayEnabled && fc.OverlayFileIndex >= 0 && fc.OverlayFileIndex < fcsFiles.Count)
+                {
+                    chkOverlay.IsChecked = true;
+                    cboOverlay.SelectedIndex = fc.OverlayFileIndex;
+                }
+
+                // ── 13. Restore parent gate selections ──
+                SetParentGateByName(cboParentGate, fc.ScatterParentGateName);
+                SetParentGateByName(cboHistParentGate, fc.HistParentGateName);
+
+                // ── 14. Restore statistics records ──
+                statsRecords.Clear();
+                foreach (var s in fc.Stats)
+                {
+                    statsRecords.Add(new StatsRecord
+                    {
+                        SampleName = s.SampleName,
+                        ViewType = s.ViewType,
+                        Parameters = s.Parameters,
+                        GateRegion = s.GateRegion,
+                        Count = s.Count,
+                        Percentage = s.Percentage,
+                        ParentGate = s.ParentGate,
+                        Details = s.Details
+                    });
+                }
+
+                if (statsRecords.Count > 0)
+                {
+                    dgStats.ItemsSource = statsRecords;
+                    pnlStats.Visibility = Visibility.Visible;
+                }
+
+                // ── 15. Draw ──
+                DrawPlot();
+                txtStatus.Text = $"Loaded .xak: {fcsFiles.Count} files, {gateTemplates.Count} gates, {statsRecords.Count} stats";
+            }
+            catch (Exception ex)
+            {
+                progressBar.Visibility = Visibility.Collapsed;
+                MessageBox.Show($"Failed to load:\n{ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        //  .xak Helpers
+        // ══════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Build an FCS file entry with path + compressed embedded data.
+        /// Subsamples to XakMaxEmbedEvents if needed.
+        /// </summary>
+        private FlowFcsFileEntry BuildFcsFileEntry(FcsFile file)
+        {
+            var entry = new FlowFcsFileEntry
+            {
+                FilePath = file.FilePath,
+                Filename = file.Filename,
+                Parameters = file.Parameters.Select(p => new FlowFcsParam
+                {
+                    Name = p.Name,
+                    Label = p.Label,
+                    Range = p.Range
+                }).ToList(),
+                OriginalEventCount = file.Events.Count
+            };
+
+            // Subsample if needed
+            var events = file.Events;
+            if (events.Count > XakMaxEmbedEvents)
+            {
+                var rng = new Random(42);
+                var indices = Enumerable.Range(0, events.Count)
+                    .OrderBy(_ => rng.Next())
+                    .Take(XakMaxEmbedEvents)
+                    .ToList();
+                events = indices.Select(i => file.Events[i]).ToList();
+            }
+
+            entry.EmbeddedEventCount = events.Count;
+
+            // Flatten to float[] then compress
+            int nParams = file.Parameters.Count;
+            var flat = new float[events.Count * nParams];
+            for (int i = 0; i < events.Count; i++)
+            {
+                var ev = events[i];
+                for (int j = 0; j < nParams && j < ev.Length; j++)
+                    flat[i * nParams + j] = ev[j];
+            }
+
+            // float[] → byte[] → Deflate → Base64
+            var rawBytes = new byte[flat.Length * sizeof(float)];
+            Buffer.BlockCopy(flat, 0, rawBytes, 0, rawBytes.Length);
+
+            using var ms = new MemoryStream();
+            using (var deflate = new DeflateStream(ms, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                deflate.Write(rawBytes, 0, rawBytes.Length);
+            }
+            entry.CompressedEvents = Convert.ToBase64String(ms.ToArray());
+
+            return entry;
+        }
+
+        /// <summary>
+        /// Reconstruct an FcsFile from embedded compressed data.
+        /// </summary>
+        private FcsFile? ReconstructFromEmbedded(FlowFcsFileEntry entry)
+        {
+            if (string.IsNullOrEmpty(entry.CompressedEvents) || entry.Parameters.Count == 0)
+                return null;
+
+            try
+            {
+                // Base64 → Deflate decompress → byte[] → float[]
+                var compressed = Convert.FromBase64String(entry.CompressedEvents);
+                int nParams = entry.Parameters.Count;
+                int expectedFloats = entry.EmbeddedEventCount * nParams;
+                var rawBytes = new byte[expectedFloats * sizeof(float)];
+
+                using (var ms = new MemoryStream(compressed))
+                using (var deflate = new DeflateStream(ms, CompressionMode.Decompress))
+                {
+                    int totalRead = 0;
+                    while (totalRead < rawBytes.Length)
+                    {
+                        int read = deflate.Read(rawBytes, totalRead, rawBytes.Length - totalRead);
+                        if (read == 0) break;
+                        totalRead += read;
+                    }
+                }
+
+                var flat = new float[expectedFloats];
+                Buffer.BlockCopy(rawBytes, 0, flat, 0, rawBytes.Length);
+
+                // Rebuild events
+                var events = new List<float[]>(entry.EmbeddedEventCount);
+                for (int i = 0; i < entry.EmbeddedEventCount; i++)
+                {
+                    var ev = new float[nParams];
+                    Array.Copy(flat, i * nParams, ev, 0, nParams);
+                    events.Add(ev);
+                }
+
+                // Rebuild parameters
+                var parameters = entry.Parameters.Select(p => new FcsParameter
+                {
+                    Name = p.Name,
+                    Label = p.Label,
+                    Range = p.Range
+                }).ToList();
+
+                string filename = entry.Filename;
+                if (!filename.Contains("[embedded]"))
+                    filename += $" [embedded {entry.EmbeddedEventCount / 1000}k/{entry.OriginalEventCount / 1000}k]";
+
+                return new FcsFile
+                {
+                    Filename = filename,
+                    FilePath = "",  // no path for reconstructed files
+                    Parameters = parameters,
+                    Events = events
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Save current compensation matrix (after user slider edits).
+        /// </summary>
+        private FlowCompensationOverride? GetCompensationOverride()
+        {
+            FcsFile? source = _globalCompSource ?? selectedFile
+                ?? fcsFiles.FirstOrDefault(f => f.HasCompensationData);
+
+            if (source?.SpilloverMatrix == null || source.SpilloverChannels.Count == 0)
+                return null;
+
+            int n = source.SpilloverChannels.Count;
+            var matrix = new List<List<float>>(n);
+            for (int i = 0; i < n; i++)
+            {
+                var row = new List<float>(n);
+                for (int j = 0; j < n; j++)
+                    row.Add(source.SpilloverMatrix[i, j]);
+                matrix.Add(row);
+            }
+
+            return new FlowCompensationOverride
+            {
+                Channels = new List<string>(source.SpilloverChannels),
+                Matrix = matrix
+            };
+        }
+
+        /// <summary>
+        /// Apply saved compensation to all loaded files.
+        /// </summary>
+        private void ApplyCompensationOverride(FlowCompensationOverride ovr)
+        {
+            int n = ovr.Channels.Count;
+            if (n == 0 || ovr.Matrix.Count != n) return;
+
+            var matrix = new float[n, n];
+            for (int i = 0; i < n; i++)
+            {
+                if (ovr.Matrix[i].Count != n) return;
+                for (int j = 0; j < n; j++)
+                    matrix[i, j] = ovr.Matrix[i][j];
+            }
+
+            var inverse = InvertMatrixPublic(matrix, n);
+
+            foreach (var file in fcsFiles)
+            {
+                file.SpilloverChannels = new List<string>(ovr.Channels);
+                file.SpilloverMatrix = (float[,])matrix.Clone();
+                file.CompensationMatrix = inverse;
+                file.BuildSpilloverIndex();
+            }
+
+            _globalCompSource = fcsFiles.FirstOrDefault(f => f.HasCompensationData);
+        }
+
+        // ── ComboBox helpers ──
+
+        private static void SetComboBoxByContent(ComboBox? cbo, string content)
+        {
+            if (cbo == null || string.IsNullOrEmpty(content)) return;
+            for (int i = 0; i < cbo.Items.Count; i++)
+            {
+                if (cbo.Items[i] is ComboBoxItem item && item.Content?.ToString() == content)
+                { cbo.SelectedIndex = i; return; }
+            }
+        }
+
+        private void SetParamComboByName(ComboBox? cbo, string paramName)
+        {
+            if (cbo == null || selectedFile == null || string.IsNullOrEmpty(paramName)) return;
+            for (int i = 0; i < selectedFile.Parameters.Count; i++)
+            {
+                if (selectedFile.Parameters[i].Label.Equals(paramName, StringComparison.OrdinalIgnoreCase) ||
+                    selectedFile.Parameters[i].Name.Equals(paramName, StringComparison.OrdinalIgnoreCase))
+                { if (i < cbo.Items.Count) cbo.SelectedIndex = i; return; }
+            }
+        }
+
+        private static void SetParentGateByName(ComboBox? cbo, string gateName)
+        {
+            if (cbo == null || string.IsNullOrEmpty(gateName)) return;
+            for (int i = 0; i < cbo.Items.Count; i++)
+            {
+                if (cbo.Items[i] is ComboBoxItem item && item.Content?.ToString() == gateName)
+                { cbo.SelectedIndex = i; return; }
+            }
+        }
+
+        #endregion
         #region File Operations
 
         private const int MaxLoadEvents = 500_000;
@@ -3477,6 +4005,8 @@ namespace BioSAK
     public class FcsFile
     {
         public string Filename { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+
         public List<FcsParameter> Parameters { get; set; } = new List<FcsParameter>();
         public List<float[]> Events { get; set; } = new List<float[]>();
         public int EventCount => Events.Count;

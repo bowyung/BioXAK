@@ -1,10 +1,11 @@
 ﻿<Page x:Class="BioSAK.Pages.PrimerDesignerPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:BioSAK.Localization"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       mc:Ignorable="d" d:DesignHeight="800" d:DesignWidth="1100"
-      Title="Primer Designer" Background="#F5F5F5">
+      Title="{loc:L Primer_Designer}" Background="#F5F5F5">
 
     <Page.Resources>
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
@@ -196,10 +197,10 @@
                         <Grid>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock x:Name="CollapseArrow" Text="▼" FontSize="12" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Text="🧬 Primer Designer" FontSize="16" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
+                                <TextBlock Text="{loc:L Primer_Designer_2}" FontSize="16" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="InputSectionSummary" Text="" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold"/>
                             </StackPanel>
-                            <TextBlock Text="Click to expand/collapse" FontSize="10" Foreground="#999" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:L Click_to_expand_collapse}" FontSize="10" Foreground="#999" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
                     <Border x:Name="InputContentPanel" Grid.Row="1" Padding="15" BorderBrush="#EEE" BorderThickness="0,1,0,0">
@@ -214,14 +215,14 @@
 
                             <!-- ★ Col 0: Direct Sequence Input (DEFAULT) -->
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="📝 Direct Sequence Input" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
+                                <TextBlock Text="{loc:L Direct_Sequence_Input}" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
                                 <Grid>
                                     <TextBox x:Name="DirectSequenceInput" Style="{StaticResource SeqBoxStyle}" Height="155" TextChanged="DirectSequenceInput_TextChanged"/>
-                                    <TextBlock x:Name="DirectSeqHint" Text="Paste DNA template sequence (ATGC)..." Foreground="#AAA" FontSize="12" Margin="10,10,0,0" IsHitTestVisible="False"/>
+                                    <TextBlock x:Name="DirectSeqHint" Text="{loc:L Paste_DNA_template_sequence_ATGC}" Foreground="#AAA" FontSize="12" Margin="10,10,0,0" IsHitTestVisible="False"/>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                    <TextBlock x:Name="DirectSeqLengthLabel" Text="Length: 0 bp" FontSize="11" Foreground="#888" VerticalAlignment="Center"/>
-                                    <Button Content="Use This Sequence" Style="{StaticResource TealButtonStyle}" Margin="15,0,0,0" Click="UseDirectSequence_Click"/>
+                                    <TextBlock x:Name="DirectSeqLengthLabel" Text="{loc:L Length_0_bp}" FontSize="11" Foreground="#888" VerticalAlignment="Center"/>
+                                    <Button Content="{loc:L Use_This_Sequence}" Style="{StaticResource TealButtonStyle}" Margin="15,0,0,0" Click="UseDirectSequence_Click"/>
                                 </StackPanel>
                             </StackPanel>
 
@@ -229,9 +230,9 @@
 
                             <!-- Col 2: Search Gene from NCBI -->
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="🔍 Search Gene from NCBI" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
-                                <TextBlock Text="Gene Symbol / Alias" Style="{StaticResource LabelStyle}"/>
-                                <TextBox x:Name="GeneSymbolTextBox" Style="{StaticResource InputStyle}" Text="TP53"/>
+                                <TextBlock Text="{loc:L Search_Gene_from_NCBI}" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
+                                <TextBlock Text="{loc:L Gene_Symbol_Alias}" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="GeneSymbolTextBox" Style="{StaticResource InputStyle}" Text="{loc:L TP53}"/>
                                 <Grid Margin="0,8,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -239,7 +240,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Species" Style="{StaticResource LabelStyle}"/>
+                                        <TextBlock Text="{loc:L Species_2}" Style="{StaticResource LabelStyle}"/>
                                         <ComboBox x:Name="SpeciesComboBox" Style="{StaticResource ComboStyle}">
                                             <ComboBoxItem Content="Homo sapiens" IsSelected="True" Tag="9606"/>
                                             <ComboBoxItem Content="Mus musculus" Tag="10090"/>
@@ -247,24 +248,24 @@
                                         </ComboBox>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Sequence Type" Style="{StaticResource LabelStyle}"/>
+                                        <TextBlock Text="{loc:L Sequence_Type}" Style="{StaticResource LabelStyle}"/>
                                         <ComboBox x:Name="SeqTypeComboBox" Style="{StaticResource ComboStyle}">
                                             <ComboBoxItem Content="mRNA (NM_)" IsSelected="True" Tag="mRNA"/>
                                             <ComboBoxItem Content="Genomic (NG_)" Tag="Genomic"/>
                                         </ComboBox>
                                     </StackPanel>
                                 </Grid>
-                                <TextBlock Text="── OR enter accession ──" HorizontalAlignment="Center" Foreground="#CCC" FontSize="10" Margin="0,8"/>
-                                <TextBlock Text="Accession (NM_ / NG_ / NR_)" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{loc:L OR_enter_accession}" HorizontalAlignment="Center" Foreground="#CCC" FontSize="10" Margin="0,8"/>
+                                <TextBlock Text="{loc:L Accession_NM_NG_NR}" Style="{StaticResource LabelStyle}"/>
                                 <TextBox x:Name="AccessionTextBox" Style="{StaticResource InputStyle}"/>
-                                <Button x:Name="FetchGeneButton" Content="🔍 Fetch Gene" Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0" Click="FetchGeneButton_Click"/>
+                                <Button x:Name="FetchGeneButton" Content="{loc:L Fetch_Gene}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0" Click="FetchGeneButton_Click"/>
                             </StackPanel>
 
                             <Rectangle Grid.Column="3" Width="1" Fill="#E0E0E0" Margin="12,0"/>
 
                             <!-- Col 4: Isoform Selection (HIDDEN initially) -->
                             <StackPanel x:Name="IsoformPanel" Grid.Column="4" Visibility="Collapsed">
-                                <TextBlock Text="📋 Isoforms / CDS Variants" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
+                                <TextBlock Text="{loc:L Isoforms_CDS_Variants}" FontSize="14" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,10"/>
                                 <ListBox x:Name="IsoformListBox" MaxHeight="180" BorderBrush="#DDD" BorderThickness="1" SelectionChanged="IsoformListBox_SelectionChanged">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
@@ -289,7 +290,7 @@
                         <TextBlock x:Name="GeneInfoLabel" Text="" FontSize="12" FontWeight="SemiBold" Foreground="#333"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="−" Width="28" Height="24" Style="{StaticResource SmallButtonStyle}" Click="ZoomOutButton_Click" Margin="0,0,3,0"/>
-                            <Button Content="Reset" Height="24" Style="{StaticResource SmallButtonStyle}" Click="ZoomResetButton_Click" Margin="0,0,3,0"/>
+                            <Button Content="{loc:L Reset}" Height="24" Style="{StaticResource SmallButtonStyle}" Click="ZoomResetButton_Click" Margin="0,0,3,0"/>
                             <Button Content="+" Width="28" Height="24" Style="{StaticResource SmallButtonStyle}" Click="ZoomInButton_Click"/>
                         </StackPanel>
                     </Grid>
@@ -303,12 +304,12 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="💡 Click and drag on the gene map above to select a region as your primer design template." FontSize="11" Foreground="#666" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                            <TextBlock Grid.Row="0" Text="{loc:L Click_and_drag_on_the_gene_map_above_to_sele}" FontSize="11" Foreground="#666" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,4"/>
                             <StackPanel Grid.Row="1" Orientation="Horizontal">
-                                <TextBlock Text="Selected Region:" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="SelectedRegionLabel" Text="No region selected" FontSize="12" Foreground="#2196F3" VerticalAlignment="Center" Margin="8,0,0,0" FontWeight="SemiBold"/>
-                                <Button x:Name="UseSelectedRegionButton" Content="Use Selected Region" Style="{StaticResource SecondaryButtonStyle}" Margin="15,0,0,0" IsEnabled="False" Click="UseSelectedRegion_Click"/>
-                                <Button Content="Use Entire Sequence" Style="{StaticResource SmallButtonStyle}" Margin="8,0,0,0" Click="UseEntireSequence_Click"/>
+                                <TextBlock Text="{loc:L Selected_Region}" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="SelectedRegionLabel" Text="{loc:L No_region_selected}" FontSize="12" Foreground="#2196F3" VerticalAlignment="Center" Margin="8,0,0,0" FontWeight="SemiBold"/>
+                                <Button x:Name="UseSelectedRegionButton" Content="{loc:L Use_Selected_Region}" Style="{StaticResource SecondaryButtonStyle}" Margin="15,0,0,0" IsEnabled="False" Click="UseSelectedRegion_Click"/>
+                                <Button Content="{loc:L Use_Entire_Sequence}" Style="{StaticResource SmallButtonStyle}" Margin="8,0,0,0" Click="UseEntireSequence_Click"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -325,7 +326,7 @@
             <Border x:Name="LoadingOverlay" Grid.RowSpan="3" Background="#80FFFFFF" Visibility="Collapsed" CornerRadius="8" Panel.ZIndex="100">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                     <ProgressBar IsIndeterminate="True" Width="200" Height="4"/>
-                    <TextBlock x:Name="LoadingText" Text="Loading..." FontSize="13" Foreground="#555" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="LoadingText" Text="{loc:L Loading}" FontSize="13" Foreground="#555" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
@@ -343,32 +344,32 @@
                         <!-- Active Template -->
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Text="Active Template Sequence" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{loc:L Active_Template_Sequence}" Style="{StaticResource SectionTitleStyle}"/>
                                 <TextBox x:Name="ActiveTemplateDisplay" Style="{StaticResource SeqBoxStyle}" Height="60" IsReadOnly="True" Background="#F9F9F9"/>
-                                <TextBlock x:Name="ActiveTemplateLengthLabel" Text="No template loaded" FontSize="11" Foreground="#888" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="ActiveTemplateLengthLabel" Text="{loc:L No_template_loaded}" FontSize="11" Foreground="#888" Margin="0,5,0,0"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Design Mode -->
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Text="Design Mode" Style="{StaticResource SectionTitleStyle}"/>
-                                <RadioButton x:Name="ManualModeRadio" Content="Manual — Analyze / find complement" GroupName="DesignMode" Margin="0,0,0,8" Checked="DesignMode_Changed"/>
-                                <RadioButton x:Name="AutoModeRadio" Content="Auto — Pick optimal primer pairs" IsChecked="True" GroupName="DesignMode" Checked="DesignMode_Changed"/>
+                                <TextBlock Text="{loc:L Design_Mode}" Style="{StaticResource SectionTitleStyle}"/>
+                                <RadioButton x:Name="ManualModeRadio" Content="{loc:L Manual_Analyze_find_complement}" GroupName="DesignMode" Margin="0,0,0,8" Checked="DesignMode_Changed"/>
+                                <RadioButton x:Name="AutoModeRadio" Content="{loc:L Auto_Pick_optimal_primer_pairs}" IsChecked="True" GroupName="DesignMode" Checked="DesignMode_Changed"/>
                             </StackPanel>
                         </Border>
 
                         <!-- ===== Manual Panel (with conditions + find missing strand) ===== -->
                         <Border x:Name="ManualInputPanel" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                             <StackPanel>
-                                <TextBlock Text="Primer Sequences (5'→3')" Style="{StaticResource SectionTitleStyle}"/>
-                                <TextBlock Text="Forward Primer" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock Text="{loc:L Primer_Sequences_5_3}" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{loc:L Forward_Primer}" Style="{StaticResource LabelStyle}"/>
                                 <TextBox x:Name="ForwardPrimerInput" FontFamily="Consolas" FontSize="13" Padding="8" BorderBrush="#CCC" BorderThickness="1"/>
-                                <TextBlock Text="Reverse Primer (enter as 5'→3')" Style="{StaticResource LabelStyle}" Margin="0,10,0,4"/>
+                                <TextBlock Text="{loc:L Reverse_Primer_enter_as_5_3}" Style="{StaticResource LabelStyle}" Margin="0,10,0,4"/>
                                 <TextBox x:Name="ReversePrimerInput" FontFamily="Consolas" FontSize="13" Padding="8" BorderBrush="#CCC" BorderThickness="1"/>
 
-                                <TextBlock Text="Conditions for missing strand" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,12,0,6"/>
-                                <TextBlock Text="If one primer is empty, auto-find the complementary strand using these criteria:" FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                <TextBlock Text="{loc:L Conditions_for_missing_strand}" FontSize="12" FontWeight="SemiBold" Foreground="#555" Margin="0,12,0,6"/>
+                                <TextBlock Text="{loc:L If_one_primer_is_empty_auto_find_the_complem}" FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,6"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -381,19 +382,19 @@
                                         <RowDefinition/>
                                         <RowDefinition/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="Target Tm (°C)" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="0"/>
+                                    <TextBlock Text="{loc:L Target_Tm_C}" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="0"/>
                                     <TextBox x:Name="ManualTargetTmInput" Text="60" Padding="6" BorderBrush="#CCC" Grid.Row="1" Grid.Column="0" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Tm tolerance (±°C)" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="2"/>
+                                    <TextBlock Text="{loc:L Tm_tolerance_C}" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="2"/>
                                     <TextBox x:Name="ManualTmToleranceInput" Text="3" Padding="6" BorderBrush="#CCC" Grid.Row="1" Grid.Column="2" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Target Product (bp)" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="0"/>
+                                    <TextBlock Text="{loc:L Target_Product_bp}" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="0"/>
                                     <TextBox x:Name="ManualTargetProductInput" Text="300" Padding="6" BorderBrush="#CCC" Grid.Row="3" Grid.Column="0" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Product tolerance (±bp)" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="2"/>
+                                    <TextBlock Text="{loc:L Product_tolerance_bp}" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="2"/>
                                     <TextBox x:Name="ManualProductToleranceInput" Text="200" Padding="6" BorderBrush="#CCC" Grid.Row="3" Grid.Column="2" Margin="0,0,0,6"/>
                                 </Grid>
-                                <Button Content="Analyze / Find Complement" Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0" Click="AnalyzePrimers_Click"/>
+                                <Button Content="{loc:L Analyze_Find_Complement}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0" Click="AnalyzePrimers_Click"/>
 
                                 <!-- RE overhang for manual primers -->
-                                <CheckBox x:Name="ManualRECheckBox" Content="Add restriction enzyme overhangs" Margin="0,10,0,0" FontSize="12"
+                                <CheckBox x:Name="ManualRECheckBox" Content="{loc:L Add_restriction_enzyme_overhangs}" Margin="0,10,0,0" FontSize="12"
                                           Checked="ManualRECheckBox_Changed" Unchecked="ManualRECheckBox_Changed"/>
                                 <Border x:Name="ManualREPanel" Visibility="Collapsed" Background="#F5F5F5" CornerRadius="4" Padding="8" Margin="0,4,0,0">
                                     <StackPanel>
@@ -404,12 +405,12 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0">
-                                                <TextBlock Text="Fwd 5' RE" FontSize="11" Foreground="#555"/>
+                                                <TextBlock Text="{loc:L Fwd_5_RE}" FontSize="11" Foreground="#555"/>
                                                 <ComboBox x:Name="FwdREComboBox" FontSize="11" Padding="4" Margin="0,2,0,0"
                                                           SelectionChanged="REComboBox_SelectionChanged"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2">
-                                                <TextBlock Text="Rev 5' RE" FontSize="11" Foreground="#555"/>
+                                                <TextBlock Text="{loc:L Rev_5_RE}" FontSize="11" Foreground="#555"/>
                                                 <ComboBox x:Name="RevREComboBox" FontSize="11" Padding="4" Margin="0,2,0,0"
                                                           SelectionChanged="REComboBox_SelectionChanged"/>
                                             </StackPanel>
@@ -422,7 +423,7 @@
                         <!-- ===== Auto-Pick Panel (with target + RE checkbox) ===== -->
                         <Border x:Name="AutoDesignPanel" Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Text="Auto-Pick Parameters" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{loc:L Auto_Pick_Parameters}" Style="{StaticResource SectionTitleStyle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -440,35 +441,35 @@
                                         <RowDefinition/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Text="Min Length" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="0"/>
+                                    <TextBlock Text="{loc:L Min_Length}" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="0"/>
                                     <TextBox x:Name="MinLengthInput" Text="18" Padding="5" BorderBrush="#CCC" Grid.Row="1" Grid.Column="0" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Max Length" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="2"/>
+                                    <TextBlock Text="{loc:L Max_Length}" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="2"/>
                                     <TextBox x:Name="MaxLengthInput" Text="25" Padding="5" BorderBrush="#CCC" Grid.Row="1" Grid.Column="2" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Max ΔTm (°C)" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="4"/>
+                                    <TextBlock Text="{loc:L Max_Tm_C}" Style="{StaticResource LabelStyle}" Grid.Row="0" Grid.Column="4"/>
                                     <TextBox x:Name="MaxTmDiffInput" Text="3" Padding="5" BorderBrush="#CCC" Grid.Row="1" Grid.Column="4" Margin="0,0,0,6"/>
 
-                                    <TextBlock Text="Min Tm (°C)" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="0"/>
+                                    <TextBlock Text="{loc:L Min_Tm_C}" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="0"/>
                                     <TextBox x:Name="MinTmInput" Text="55" Padding="5" BorderBrush="#CCC" Grid.Row="3" Grid.Column="0" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Target Tm (°C)" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="2" Foreground="#1976D2" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:L Target_Tm_C}" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="2" Foreground="#1976D2" FontWeight="SemiBold"/>
                                     <TextBox x:Name="TargetTmInput" Text="60" Padding="5" BorderBrush="#90CAF9" BorderThickness="2" Grid.Row="3" Grid.Column="2" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Max Tm (°C)" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="4"/>
+                                    <TextBlock Text="{loc:L Max_Tm_C_2}" Style="{StaticResource LabelStyle}" Grid.Row="2" Grid.Column="4"/>
                                     <TextBox x:Name="MaxTmInput" Text="65" Padding="5" BorderBrush="#CCC" Grid.Row="3" Grid.Column="4" Margin="0,0,0,6"/>
 
-                                    <TextBlock Text="Min Product (bp)" Style="{StaticResource LabelStyle}" Grid.Row="4" Grid.Column="0"/>
+                                    <TextBlock Text="{loc:L Min_Product_bp}" Style="{StaticResource LabelStyle}" Grid.Row="4" Grid.Column="0"/>
                                     <TextBox x:Name="MinProductInput" Text="100" Padding="5" BorderBrush="#CCC" Grid.Row="5" Grid.Column="0" Margin="0,0,0,4"/>
-                                    <TextBlock Text="Target Product (bp)" Style="{StaticResource LabelStyle}" Grid.Row="4" Grid.Column="2" Foreground="#1976D2" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:L Target_Product_bp}" Style="{StaticResource LabelStyle}" Grid.Row="4" Grid.Column="2" Foreground="#1976D2" FontWeight="SemiBold"/>
                                     <TextBox x:Name="TargetProductInput" Text="300" Padding="5" BorderBrush="#90CAF9" BorderThickness="2" Grid.Row="5" Grid.Column="2" Margin="0,0,0,4"/>
-                                    <TextBlock Text="Max Product (bp)" Style="{StaticResource LabelStyle}" Grid.Row="4" Grid.Column="4"/>
+                                    <TextBlock Text="{loc:L Max_Product_bp}" Style="{StaticResource LabelStyle}" Grid.Row="4" Grid.Column="4"/>
                                     <TextBox x:Name="MaxProductInput" Text="1000" Padding="5" BorderBrush="#CCC" Grid.Row="5" Grid.Column="4" Margin="0,0,0,4"/>
                                 </Grid>
 
-                                <CheckBox x:Name="GcClampCheckBox" Content="Require GC clamp (3' G or C)" IsChecked="True" Margin="0,6,0,0"/>
-                                <CheckBox x:Name="SelfCompCheckBox" Content="Penalize self-complementarity (ΔG &lt; -5 kcal/mol)" IsChecked="True" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="GcClampCheckBox" Content="{loc:L Require_GC_clamp_3_G_or_C}" IsChecked="True" Margin="0,6,0,0"/>
+                                <CheckBox x:Name="SelfCompCheckBox" Content="{loc:L Penalize_self_complementarity_G_5_kcal_mol}" IsChecked="True" Margin="0,4,0,0"/>
 
                                 <!-- Reaction Conditions (Owczarzy 2008 / SantaLucia 1998) -->
                                 <Border Background="#F5F9FF" CornerRadius="4" Padding="8,6" Margin="0,8,0,0" BorderBrush="#BBDEFB" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="🧪 Reaction Conditions" FontSize="11" FontWeight="SemiBold" Foreground="#1565C0" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{loc:L Reaction_Conditions}" FontSize="11" FontWeight="SemiBold" Foreground="#1565C0" Margin="0,0,0,4"/>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -483,21 +484,21 @@
                                                 <RowDefinition/>
                                                 <RowDefinition/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Text="Na⁺ (mM)" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="0"/>
-                                            <TextBox x:Name="NaConcInput" Text="50" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="0" ToolTip="Monovalent cation concentration (mM)"/>
-                                            <TextBlock Text="Mg²⁺ (mM)" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="2"/>
-                                            <TextBox x:Name="MgConcInput" Text="1.5" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="2" ToolTip="Divalent cation concentration (mM)"/>
-                                            <TextBlock Text="dNTP (mM)" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="4"/>
-                                            <TextBox x:Name="DntpConcInput" Text="0.6" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="4" ToolTip="dNTP concentration (mM)"/>
-                                            <TextBlock Text="Primer (nM)" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="6"/>
-                                            <TextBox x:Name="PrimerConcInput" Text="250" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="6" ToolTip="Primer concentration (nM)"/>
+                                            <TextBlock Text="{loc:L Na_mM}" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="0"/>
+                                            <TextBox x:Name="NaConcInput" Text="50" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="0" ToolTip="{loc:L Monovalent_cation_concentration_mM}"/>
+                                            <TextBlock Text="{loc:L Mg_mM}" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="2"/>
+                                            <TextBox x:Name="MgConcInput" Text="1.5" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="2" ToolTip="{loc:L Divalent_cation_concentration_mM}"/>
+                                            <TextBlock Text="{loc:L dNTP_mM}" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="4"/>
+                                            <TextBox x:Name="DntpConcInput" Text="0.6" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="4" ToolTip="{loc:L dNTP_concentration_mM}"/>
+                                            <TextBlock Text="{loc:L Primer_nM}" FontSize="10" Foreground="#666" Grid.Row="0" Grid.Column="6"/>
+                                            <TextBox x:Name="PrimerConcInput" Text="250" Padding="3" FontSize="11" BorderBrush="#CCC" Grid.Row="1" Grid.Column="6" ToolTip="{loc:L Primer_concentration_nM}"/>
                                         </Grid>
-                                        <TextBlock Text="Tm: Owczarzy 2008 + SantaLucia 1998 NN" FontSize="9" Foreground="#999" FontStyle="Italic" Margin="0,3,0,0"/>
+                                        <TextBlock Text="{loc:L Tm_Owczarzy_2008_SantaLucia_1998_NN}" FontSize="9" Foreground="#999" FontStyle="Italic" Margin="0,3,0,0"/>
                                     </StackPanel>
                                 </Border>
 
                                 <!-- RE in Auto-Pick -->
-                                <CheckBox x:Name="AutoPickRECheckBox" Content="Include restriction enzyme overhangs" Margin="0,6,0,0" Checked="AutoPickRECheckBox_Changed" Unchecked="AutoPickRECheckBox_Changed"/>
+                                <CheckBox x:Name="AutoPickRECheckBox" Content="{loc:L Include_restriction_enzyme_overhangs}" Margin="0,6,0,0" Checked="AutoPickRECheckBox_Changed" Unchecked="AutoPickRECheckBox_Changed"/>
                                 <Border x:Name="AutoPickREPanel" Visibility="Collapsed" Background="#F5F5F5" CornerRadius="4" Padding="8" Margin="0,4,0,0">
                                     <StackPanel>
                                         <Grid>
@@ -507,18 +508,18 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0">
-                                                <TextBlock Text="Fwd 5' RE" FontSize="11" Foreground="#555"/>
+                                                <TextBlock Text="{loc:L Fwd_5_RE}" FontSize="11" Foreground="#555"/>
                                                 <ComboBox x:Name="AutoFwdREComboBox" FontSize="11" Padding="4" Margin="0,2,0,0"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2">
-                                                <TextBlock Text="Rev 5' RE" FontSize="11" Foreground="#555"/>
+                                                <TextBlock Text="{loc:L Rev_5_RE}" FontSize="11" Foreground="#555"/>
                                                 <ComboBox x:Name="AutoRevREComboBox" FontSize="11" Padding="4" Margin="0,2,0,0"/>
                                             </StackPanel>
                                         </Grid>
                                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                            <TextBlock Text="Protective bases:" VerticalAlignment="Center" FontSize="11" Foreground="#555"/>
+                                            <TextBlock Text="{loc:L Protective_bases}" VerticalAlignment="Center" FontSize="11" Foreground="#555"/>
                                             <ComboBox x:Name="ProtectiveBasesInput" Width="55" Margin="6,0,0,0" FontSize="11"
-                                                      ToolTip="Extra bases before RE site for efficient cutting. Composition auto-adjusted to minimise GC% shift."
+                                                      ToolTip="{loc:L Extra_bases_before_RE_site_for_efficient_cut}"
                                                       SelectedIndex="1">
                                                 <ComboBoxItem Content="0 bp" Tag="0"/>
                                                 <ComboBoxItem Content="2 bp" Tag="2"/>
@@ -529,7 +530,7 @@
                                         </StackPanel>
                                         <Border Background="#EEEEEE" CornerRadius="3" Padding="6" Margin="0,6,0,0">
                                             <StackPanel>
-                                                <TextBlock Text="Preview (top result):" FontSize="10" Foreground="#777" Margin="0,0,0,2"/>
+                                                <TextBlock Text="{loc:L Preview_top_result}" FontSize="10" Foreground="#777" Margin="0,0,0,2"/>
                                                 <TextBlock x:Name="FwdWithREPreview" FontFamily="Consolas" FontSize="10" Foreground="#1976D2" TextWrapping="Wrap"/>
                                                 <TextBlock x:Name="RevWithREPreview" FontFamily="Consolas" FontSize="10" Foreground="#388E3C" TextWrapping="Wrap" Margin="0,1,0,0"/>
                                             </StackPanel>
@@ -538,32 +539,32 @@
                                 </Border>
 
                                 <!-- Product must span region constraint -->
-                                <CheckBox x:Name="IncludeRegionCheckBox" Content="Product must span selected region" Margin="0,10,0,0" FontSize="12"/>
+                                <CheckBox x:Name="IncludeRegionCheckBox" Content="{loc:L Product_must_span_selected_region}" Margin="0,10,0,0" FontSize="12"/>
                                 <Border x:Name="ConstraintPanel" Background="#F3F7FF" CornerRadius="4" Padding="8" Margin="0,4,0,0">
                                     <StackPanel>
-                                        <TextBlock x:Name="ConstraintRegionLabel" Text="No constraint set" FontSize="11" Foreground="#999" Margin="0,0,0,6"/>
+                                        <TextBlock x:Name="ConstraintRegionLabel" Text="{loc:L No_constraint_set}" FontSize="11" Foreground="#999" Margin="0,0,0,6"/>
                                         <WrapPanel>
-                                            <Button Content="📌 Set from canvas selection" FontSize="11" Padding="6,3" Margin="0,0,6,0"
+                                            <Button Content="{loc:L Set_from_canvas_selection}" FontSize="11" Padding="6,3" Margin="0,0,6,0"
                                                     Background="#1976D2" Foreground="White" BorderThickness="0" Cursor="Hand"
                                                     Click="SetConstraintFromSelection_Click"
-                                                    ToolTip="Use the region you dragged on the gene visualization canvas">
+                                                    ToolTip="{loc:L Use_the_region_you_dragged_on_the_gene_visua}">
                                                 <Button.Resources>
                                                     <Style TargetType="Border">
                                                         <Setter Property="CornerRadius" Value="4"/>
                                                     </Style>
                                                 </Button.Resources>
                                             </Button>
-                                            <Button Content="🧬 Set from CDS" FontSize="11" Padding="6,3" Margin="0,0,6,0"
+                                            <Button Content="{loc:L Set_from_CDS}" FontSize="11" Padding="6,3" Margin="0,0,6,0"
                                                     Background="#388E3C" Foreground="White" BorderThickness="0" Cursor="Hand"
                                                     Click="SetConstraintFromCDS_Click"
-                                                    ToolTip="Set constraint to the full CDS region">
+                                                    ToolTip="{loc:L Set_constraint_to_the_full_CDS_region}">
                                                 <Button.Resources>
                                                     <Style TargetType="Border">
                                                         <Setter Property="CornerRadius" Value="4"/>
                                                     </Style>
                                                 </Button.Resources>
                                             </Button>
-                                            <Button Content="✕ Clear" FontSize="11" Padding="6,3"
+                                            <Button Content="{loc:L Clear_3}" FontSize="11" Padding="6,3"
                                                     Background="#757575" Foreground="White" BorderThickness="0" Cursor="Hand"
                                                     Click="ClearConstraint_Click">
                                                 <Button.Resources>
@@ -574,16 +575,16 @@
                                             </Button>
                                         </WrapPanel>
                                         <TextBlock FontSize="10" Foreground="#888" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"
-                                                   Text="Fwd primer will start before region; Rev primer will end after region. You can also drag-select a CDS block on the gene canvas."/>
+                                                   Text="{loc:L Fwd_primer_will_start_before_region_Rev_prim}"/>
                                     </StackPanel>
                                 </Border>
 
-                                <Button Content="🔍 Auto-Pick Primers" Style="{StaticResource SecondaryButtonStyle}" Margin="0,12,0,0" Click="AutoPickPrimers_Click"/>
+                                <Button Content="{loc:L Auto_Pick_Primers}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,12,0,0" Click="AutoPickPrimers_Click"/>
                             </StackPanel>
                         </Border>
 
 
-                        <Button Content="Clear All" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Margin="0,3,0,10" Click="ClearAll_Click"/>
+                        <Button Content="{loc:L Clear_All_2}" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Margin="0,3,0,10" Click="ClearAll_Click"/>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -595,14 +596,14 @@
                             <Border x:Name="AutoResultsPanel" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="🏆 Auto-Picked Primer Pairs" Style="{StaticResource SectionTitleStyle}" Foreground="#00796B"/>
-                                        <Button Content="Export CSV" Style="{StaticResource SmallButtonStyle}" Margin="15,0,0,0" Click="ExportAutoResults_Click" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{loc:L Auto_Picked_Primer_Pairs}" Style="{StaticResource SectionTitleStyle}" Foreground="#00796B"/>
+                                        <Button Content="{loc:L Export_CSV_2}" Style="{StaticResource SmallButtonStyle}" Margin="15,0,0,0" Click="ExportAutoResults_Click" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock Text="💡 Click to preview primer details below." FontSize="10" Foreground="#999" Margin="0,0,0,4" FontStyle="Italic"/>
+                                    <TextBlock Text="{loc:L Click_to_preview_primer_details_below}" FontSize="10" Foreground="#999" Margin="0,0,0,4" FontStyle="Italic"/>
                                     <DataGrid x:Name="AutoResultsDataGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderBrush="#E0E0E0" BorderThickness="1" MaxHeight="300" FontSize="11" SelectionChanged="AutoResultsDataGrid_SelectionChanged" MouseDoubleClick="AutoResultsDataGrid_MouseDoubleClick">
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="30"/>
-                                            <DataGridTextColumn Header="Fwd (5'→3')" Binding="{Binding ForwardDisplay}" Width="160">
+                                            <DataGridTextColumn Header="{loc:L Fwd_5_3}" Binding="{Binding ForwardDisplay}" Width="160">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="FontFamily" Value="Consolas"/>
@@ -610,7 +611,7 @@
                                                     </Style>
                                                 </DataGridTextColumn.ElementStyle>
                                             </DataGridTextColumn>
-                                            <DataGridTextColumn Header="Rev (5'→3')" Binding="{Binding ReverseDisplay}" Width="160">
+                                            <DataGridTextColumn Header="{loc:L Rev_5_3}" Binding="{Binding ReverseDisplay}" Width="160">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="FontFamily" Value="Consolas"/>
@@ -618,12 +619,12 @@
                                                     </Style>
                                                 </DataGridTextColumn.ElementStyle>
                                             </DataGridTextColumn>
-                                            <DataGridTextColumn Header="Fwd Tm" Binding="{Binding ForwardTm, StringFormat={}{0:F1}}" Width="52"/>
-                                            <DataGridTextColumn Header="Rev Tm" Binding="{Binding ReverseTm, StringFormat={}{0:F1}}" Width="52"/>
-                                            <DataGridTextColumn Header="ΔTm" Binding="{Binding TmDiff, StringFormat={}{0:F1}}" Width="38"/>
-                                            <DataGridTextColumn Header="Product" Binding="{Binding ProductSize}" Width="52"/>
-                                            <DataGridTextColumn Header="Score" Binding="{Binding Score, StringFormat={}{0:F1}}" Width="45"/>
-                                            <DataGridTextColumn Header="Fwd Tm+RE" Binding="{Binding ForwardTmFullDisplay}" Width="58">
+                                            <DataGridTextColumn Header="{loc:L Fwd_Tm}" Binding="{Binding ForwardTm, StringFormat={}{0:F1}}" Width="52"/>
+                                            <DataGridTextColumn Header="{loc:L Rev_Tm}" Binding="{Binding ReverseTm, StringFormat={}{0:F1}}" Width="52"/>
+                                            <DataGridTextColumn Header="{loc:L Tm}" Binding="{Binding TmDiff, StringFormat={}{0:F1}}" Width="38"/>
+                                            <DataGridTextColumn Header="{loc:L Product}" Binding="{Binding ProductSize}" Width="52"/>
+                                            <DataGridTextColumn Header="{loc:L Score}" Binding="{Binding Score, StringFormat={}{0:F1}}" Width="45"/>
+                                            <DataGridTextColumn Header="{loc:L Fwd_Tm_RE}" Binding="{Binding ForwardTmFullDisplay}" Width="58">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="#2E7D32"/>
@@ -631,7 +632,7 @@
                                                     </Style>
                                                 </DataGridTextColumn.ElementStyle>
                                             </DataGridTextColumn>
-                                            <DataGridTextColumn Header="Rev Tm+RE" Binding="{Binding ReverseTmFullDisplay}" Width="58">
+                                            <DataGridTextColumn Header="{loc:L Rev_Tm_RE}" Binding="{Binding ReverseTmFullDisplay}" Width="58">
                                                 <DataGridTextColumn.ElementStyle>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="#2E7D32"/>
@@ -648,10 +649,10 @@
                             <Border x:Name="PairSummaryPanel" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🔗 Primer Pair Summary" Style="{StaticResource SectionTitleStyle}" Foreground="#7B1FA2"/>
-                                        <Button Content="🔬 Primer-BLAST (NCBI)" FontSize="11" Padding="8,4" Margin="15,0,0,0"
+                                        <TextBlock Text="{loc:L Primer_Pair_Summary}" Style="{StaticResource SectionTitleStyle}" Foreground="#7B1FA2"/>
+                                        <Button Content="{loc:L Primer_BLAST_NCBI}" FontSize="11" Padding="8,4" Margin="15,0,0,0"
                                             Background="#1565C0" Foreground="White" BorderThickness="0" Cursor="Hand"
-                                            Click="PrimerBlast_Click" ToolTip="Open NCBI Primer-BLAST with current primers pre-filled" VerticalAlignment="Center">
+                                            Click="PrimerBlast_Click" ToolTip="{loc:L Open_NCBI_Primer_BLAST_with_current_primers}" VerticalAlignment="Center">
                                             <Button.Resources>
                                                 <Style TargetType="Border">
                                                     <Setter Property="CornerRadius" Value="4"/>
@@ -667,19 +668,19 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                            <TextBlock Text="Product" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L Product}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="ProductSize" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                                            <TextBlock Text="ΔTm" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L Tm}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="TmDifference" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Margin="0,0,8,0">
-                                            <TextBlock Text="Hetero-Dimer" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L Hetero_Dimer}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="HeteroDimer" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" Margin="0,0,8,0">
-                                            <TextBlock Text="Score" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L Score}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="OverallScore" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Grid>
@@ -688,7 +689,7 @@
                                     <!-- Full primer Tm with RE overhang (only visible when RE is active) -->
                                     <Border x:Name="FullTmRow" Background="#E8F5E9" CornerRadius="4" Padding="8,6" Margin="0,6,0,0" Visibility="Collapsed">
                                         <StackPanel>
-                                            <TextBlock Text="🧪 Full Primer Tm (including RE overhang)" FontSize="11" FontWeight="SemiBold" Foreground="#2E7D32" Margin="0,0,0,6"/>
+                                            <TextBlock Text="{loc:L Full_Primer_Tm_including_RE_overhang}" FontSize="11" FontWeight="SemiBold" Foreground="#2E7D32" Margin="0,0,0,6"/>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -696,19 +697,19 @@
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                                    <TextBlock Text="Fwd Tm (+RE)" FontSize="11" Foreground="#555"/>
+                                                    <TextBlock Text="{loc:L Fwd_Tm_RE_2}" FontSize="11" Foreground="#555"/>
                                                     <TextBlock x:Name="FwdFullTm" FontSize="16" FontWeight="SemiBold" Foreground="#2E7D32"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                                                    <TextBlock Text="Rev Tm (+RE)" FontSize="11" Foreground="#555"/>
+                                                    <TextBlock Text="{loc:L Rev_Tm_RE_2}" FontSize="11" Foreground="#555"/>
                                                     <TextBlock x:Name="RevFullTm" FontSize="16" FontWeight="SemiBold" Foreground="#2E7D32"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2">
-                                                    <TextBlock Text="ΔTm (full)" FontSize="11" Foreground="#555"/>
+                                                    <TextBlock Text="{loc:L Tm_full}" FontSize="11" Foreground="#555"/>
                                                     <TextBlock x:Name="FullTmDiff" FontSize="16" FontWeight="SemiBold"/>
                                                 </StackPanel>
                                             </Grid>
-                                            <TextBlock Text="💡 Full Tm reflects later PCR cycles (cycles 3+) when the overhang becomes double-stranded. Annealing temp should be based on gene-specific Tm (above)." 
+                                            <TextBlock Text="{loc:L Full_Tm_reflects_later_PCR_cycles_cycles_3_w}" 
                                                        FontSize="10" Foreground="#555" FontStyle="Italic" TextWrapping="Wrap" Margin="0,5,0,0"/>
                                         </StackPanel>
                                     </Border>
@@ -718,8 +719,8 @@
                             <Border x:Name="ForwardResultPanel" Style="{StaticResource CardStyle}">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="➤ Forward Primer" Style="{StaticResource SectionTitleStyle}" Foreground="#1976D2"/>
-                                        <Button Content="Copy" Style="{StaticResource SmallButtonStyle}" Margin="15,0,0,0" Click="CopyForwardPrimer_Click" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{loc:L Forward_Primer_2}" Style="{StaticResource SectionTitleStyle}" Foreground="#1976D2"/>
+                                        <Button Content="{loc:L Copy}" Style="{StaticResource SmallButtonStyle}" Margin="15,0,0,0" Click="CopyForwardPrimer_Click" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <TextBlock x:Name="FwdSequenceDisplay" FontFamily="Consolas" FontSize="14" Foreground="#333" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                     <Grid>
@@ -739,11 +740,11 @@
                                             <TextBlock x:Name="FwdLength" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="0" Margin="0,0,8,8">
-                                            <TextBlock Text="Tm (°C)" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L Tm_C}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="FwdTm" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Grid.Row="0" Margin="0,0,8,8">
-                                            <TextBlock Text="GC %" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L GC}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="FwdGC" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" Grid.Row="0" Margin="0,0,8,8">
@@ -752,50 +753,50 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="GC Clamp" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L GC_Clamp}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdGCClamp" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Self-Comp" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Self_Comp}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdSelfComp" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Hairpin" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Hairpin}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdHairpin" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="3' ΔG" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdEndStability" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="0" Grid.Row="2" Margin="0,0,8,0">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Self-Dimer ΔG" FontSize="10" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Self_Dimer_G}" FontSize="10" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdSelfDimerDG" FontSize="13" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="2" Margin="0,0,8,0">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Hairpin ΔG" FontSize="10" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Hairpin_G}" FontSize="10" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdHairpinDG" FontSize="13" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Grid.Row="2" Margin="0,0,8,0" Grid.ColumnSpan="2">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Any Self-Comp" FontSize="10" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Any_Self_Comp}" FontSize="10" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="FwdAnyComp" FontSize="13" FontWeight="SemiBold"/>
                                         </StackPanel>
@@ -807,8 +808,8 @@
                             <Border x:Name="ReverseResultPanel" Style="{StaticResource CardStyle}">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="◄ Reverse Primer" Style="{StaticResource SectionTitleStyle}" Foreground="#388E3C"/>
-                                        <Button Content="Copy" Style="{StaticResource SmallButtonStyle}" Margin="15,0,0,0" Click="CopyReversePrimer_Click" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{loc:L Reverse_Primer}" Style="{StaticResource SectionTitleStyle}" Foreground="#388E3C"/>
+                                        <Button Content="{loc:L Copy}" Style="{StaticResource SmallButtonStyle}" Margin="15,0,0,0" Click="CopyReversePrimer_Click" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <TextBlock x:Name="RevSequenceDisplay" FontFamily="Consolas" FontSize="14" Foreground="#333" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                     <Grid>
@@ -828,11 +829,11 @@
                                             <TextBlock x:Name="RevLength" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="0" Margin="0,0,8,8">
-                                            <TextBlock Text="Tm (°C)" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L Tm_C}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="RevTm" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Grid.Row="0" Margin="0,0,8,8">
-                                            <TextBlock Text="GC %" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{loc:L GC}" FontSize="11" Foreground="#888"/>
                                             <TextBlock x:Name="RevGC" FontSize="16" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" Grid.Row="0" Margin="0,0,8,8">
@@ -841,50 +842,50 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="GC Clamp" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L GC_Clamp}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevGCClamp" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Self-Comp" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Self_Comp}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevSelfComp" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Hairpin" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Hairpin}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevHairpin" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="3" Grid.Row="1" Margin="0,0,8,8">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="3' ΔG" FontSize="11" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text=" ⓘ" FontSize="9" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevEndStability" FontSize="14" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="0" Grid.Row="2" Margin="0,0,8,0">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Self-Dimer ΔG" FontSize="10" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Self_Dimer_G}" FontSize="10" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevSelfDimerDG" FontSize="13" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="2" Margin="0,0,8,0">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Hairpin ΔG" FontSize="10" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Hairpin_G}" FontSize="10" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevHairpinDG" FontSize="13" FontWeight="SemiBold"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Grid.Row="2" Margin="0,0,8,0" Grid.ColumnSpan="2">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Any Self-Comp" FontSize="10" Foreground="#888"/>
-                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="Click for explanation"/>
+                                                <TextBlock Text="{loc:L Any_Self_Comp}" FontSize="10" Foreground="#888"/>
+                                                <TextBlock Text=" ⓘ" FontSize="8" Foreground="#7B1FA2" Cursor="Hand" MouseLeftButtonDown="ScrollToGuide_Click" ToolTip="{loc:L Click_for_explanation}"/>
                                             </StackPanel>
                                             <TextBlock x:Name="RevAnyComp" FontSize="13" FontWeight="SemiBold"/>
                                         </StackPanel>
@@ -895,7 +896,7 @@
                             <!-- Parameter Guide (always visible) -->
                             <Border x:Name="ParameterDetailPanel" Style="{StaticResource CardStyle}" Background="#F3E5F5" BorderBrush="#B39DDB" BorderThickness="1.5">
                                 <StackPanel>
-                                    <TextBlock Text="📘 Analysis Parameters Guide" Style="{StaticResource SectionTitleStyle}" Foreground="#5E35B1" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{loc:L Analysis_Parameters_Guide}" Style="{StaticResource SectionTitleStyle}" Foreground="#5E35B1" Margin="0,0,0,6"/>
                                     <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#555" LineHeight="18">
                                     <Run FontWeight="SemiBold" Foreground="#1976D2">GC Clamp</Run><Run> — Primer ends with G or C at the 3' terminus, enhancing binding stability at the extension initiation site.</Run><LineBreak/>
                                     <Run FontWeight="SemiBold" Foreground="#1976D2">Self-Comp</Run><Run> — Maximum number of consecutive self-complementary bases (primer aligned to its own reverse complement). A score ≥4 indicates significant self-dimer formation risk.</Run><LineBreak/>
@@ -910,7 +911,7 @@
                             <!-- Sequence View -->
                             <Border x:Name="SequenceViewPanel" Style="{StaticResource CardStyle}" Visibility="Collapsed">
                                 <StackPanel>
-                                    <TextBlock Text="📋 Primer Binding Visualization" Style="{StaticResource SectionTitleStyle}"/>
+                                    <TextBlock Text="{loc:L Primer_Binding_Visualization}" Style="{StaticResource SectionTitleStyle}"/>
                                     <Border Background="#FAFAFA" CornerRadius="4" Padding="10" BorderBrush="#E0E0E0" BorderThickness="1">
                                         <TextBlock x:Name="SequenceVisualization" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" xml:space="preserve"/>
                                     </Border>

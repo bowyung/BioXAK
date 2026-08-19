@@ -1,7 +1,8 @@
 ﻿<Window x:Class="BioSAK.ChartWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Chart" 
+        xmlns:loc="clr-namespace:BioSAK.Localization"
+        Title="{loc:L Chart}" 
         Height="700" Width="900"
         MinHeight="500" MinWidth="600"
         WindowStartupLocation="CenterOwner"
@@ -20,22 +21,22 @@
         <!-- Main Toolbar -->
         <Border Grid.Row="0" Background="White" CornerRadius="5" Padding="10" Margin="0,0,0,5">
             <StackPanel Orientation="Horizontal">
-                <Button Content="💾 Save PNG" Padding="8,5" Margin="0,0,5,0"
+                <Button Content="{loc:L Save_PNG}" Padding="8,5" Margin="0,0,5,0"
                         Background="#4CAF50" Foreground="White" BorderThickness="0"
                         Cursor="Hand" Click="SaveAsPng_Click"/>
-                <Button Content="💾 Save SVG" Padding="8,5" Margin="0,0,10,0"
+                <Button Content="{loc:L Save_SVG}" Padding="8,5" Margin="0,0,10,0"
                         Background="#2196F3" Foreground="White" BorderThickness="0"
                         Cursor="Hand" Click="SaveAsSvg_Click"/>
                 <Separator Margin="5,0"/>
-                <Button Content="📋 Copy to Clipboard" Padding="8,5" Margin="5,0"
+                <Button Content="{loc:L Copy_to_Clipboard_2}" Padding="8,5" Margin="5,0"
                         Background="#9C27B0" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="CopyToClipboard_Click" ToolTip="Ctrl+C"/>
+                        Cursor="Hand" Click="CopyToClipboard_Click" ToolTip="{loc:L Ctrl_C}"/>
                 <Separator Margin="5,0"/>
-                <Button Content="📊 Statistics" Padding="8,5" Margin="5,0"
+                <Button Content="{loc:L Statistics}" Padding="8,5" Margin="5,0"
                         Background="#FF5722" Foreground="White" BorderThickness="0"
                         Cursor="Hand" Click="OpenStatistics_Click"/>
                 <Separator Margin="5,0"/>
-                <TextBlock Text="Double-click chart to edit | Ctrl+A: Select All | Del: Delete" 
+                <TextBlock Text="{loc:L Double_click_chart_to_edit_Ctrl_A_Select_All}" 
                            VerticalAlignment="Center" Foreground="#888" FontStyle="Italic" Margin="10,0"/>
             </StackPanel>
         </Border>
@@ -43,34 +44,34 @@
         <!-- Annotation Toolbar -->
         <Border Grid.Row="1" Background="White" CornerRadius="5" Padding="10" Margin="0,0,0,5">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Add:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:L Add_2}" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
 
-                <Button x:Name="TextBoxTool" Content="📝 Text" Padding="8,5" Margin="0,0,5,0"
+                <Button x:Name="TextBoxTool" Content="{loc:L Text}" Padding="8,5" Margin="0,0,5,0"
                         Background="#FF9800" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="AddTextBox_Click" ToolTip="Add Text Box"/>
+                        Cursor="Hand" Click="AddTextBox_Click" ToolTip="{loc:L Add_Text_Box}"/>
 
-                <Button Content="Ω Symbol" Padding="8,5" Margin="0,0,5,0"
+                <Button Content="{loc:L Symbol_2}" Padding="8,5" Margin="0,0,5,0"
                         Background="#9C27B0" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="OpenSymbolPicker_Click" ToolTip="Insert Special Symbol"/>
+                        Cursor="Hand" Click="OpenSymbolPicker_Click" ToolTip="{loc:L Insert_Special_Symbol}"/>
 
                 <Separator Margin="10,0"/>
-                <TextBlock Text="Lines:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:L Lines}" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
 
                 <Button Content="─" Padding="10,5" Margin="0,0,3,0"
                         Background="#607D8B" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="AddLine_Click" ToolTip="Straight Line" Tag="Line"/>
+                        Cursor="Hand" Click="AddLine_Click" ToolTip="{loc:L Straight_Line}" Tag="Line"/>
                 <Button Content="┌┐" Padding="10,5" Margin="0,0,3,0"
                         Background="#607D8B" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="AddLine_Click" ToolTip="U-Shape (ㄇ)" Tag="UShape"/>
+                        Cursor="Hand" Click="AddLine_Click" ToolTip="{loc:L U_Shape}" Tag="UShape"/>
                 <Button Content="→" Padding="10,5" Margin="0,0,3,0"
                         Background="#607D8B" Foreground="White" BorderThickness="0"
                         Cursor="Hand" Click="AddLine_Click" ToolTip="Arrow" Tag="Arrow"/>
                 <Button Content="╠╣" Padding="10,5" Margin="0,0,3,0"
                         Background="#607D8B" Foreground="White" BorderThickness="0"
-                        Cursor="Hand" Click="AddLine_Click" ToolTip="H-Shape" Tag="HShape"/>
+                        Cursor="Hand" Click="AddLine_Click" ToolTip="{loc:L H_Shape}" Tag="HShape"/>
 
                 <Separator Margin="10,0"/>
-                <Button Content="🗑 Delete (Del)" Padding="8,5"
+                <Button Content="{loc:L Delete_Del}" Padding="8,5"
                         Background="#EF5350" Foreground="White" BorderThickness="0"
                         Cursor="Hand" Click="DeleteSelected_Click"/>
             </StackPanel>

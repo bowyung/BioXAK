@@ -1,10 +1,11 @@
 ﻿<Page x:Class="BioSAK.Pages.VectorDesignerPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:BioSAK.Localization"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       mc:Ignorable="d" d:DesignHeight="700" d:DesignWidth="1100"
-      Title="Vector Designer" Background="WhiteSmoke">
+      Title="{loc:L Vector_Designer}" Background="WhiteSmoke">
 
     <Page.Resources>
         <Style x:Key="SectionHeader" TargetType="TextBlock">
@@ -95,11 +96,11 @@
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Background="#1976D2" CornerRadius="6,6,0,0" Padding="10,8">
-                    <TextBlock Text="🧬 Vector Designer" FontSize="15" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="{loc:L Vector_Designer_2}" FontSize="15" FontWeight="Bold" Foreground="White"/>
                 </Border>
 
                 <StackPanel Grid.Row="1" Margin="8,6,8,0">
-                    <TextBlock Text="VECTOR LIBRARY" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="{loc:L VECTOR_LIBRARY}" Style="{StaticResource SectionHeader}"/>
                     <ComboBox x:Name="CategoryComboBox" Margin="0,2,0,4" SelectionChanged="CategoryComboBox_SelectionChanged" FontSize="12">
                         <ComboBoxItem Content="All Categories" IsSelected="True"/>
                     </ComboBox>
@@ -115,9 +116,9 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </Border>
-                    <Button Content="📥 Load Selected Vector" Style="{StaticResource ActionButton}" Click="LoadVector_Click" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
-                    <Button Content="📂 Import .gb File" Style="{StaticResource SmallButton}" Click="ImportGenBank_Click" Margin="0,2,0,0" HorizontalAlignment="Stretch"/>
-                    <Expander Header="📖 How to get .gb files" FontSize="10" Foreground="#666" IsExpanded="False" Margin="0,4,0,0">
+                    <Button Content="{loc:L Load_Selected_Vector}" Style="{StaticResource ActionButton}" Click="LoadVector_Click" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
+                    <Button Content="{loc:L Import_gb_File}" Style="{StaticResource SmallButton}" Click="ImportGenBank_Click" Margin="0,2,0,0" HorizontalAlignment="Stretch"/>
+                    <Expander Header="{loc:L How_to_get_gb_files}" FontSize="10" Foreground="#666" IsExpanded="False" Margin="0,4,0,0">
                         <Border Background="#F9F9F9" CornerRadius="3" Padding="6,4" Margin="0,2,0,0">
                             <TextBlock TextWrapping="Wrap" FontSize="9.5" Foreground="#555" LineHeight="15">
                                 <Bold>R Script</Bold> — run download_vectors.R<LineBreak/>
@@ -129,22 +130,22 @@
                     </Expander>
 
                     <Separator Margin="0,6,0,2"/>
-                    <TextBlock Text="ADD CUSTOM SEQUENCE" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="{loc:L ADD_CUSTOM_SEQUENCE}" Style="{StaticResource SectionHeader}"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Name:" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0"/>
+                        <TextBlock Text="{loc:L Name}" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0"/>
                         <TextBox x:Name="CustomNameTextBox" Grid.Column="1" FontSize="11" Padding="4,2" Margin="0,2"/>
                     </Grid>
                     <TextBox x:Name="CustomSequenceTextBox" Height="50" FontSize="10" FontFamily="Consolas"
                              AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,4,0,2"/>
                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                        <CheckBox x:Name="IsCircularCheckBox" Content="Circular" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBlock x:Name="CustomSeqLengthText" Text="0 bp" FontSize="10" Foreground="#888" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="IsCircularCheckBox" Content="{loc:L Circular}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="CustomSeqLengthText" Text="{loc:L N0_bp}" FontSize="10" Foreground="#888" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Expander Header="Flanking RE Sites" FontSize="11" IsExpanded="False" Margin="0,4,0,0">
+                    <Expander Header="{loc:L Flanking_RE_Sites}" FontSize="11" IsExpanded="False" Margin="0,4,0,0">
                         <StackPanel Margin="0,4,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -155,19 +156,19 @@
                                     <RowDefinition/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="5' RE:" Grid.Row="0" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
+                                <TextBlock Text="{loc:L N5_RE}" Grid.Row="0" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
                                 <ComboBox x:Name="Flank5ComboBox" Grid.Row="0" Grid.Column="1" FontSize="10" FontFamily="Consolas" Margin="0,0,0,2" IsEditable="True"/>
-                                <TextBlock Text="3' RE:" Grid.Row="1" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
+                                <TextBlock Text="{loc:L N3_RE}" Grid.Row="1" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
                                 <ComboBox x:Name="Flank3ComboBox" Grid.Row="1" Grid.Column="1" FontSize="10" FontFamily="Consolas" Margin="0,0,0,2" IsEditable="True"/>
                             </Grid>
                         </StackPanel>
                     </Expander>
-                    <Button Content="➕ Add Sequence" Style="{StaticResource ActionButton}" Click="AddCustomSequence_Click" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
+                    <Button Content="{loc:L Add_Sequence}" Style="{StaticResource ActionButton}" Click="AddCustomSequence_Click" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" Margin="8,4,8,4">
                     <Separator Margin="0,4,0,4"/>
-                    <TextBlock Text="WORKSPACE" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="{loc:L WORKSPACE}" Style="{StaticResource SectionHeader}"/>
                     <ListBox x:Name="ConstructListBox" SelectionChanged="ConstructListBox_SelectionChanged"
                              ItemContainerStyle="{StaticResource ConstructListItem}" BorderBrush="#DDD" BorderThickness="1"
                              MinHeight="50" MaxHeight="160" FontSize="11">
@@ -180,9 +181,9 @@
                 </StackPanel>
                 <StackPanel Grid.Row="3" Margin="8,0,8,8">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="↩ Undo" Style="{StaticResource SmallButton}" Click="Undo_Click"/>
-                        <Button Content="📋 Clone" Style="{StaticResource SmallButton}" Click="CloneConstruct_Click"/>
-                        <Button Content="🗑 Delete" Style="{StaticResource DangerButton}" Click="DeleteConstruct_Click"/>
+                        <Button Content="{loc:L Undo}" Style="{StaticResource SmallButton}" Click="Undo_Click"/>
+                        <Button Content="{loc:L Clone}" Style="{StaticResource SmallButton}" Click="CloneConstruct_Click"/>
+                        <Button Content="{loc:L Delete}" Style="{StaticResource DangerButton}" Click="DeleteConstruct_Click"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
@@ -206,17 +207,17 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="VisualizationTitle" Text="Select a construct" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="VisualizationTitle" Text="{loc:L Select_a_construct}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock x:Name="VisualizationInfo" Text="" FontSize="12" Foreground="#888" Margin="10,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <ToggleButton x:Name="CircularViewToggle" Content="⭕" Width="32" Height="28" FontSize="14" Margin="2"
-                                          ToolTip="Circular / Linear" Click="CircularViewToggle_Click" Background="White" BorderBrush="#CCC" Cursor="Hand"/>
+                                          ToolTip="{loc:L Circular_Linear}" Click="CircularViewToggle_Click" Background="White" BorderBrush="#CCC" Cursor="Hand"/>
                             <Border Width="1" Background="#DDD" Margin="4,4"/>
-                            <Button Style="{StaticResource SmallButton}" Click="ZoomIn_Click" Width="38" Height="28" ToolTip="Zoom In">
+                            <Button Style="{StaticResource SmallButton}" Click="ZoomIn_Click" Width="38" Height="28" ToolTip="{loc:L Zoom_In}">
                                 <TextBlock Text="+" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,-4,0,0"/>
                             </Button>
-                            <Button Style="{StaticResource SmallButton}" Click="ZoomOut_Click" Width="38" Height="28" ToolTip="Zoom Out">
+                            <Button Style="{StaticResource SmallButton}" Click="ZoomOut_Click" Width="38" Height="28" ToolTip="{loc:L Zoom_Out}">
                                 <TextBlock Text="−" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,-4,0,0"/>
                             </Button>
                             <Button Style="{StaticResource SmallButton}" Click="ResetView_Click" Height="28" Padding="6,2">
@@ -249,7 +250,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="SeqViewerTitle" Text="Sequence" FontSize="11" FontWeight="SemiBold" Foreground="#555"/>
+                                <TextBlock x:Name="SeqViewerTitle" Text="{loc:L Sequence}" FontSize="11" FontWeight="SemiBold" Foreground="#555"/>
                                 <Button Grid.Column="1" Content="✕" FontSize="10" Width="22" Height="20" 
                                         Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand"
                                         Click="CloseSeqViewer_Click"/>
@@ -272,7 +273,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="StatusText" Text="Drag on map to view sequence. Ready." FontSize="11" Foreground="#666"/>
+                        <TextBlock x:Name="StatusText" Text="{loc:L Drag_on_map_to_view_sequence_Ready}" FontSize="11" Foreground="#666"/>
                         <TextBlock x:Name="PositionText" Grid.Column="1" FontSize="11" Foreground="#888" FontFamily="Consolas"/>
                     </Grid>
                 </Border>
@@ -305,7 +306,7 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </Border>
-                    <Expander Header="Add Feature" FontSize="11" Margin="0,4,0,0" IsExpanded="False">
+                    <Expander Header="{loc:L Add_Feature}" FontSize="11" Margin="0,4,0,0" IsExpanded="False">
                         <StackPanel Margin="0,4,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -318,26 +319,26 @@
                                     <RowDefinition/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="Name:" Grid.Row="0" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
+                                <TextBlock Text="{loc:L Name}" Grid.Row="0" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
                                 <TextBox x:Name="FeatureNameTextBox" Grid.Row="0" Grid.Column="1" FontSize="11" Padding="3,1" Margin="0,0,0,2"/>
-                                <TextBlock Text="Type:" Grid.Row="1" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
+                                <TextBlock Text="{loc:L Type}" Grid.Row="1" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
                                 <ComboBox x:Name="FeatureTypeComboBox" Grid.Row="1" Grid.Column="1" FontSize="11" Margin="0,0,0,2"/>
-                                <TextBlock Text="Pos:" Grid.Row="2" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
+                                <TextBlock Text="{loc:L Pos}" Grid.Row="2" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,2"/>
                                 <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,2">
                                     <TextBox x:Name="FeatureStartTextBox" Width="55" FontSize="11" Padding="3,1"/>
                                     <TextBlock Text=" — " FontSize="11" VerticalAlignment="Center"/>
                                     <TextBox x:Name="FeatureEndTextBox" Width="55" FontSize="11" Padding="3,1"/>
                                 </StackPanel>
-                                <CheckBox x:Name="FeatureReverseCheckBox" Grid.Row="3" Grid.Column="1" Content="Reverse strand" FontSize="11" Margin="0,2,0,0"/>
+                                <CheckBox x:Name="FeatureReverseCheckBox" Grid.Row="3" Grid.Column="1" Content="{loc:L Reverse_strand}" FontSize="11" Margin="0,2,0,0"/>
                             </Grid>
-                            <Button Content="Add Feature" Style="{StaticResource SmallButton}" Click="AddFeature_Click" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
+                            <Button Content="{loc:L Add_Feature}" Style="{StaticResource SmallButton}" Click="AddFeature_Click" Margin="0,4,0,0" HorizontalAlignment="Stretch"/>
                         </StackPanel>
                     </Expander>
 
                     <Separator Margin="0,6,0,4"/>
 
                     <!-- RE Digest -->
-                    <TextBlock Text="✂️ RESTRICTION DIGEST" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="{loc:L RESTRICTION_DIGEST}" Style="{StaticResource SectionHeader}"/>
                     <TextBox x:Name="EnzymeSearchBox" FontSize="11" Padding="4,3" TextChanged="EnzymeSearchBox_TextChanged">
                         <TextBox.Style>
                             <Style TargetType="TextBox">
@@ -347,7 +348,7 @@
                                             <Setter.Value>
                                                 <VisualBrush AlignmentX="Left" AlignmentY="Center" Stretch="None">
                                                     <VisualBrush.Visual>
-                                                        <TextBlock Text="  🔍 Search enzyme..." Foreground="#AAA" FontSize="11" Margin="2,0,0,0"/>
+                                                        <TextBlock Text="{loc:L Search_enzyme_2}" Foreground="#AAA" FontSize="11" Margin="2,0,0,0"/>
                                                     </VisualBrush.Visual>
                                                 </VisualBrush>
                                             </Setter.Value>
@@ -375,16 +376,16 @@
                             <TextBlock x:Name="CutSiteCountText" FontSize="10" Foreground="#1976D2" FontWeight="SemiBold" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Button x:Name="DigestButton" Content="✂️ Digest" Style="{StaticResource ActionButton}"
+                    <Button x:Name="DigestButton" Content="{loc:L Digest_2}" Style="{StaticResource ActionButton}"
                             Click="Digest_Click" Margin="0,6,0,0" HorizontalAlignment="Stretch" IsEnabled="False"/>
                     <TextBlock x:Name="DigestResultText" FontSize="10" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0"/>
 
                     <Separator Margin="0,6,0,4"/>
 
                     <!-- ===== CLONING WORKFLOW ===== -->
-                    <TextBlock Text="🔬 CLONING" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="{loc:L CLONING_2}" Style="{StaticResource SectionHeader}"/>
 
-                    <TextBlock Text="Vector:" FontSize="10" Foreground="#555" Margin="0,2,0,0"/>
+                    <TextBlock Text="{loc:L Vector}" FontSize="10" Foreground="#555" Margin="0,2,0,0"/>
                     <ComboBox x:Name="CloningVectorComboBox" FontSize="10" Margin="0,2,0,4" SelectionChanged="CloningSelectionChanged">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
@@ -393,7 +394,7 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <TextBlock Text="Insert:" FontSize="10" Foreground="#555"/>
+                    <TextBlock Text="{loc:L Insert}" FontSize="10" Foreground="#555"/>
                     <ComboBox x:Name="CloningInsertComboBox" FontSize="10" Margin="0,2,0,4" SelectionChanged="CloningSelectionChanged">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
@@ -404,13 +405,13 @@
 
                     <!-- Orientation -->
                     <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
-                        <TextBlock Text="Orientation:" FontSize="10" Foreground="#555" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <RadioButton x:Name="ForwardRadio" Content="Forward (→)" FontSize="10" IsChecked="True" Margin="0,0,10,0" Checked="CloningSelectionChanged"/>
-                        <RadioButton x:Name="ReverseRadio" Content="Reverse (←)" FontSize="10" Checked="CloningSelectionChanged"/>
+                        <TextBlock Text="{loc:L Orientation}" FontSize="10" Foreground="#555" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <RadioButton x:Name="ForwardRadio" Content="{loc:L Forward}" FontSize="10" IsChecked="True" Margin="0,0,10,0" Checked="CloningSelectionChanged"/>
+                        <RadioButton x:Name="ReverseRadio" Content="{loc:L Reverse_2}" FontSize="10" Checked="CloningSelectionChanged"/>
                     </StackPanel>
 
                     <!-- RE site selection -->
-                    <TextBlock Text="Cut sites (select or auto-detect):" FontSize="10" Foreground="#555" Margin="0,2,0,2"/>
+                    <TextBlock Text="{loc:L Cut_sites_select_or_auto_detect}" FontSize="10" Foreground="#555" Margin="0,2,0,2"/>
                     <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="3" MaxHeight="100" Margin="0,0,0,4">
                         <ListBox x:Name="CloningREListBox" FontSize="10" FontFamily="Consolas" BorderThickness="0"
                                  SelectionMode="Single" SelectionChanged="CloningREListBox_SelectionChanged">
@@ -424,12 +425,12 @@
 
                     <TextBlock x:Name="CloningInfoText" FontSize="10" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4"/>
 
-                    <Button x:Name="CloningButton" Content="🧬 Clone Insert into Vector" Style="{StaticResource ActionButton}"
+                    <Button x:Name="CloningButton" Content="{loc:L Clone_Insert_into_Vector}" Style="{StaticResource ActionButton}"
                             Click="Cloning_Click" Margin="0,2,0,0" HorizontalAlignment="Stretch" IsEnabled="False"/>
                     <TextBlock x:Name="CloningResultText" FontSize="10" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0"/>
 
                     <Separator Margin="0,6,0,4"/>
-                    <Button Content="📋 Copy Sequence" Style="{StaticResource SmallButton}" Click="CopySequence_Click" HorizontalAlignment="Stretch"/>
+                    <Button Content="{loc:L Copy_Sequence}" Style="{StaticResource SmallButton}" Click="CopySequence_Click" HorizontalAlignment="Stretch"/>
                 </StackPanel>
             </ScrollViewer>
         </Border>

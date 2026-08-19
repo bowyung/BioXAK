@@ -1,7 +1,8 @@
-<Window x:Class="BioSAK.BarStyleEditorDialog"
+﻿<Window x:Class="BioSAK.BarStyleEditorDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Edit Bar Styles" 
+        xmlns:loc="clr-namespace:BioSAK.Localization"
+        Title="{loc:L Edit_Bar_Styles}" 
         Height="550" Width="650"
         WindowStartupLocation="CenterOwner"
         Background="#F5F5F5">
@@ -14,17 +15,17 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="🎨 Edit Bar Styles" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+        <TextBlock Grid.Row="0" Text="{loc:L Edit_Bar_Styles_2}" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
 
         <!-- Edit Mode Selection -->
         <Border Grid.Row="1" Background="White" CornerRadius="5" Padding="15" Margin="0,0,0,10">
             <StackPanel>
-                <TextBlock Text="Edit Mode:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock Text="{loc:L Edit_Mode}" FontWeight="SemiBold" Margin="0,0,0,10"/>
                 <WrapPanel>
-                    <RadioButton x:Name="ModeAll" Content="All Bars" GroupName="EditMode" IsChecked="True" Margin="0,0,20,5"/>
-                    <RadioButton x:Name="ModeSeries" Content="Same Series" GroupName="EditMode" Margin="0,0,20,5"/>
-                    <RadioButton x:Name="ModeRow" Content="Same X (Row)" GroupName="EditMode" Margin="0,0,20,5"/>
-                    <RadioButton x:Name="ModeIndividual" Content="Individual" GroupName="EditMode" Margin="0,0,20,5"/>
+                    <RadioButton x:Name="ModeAll" Content="{loc:L All_Bars}" GroupName="EditMode" IsChecked="True" Margin="0,0,20,5"/>
+                    <RadioButton x:Name="ModeSeries" Content="{loc:L Same_Series}" GroupName="EditMode" Margin="0,0,20,5"/>
+                    <RadioButton x:Name="ModeRow" Content="{loc:L Same_X_Row}" GroupName="EditMode" Margin="0,0,20,5"/>
+                    <RadioButton x:Name="ModeIndividual" Content="{loc:L Individual}" GroupName="EditMode" Margin="0,0,20,5"/>
                 </WrapPanel>
                 
                 <Grid Margin="0,10,0,0">
@@ -35,10 +36,10 @@
                         <ColumnDefinition Width="150"/>
                     </Grid.ColumnDefinitions>
                     
-                    <TextBlock Grid.Column="0" Text="Series:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="0" Text="{loc:L Series}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <ComboBox Grid.Column="1" x:Name="SeriesCombo" Width="140"/>
                     
-                    <TextBlock Grid.Column="2" Text="X Index:" VerticalAlignment="Center" Margin="20,0,10,0"/>
+                    <TextBlock Grid.Column="2" Text="{loc:L X_Index}" VerticalAlignment="Center" Margin="20,0,10,0"/>
                     <ComboBox Grid.Column="3" x:Name="XIndexCombo" Width="140"/>
                 </Grid>
             </StackPanel>
@@ -60,10 +61,10 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Fill Color -->
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Fill Color:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:L Fill_Color}" VerticalAlignment="Center" Margin="0,5"/>
                 <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
                     <Border x:Name="FillColorPreview" Width="30" Height="25" BorderBrush="Gray" BorderThickness="1" Background="DodgerBlue" Margin="0,0,10,0"/>
-                    <Button Content="Choose..." Padding="10,3" Click="ChooseFillColor_Click"/>
+                    <Button Content="{loc:L Choose}" Padding="10,3" Click="ChooseFillColor_Click"/>
                     <WrapPanel Margin="15,0,0,0">
                         <Button Content=" " Width="22" Height="22" Margin="2" Background="#4285F4" Click="QuickColor_Click" Tag="#4285F4"/>
                         <Button Content=" " Width="22" Height="22" Margin="2" Background="#EA4335" Click="QuickColor_Click" Tag="#EA4335"/>
@@ -77,21 +78,21 @@
                 </StackPanel>
 
                 <!-- Border Color -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Border Color:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:L Border_Color}" VerticalAlignment="Center" Margin="0,5"/>
                 <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
                     <Border x:Name="BorderColorPreview" Width="30" Height="25" BorderBrush="Gray" BorderThickness="1" Background="Black" Margin="0,0,10,0"/>
-                    <Button Content="Choose..." Padding="10,3" Click="ChooseBorderColor_Click"/>
+                    <Button Content="{loc:L Choose}" Padding="10,3" Click="ChooseBorderColor_Click"/>
                 </StackPanel>
 
                 <!-- Border Thickness -->
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Border Width:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:L Border_Width}" VerticalAlignment="Center" Margin="0,5"/>
                 <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
                     <Slider x:Name="BorderThicknessSlider" Width="150" Minimum="0" Maximum="5" Value="1" TickFrequency="0.5" IsSnapToTickEnabled="True"/>
                     <TextBlock x:Name="BorderThicknessLabel" Text="1" Margin="10,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Fill Pattern -->
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Fill Pattern:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:L Fill_Pattern}" VerticalAlignment="Center" Margin="0,5"/>
                 <ComboBox Grid.Row="3" Grid.Column="1" x:Name="PatternCombo" Width="200" HorizontalAlignment="Left" Margin="0,5">
                     <ComboBoxItem Content="Solid" Tag="Solid" IsSelected="True"/>
                     <ComboBoxItem Content="Horizontal Lines" Tag="HorizontalLines"/>
@@ -103,7 +104,7 @@
                 </ComboBox>
 
                 <!-- Preview -->
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Preview:" VerticalAlignment="Top" Margin="0,15,0,0"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:L Preview_2}" VerticalAlignment="Top" Margin="0,15,0,0"/>
                 <Border Grid.Row="4" Grid.Column="1" x:Name="PreviewBorder" Width="100" Height="60" 
                         HorizontalAlignment="Left" Margin="0,15,0,0"
                         BorderBrush="Black" BorderThickness="1"/>
@@ -112,13 +113,13 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Apply" Padding="20,8" Margin="0,0,10,0"
+            <Button Content="{loc:L Apply}" Padding="20,8" Margin="0,0,10,0"
                     Background="#FF9800" Foreground="White" BorderThickness="0"
                     Cursor="Hand" Click="Apply_Click"/>
-            <Button Content="Cancel" Padding="20,8" Margin="0,0,10,0"
+            <Button Content="{loc:L Cancel}" Padding="20,8" Margin="0,0,10,0"
                     Background="#9E9E9E" Foreground="White" BorderThickness="0"
                     Cursor="Hand" Click="Cancel_Click"/>
-            <Button Content="OK" Padding="20,8"
+            <Button Content="{loc:L OK}" Padding="20,8"
                     Background="#4CAF50" Foreground="White" BorderThickness="0"
                     Cursor="Hand" Click="OK_Click"/>
         </StackPanel>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -92,7 +92,7 @@ namespace BioSAK.Pages
             {
                 // 恢復按鈕狀態
                 AnalyzeButton.IsEnabled = true;
-                AnalyzeButton.Content = "Analyze All Enzymes";
+                AnalyzeButton.Content = BioSAK.Localization.L.T("Analyze_All_Enzymes");
             }
         }
 

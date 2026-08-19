@@ -215,7 +215,7 @@ namespace BioSAK.Pages
             }
             else
             {
-                VisualizationTitle.Text = "Select a construct"; VisualizationInfo.Text = "";
+                VisualizationTitle.Text = BioSAK.Localization.L.T("Select_a_construct"); VisualizationInfo.Text = "";
                 FeatureListBox.ItemsSource = null; VisualizationCanvas.Children.Clear();
                 DigestButton.IsEnabled = false;
             }

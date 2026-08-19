@@ -1306,7 +1306,7 @@ namespace BioSAK.Pages
             }
             else
             {
-                ConstraintRegionLabel.Text = "No constraint set";
+                ConstraintRegionLabel.Text = BioSAK.Localization.L.T("No_constraint_set");
                 ConstraintRegionLabel.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#999999"));
             }
         }
@@ -2755,7 +2755,7 @@ namespace BioSAK.Pages
             _exonList.Clear(); _cdsList.Clear(); _isoforms.Clear();
             _selectionStart = _selectionEnd = -1;
 
-            ActiveTemplateDisplay.Text = ""; ActiveTemplateLengthLabel.Text = "No template loaded";
+            ActiveTemplateDisplay.Text = ""; ActiveTemplateLengthLabel.Text = BioSAK.Localization.L.T("No_template_loaded");
             IsoformListBox.ItemsSource = null;
             IsoformPanel.Visibility = Visibility.Collapsed;
             InputSectionSummary.Text = "";

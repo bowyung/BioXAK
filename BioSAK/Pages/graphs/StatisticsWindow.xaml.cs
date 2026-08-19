@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -691,7 +691,7 @@ namespace BioSAK
                         break;
                     case "Descriptive":
                         results = RunDescriptive();
-                        ResultsTitle.Text = "📋 Descriptive Statistics";
+                        ResultsTitle.Text = BioSAK.Localization.L.T("Descriptive_Statistics");
                         break;
                 }
 

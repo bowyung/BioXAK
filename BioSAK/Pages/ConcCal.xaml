@@ -1,12 +1,13 @@
 ﻿<Page x:Class="BioSAK.ConcCal"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:BioSAK.Localization"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:BioSAK"
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="980"
-      Title="Molecular Weight Calculator"
+      Title="{loc:L Molecular_Weight_Calculator}"
       Background="#F5F5F5">
 
     <Page.Resources>
@@ -75,7 +76,7 @@
         </Grid.RowDefinitions>
 
         <!-- Title -->
-        <TextBlock Grid.Row="0" Text="⚖️ Molecular Weight Calculator" 
+        <TextBlock Grid.Row="0" Text="{loc:L Molecular_Weight_Calculator_2}" 
                    FontSize="24" FontWeight="Bold" Foreground="#333"
                    Margin="0,0,0,15"/>
 
@@ -96,7 +97,7 @@
 
                 <!-- Formula Input -->
                 <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,15">
-                    <TextBlock Text="Chemical Formula" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBlock Text="{loc:L Chemical_Formula}" FontWeight="SemiBold" Foreground="#555" Margin="0,0,0,5"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -108,12 +109,12 @@
                                  Padding="10" BorderThickness="1" BorderBrush="#DDD"
                                  VerticalContentAlignment="Center"
                                  KeyDown="FormulaInput_KeyDown"/>
-                        <Button Grid.Column="1" Content="Calculate" 
+                        <Button Grid.Column="1" Content="{loc:L Calculate}" 
                                 Padding="20,10" Margin="10,0,0,0"
                                 Background="#4FC3F7" Foreground="White" FontWeight="SemiBold"
                                 BorderThickness="0" Cursor="Hand"
                                 Click="Calculate_Click"/>
-                        <Button Grid.Column="2" Content="Clear" 
+                        <Button Grid.Column="2" Content="{loc:L Clear}" 
                                 Padding="20,10" Margin="10,0,0,0"
                                 Background="#EF5350" Foreground="White" FontWeight="SemiBold"
                                 BorderThickness="0" Cursor="Hand"
@@ -123,7 +124,7 @@
 
                 <!-- Element Breakdown -->
                 <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
-                    <TextBlock Text="Element Breakdown" FontWeight="SemiBold" Foreground="#4FC3F7" Margin="0,0,0,5"/>
+                    <TextBlock Text="{loc:L Element_Breakdown}" FontWeight="SemiBold" Foreground="#4FC3F7" Margin="0,0,0,5"/>
                     <Border Background="#F8F9FA" CornerRadius="5" Padding="10" MinHeight="80">
                         <TextBlock x:Name="ElementBreakdown" Text="-" 
                                    FontFamily="Consolas" TextWrapping="Wrap"/>
@@ -132,7 +133,7 @@
 
                 <!-- Total Weight -->
                 <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
-                    <TextBlock Text="Molecular Weight" FontWeight="SemiBold" Foreground="#4FC3F7" Margin="0,0,0,5"/>
+                    <TextBlock Text="{loc:L Molecular_Weight}" FontWeight="SemiBold" Foreground="#4FC3F7" Margin="0,0,0,5"/>
                     <Border Background="#F8F9FA" CornerRadius="5" Padding="10" MinHeight="80">
                         <TextBlock x:Name="TotalWeight" Text="-" 
                                    FontSize="24" FontWeight="Bold" Foreground="#4CAF50"
@@ -146,43 +147,43 @@
         <WrapPanel Grid.Row="2" Margin="0,0,0,10" HorizontalAlignment="Center">
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource AlkaliColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Alkali" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Alkali}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource AlkalineColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Alkaline Earth" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Alkaline_Earth}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource TransitionColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Transition" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Transition}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource PostTransitionColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Post-transition" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Post_transition}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource MetalloidColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Metalloid" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Metalloid}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource NonmetalColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Nonmetal" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Nonmetal}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource HalogenColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Halogen" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Halogen}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource NobleColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Noble Gas" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Noble_Gas}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource LanthanideColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Lanthanide" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Lanthanide}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="5,2">
                 <Border Width="16" Height="16" Background="{StaticResource ActinideColor}" CornerRadius="2" Margin="0,0,5,0"/>
-                <TextBlock Text="Actinide" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:L Actinide}" FontSize="11" VerticalAlignment="Center"/>
             </StackPanel>
         </WrapPanel>
 

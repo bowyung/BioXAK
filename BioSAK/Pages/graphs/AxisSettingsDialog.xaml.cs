@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace BioSAK
@@ -40,7 +40,7 @@ namespace BioSAK
             InitializeComponent();
             
             IsYAxis = isYAxis;
-            TitleText.Text = isYAxis ? "Y Axis Settings" : "X Axis Settings";
+            TitleText.Text = BioSAK.Localization.L.T(isYAxis ? "Y_Axis_Settings" : "X_Axis_Settings");
             
             AxisTitleBox.Text = currentTitle;
             MinValueBox.Text = currentMin.ToString("G4");

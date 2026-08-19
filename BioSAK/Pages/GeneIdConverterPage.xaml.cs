@@ -382,7 +382,7 @@ namespace BioSAK.Pages
                     var item = cell.Item as GeneConversionResult;
                     if (item != null)
                     {
-                        string value = GetCellValue(item, cell.Column.Header.ToString());
+                        string value = GetCellValue(item, ColumnKey(cell.Column));
                         sb.Append(value ?? "");
                     }
 
@@ -425,7 +425,7 @@ namespace BioSAK.Pages
         {
             if (ResultsDataGrid.SelectedCells.Count > 0 && _currentResults != null)
             {
-                var columnHeader = ResultsDataGrid.SelectedCells[0].Column.Header.ToString();
+                var columnHeader = ColumnKey(ResultsDataGrid.SelectedCells[0].Column);
                 var values = _currentResults
                     .Where(r => !r.Input.StartsWith("  └─"))
                     .Select(r => GetCellValue(r, columnHeader))
@@ -458,6 +458,16 @@ namespace BioSAK.Pages
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        /// <summary>
+        /// 以 Binding 路徑辨識欄位（而非顯示用的標題文字），
+        /// 這樣切換 UI 語言後複製／匯出仍然對應到正確的欄位。
+        /// </summary>
+        private static string ColumnKey(System.Windows.Controls.DataGridColumn col)
+        {
+            var path = col.SortMemberPath;
+            return string.IsNullOrEmpty(path) ? (col.Header?.ToString() ?? "") : path;
+        }
+
         private string GetCellValue(GeneConversionResult item, string columnHeader)
         {
             return columnHeader switch
@@ -465,10 +475,10 @@ namespace BioSAK.Pages
                 "Input" => item.Input,
                 "Status" => item.Status,
                 "Symbol" => item.Symbol,
-                "Ensembl ID" => item.EnsemblId,
-                "Entrez ID" => item.EntrezId,
-                "HGNC ID" => item.HgncId,
-                "Full Name" => item.FullName,
+                "Ensembl ID" or "EnsemblId" => item.EnsemblId,
+                "Entrez ID" or "EntrezId" => item.EntrezId,
+                "HGNC ID" or "HgncId" => item.HgncId,
+                "Full Name" or "FullName" => item.FullName,
                 "Biotype" => item.Biotype,
                 _ => ""
             };

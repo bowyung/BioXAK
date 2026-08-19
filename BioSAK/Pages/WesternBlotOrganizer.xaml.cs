@@ -248,6 +248,10 @@ namespace BioSAK.Pages
 
         // ── Zoom ───────────────────────────────────────────────
         private double _zoom = 1.0;
+        /// <summary>預覽是否自動縮放以符合視窗大小。手動拉 slider 會關掉，按 Fit 會重新開啟。</summary>
+        private bool _autoFitZoom = true;
+        /// <summary>程式自己設定 slider 時為 true，用來區分「使用者手動縮放」。</summary>
+        private bool _zoomFromCode = false;
 
         // ── Render-geometry cache (used by overlay handlers) ───
         private double _rBlotAreaX;      // figure coords (96dpi): left of blot image
@@ -707,16 +711,15 @@ namespace BioSAK.Pages
 
         private double CanvasXToFrac(double canvasX)
         {
-            // canvas pixel → figure 96dpi space → fraction within blotW
-            double figX = canvasX / _zoom;
-            return (figX - _rBlotAreaX) / _rBlotW;
+            // OverlayCanvas 的座標系 = 未縮放的 figure 96dpi 空間
+            // （縮放是 PreviewGrid 的 LayoutTransform 做的，不可重複換算）
+            return (canvasX - _rBlotAreaX) / _rBlotW;
         }
 
         private double CanvasYToMarkerFrac(double canvasY)
         {
-            double figY = canvasY / _zoom;
             if (_rBlotAreaH <= 0) return 0.5;
-            return (figY - _rBlotAreaY) / _rBlotAreaH;
+            return (canvasY - _rBlotAreaY) / _rBlotAreaH;
         }
 
         // ── Temp line on canvas ───────────────────────────────
@@ -778,7 +781,7 @@ namespace BioSAK.Pages
             {
                 foreach (double center96 in _rLaneCenters96)
                 {
-                    double cx = (_rBlotAreaX + center96) * _zoom;
+                    double cx = _rBlotAreaX + center96;
                     OverlayCanvas.Children.Add(MakeOverlayLine(
                         cx, 0, cx, canvasH,
                         Color.FromArgb(200, 30, 144, 255), 1.4));
@@ -788,7 +791,7 @@ namespace BioSAK.Pages
             // ── Left boundary (solid green) ───────────────────────────────
             if (_vm.LeftBoundFrac.HasValue)
             {
-                double cx = (_rBlotAreaX + _vm.LeftBoundFrac.Value * _rBlotW) * _zoom;
+                double cx = _rBlotAreaX + _vm.LeftBoundFrac.Value * _rBlotW;
                 OverlayCanvas.Children.Add(MakeSolidLine(cx, 0, cx, canvasH,
                     Color.FromRgb(0, 160, 60), 2.0));
             }
@@ -796,7 +799,7 @@ namespace BioSAK.Pages
             // ── Right boundary (solid red) ────────────────────────────────
             if (_vm.RightBoundFrac.HasValue)
             {
-                double cx = (_rBlotAreaX + _vm.RightBoundFrac.Value * _rBlotW) * _zoom;
+                double cx = _rBlotAreaX + _vm.RightBoundFrac.Value * _rBlotW;
                 OverlayCanvas.Children.Add(MakeSolidLine(cx, 0, cx, canvasH,
                     Color.FromRgb(210, 40, 40), 2.0));
             }
@@ -804,7 +807,7 @@ namespace BioSAK.Pages
             // ── Marker lines (orange dashed horizontal) ───────────────────
             foreach (var marker in _vm.Markers)
             {
-                double cy = (_rBlotAreaY + marker.YFraction * _rBlotAreaH) * _zoom;
+                double cy = _rBlotAreaY + marker.YFraction * _rBlotAreaH;
                 OverlayCanvas.Children.Add(MakeOverlayLine(
                     0, cy, canvasW, cy,
                     Color.FromArgb(200, 230, 126, 34), 1.5));
@@ -849,12 +852,14 @@ namespace BioSAK.Pages
             if ((Keyboard.Modifiers & ModifierKeys.Alt) == 0) return;
             e.Handled = true;  // suppress scroll
             double delta = e.Delta > 0 ? 0.1 : -0.1;
-            double next = Math.Max(0.2, Math.Min(2.5, _zoom + delta));
+            double next = Math.Max(PreviewZoom.Minimum, Math.Min(PreviewZoom.Maximum, _zoom + delta));
             PreviewZoom.Value = next;   // triggers PreviewZoom_ValueChanged
         }
 
         private void PreviewZoom_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            // 使用者自己動 slider → 離開自動符合視窗模式
+            if (!_zoomFromCode) _autoFitZoom = false;
             _zoom = e.NewValue;
             if (TxtZoomLabel != null)
                 TxtZoomLabel.Text = ((int)(_zoom * 100)) + "%";
@@ -864,12 +869,43 @@ namespace BioSAK.Pages
 
         private void BtnFitZoom_Click(object sender, RoutedEventArgs e)
         {
-            if (PreviewImage == null || !(PreviewImage.Source is BitmapSource bmp)) return;
-            double aw = PreviewScroll.ActualWidth - 48;
-            double ah = PreviewScroll.ActualHeight - 48;
+            _autoFitZoom = true;      // 重新開啟「自動符合視窗」
+            FitZoomToWindow();
+        }
+
+        /// <summary>預覽區大小改變（視窗縮放、面板拉動）時，自動重新符合視窗。</summary>
+        private void PreviewScroll_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (_autoFitZoom) FitZoomToWindow();
+        }
+
+        /// <summary>把預覽縮放到剛好放進目前的預覽區。</summary>
+        private void FitZoomToWindow()
+        {
+            if (PreviewScroll == null || PreviewZoom == null) return;
+            if (!(PreviewImage?.Source is BitmapSource bmp)) return;
+            if (bmp.PixelWidth <= 0 || bmp.PixelHeight <= 0) return;
+
+            // ScrollViewer 的 Padding 24（左右/上下各 24）+ 捲軸與陰影的緩衝
+            double aw = PreviewScroll.ActualWidth - 48 - 18;
+            double ah = PreviewScroll.ActualHeight - 48 - 18;
             if (aw <= 0 || ah <= 0) return;
+
             double s = Math.Min(aw / bmp.PixelWidth, ah / bmp.PixelHeight);
-            PreviewZoom.Value = Math.Max(0.2, Math.Min(2.5, s));
+            s = Math.Max(PreviewZoom.Minimum, Math.Min(PreviewZoom.Maximum, s));
+
+            _zoomFromCode = true;
+            PreviewZoom.Value = s;                 // 會觸發 PreviewZoom_ValueChanged
+            _zoomFromCode = false;
+
+            // slider 有 snap-to-tick，若吸附後數值沒變就不會觸發事件，這裡補做一次
+            if (Math.Abs(_zoom - PreviewZoom.Value) > 1e-9)
+            {
+                _zoom = PreviewZoom.Value;
+                if (TxtZoomLabel != null) TxtZoomLabel.Text = ((int)(_zoom * 100)) + "%";
+                ApplyZoom();
+                RefreshOverlay();
+            }
         }
 
         private void ApplyZoom()
@@ -1019,6 +1055,9 @@ namespace BioSAK.Pages
                 TxtPreviewInfo.Text = string.Format("  {0} \u00D7 {1} px  |  {2} blots  |  {3} cond rows  |  {4} labels",
                     bmp.PixelWidth, bmp.PixelHeight,
                     _vm.Blots.Count, _vm.ConditionRows.Count, _vm.Markers.Count);
+
+                // 圖尺寸可能變了 → 若在自動模式就重新符合視窗
+                if (_autoFitZoom) FitZoomToWindow();
             }
             catch (Exception ex)
             {
@@ -1134,7 +1173,31 @@ namespace BioSAK.Pages
                     double condX0 = blotX + border;
                     // All glyphs drawn at the same textY0: layout-box top is
                     // (condRowH - refH)/2 from the row top → identical for every glyph.
-                    // Lane pitch for auto-rotate threshold
+                    // ── 每個 lane 的可用文字寬度 ────────────────────────────
+                    //  版面配置：B L B B L B B L B   (B = 留白, L = lane 中央)
+                    //  L 固定在平均分佈的位置，永遠不會被文字推動；
+                    //  文字以 L 為中心往兩側吃掉 B，吃完（放不下）才自動旋轉。
+                    //  兩端的 B 只有 lane 之間的一半，所以頭尾 lane 會先旋轉。
+                    double boundLo = (_vm.LeftBoundFrac ?? 0.0) * blotW;
+                    double boundHi = (_vm.RightBoundFrac ?? 1.0) * blotW;
+                    if (boundHi <= boundLo) { boundLo = 0.0; boundHi = blotW; }
+
+                    var laneAvail = new List<double>();
+                    for (int i = 0; i < laneOffsets.Count; i++)
+                    {
+                        // 左側可吃的留白
+                        double bLeft = i == 0
+                            ? laneOffsets[i] - boundLo
+                            : (laneOffsets[i] - laneOffsets[i - 1]) / 2.0;
+                        // 右側可吃的留白
+                        double bRight = i == laneOffsets.Count - 1
+                            ? boundHi - laneOffsets[i]
+                            : (laneOffsets[i + 1] - laneOffsets[i]) / 2.0;
+                        // 對稱使用（文字置中於 L），取較小的一邊
+                        double half = Math.Max(1.0, Math.Min(bLeft, bRight));
+                        laneAvail.Add(half * 2.0);
+                    }
+
                     double lanePitch = laneOffsets.Count >= 2
                         ? laneOffsets[1] - laneOffsets[0]
                         : blotW / Math.Max(1, cols);
@@ -1159,9 +1222,12 @@ namespace BioSAK.Pages
                             double tx = cx - tf.Width / 2.0;
                             double ty = curY + (condRowH - tf.Height) / 2.0;
 
-                            if (tf.Width > lanePitch * 0.85 && tf.Width > 0)
+                            // 這個 lane 實際可用的寬度（含兩側留白 B）
+                            double avail = ci < laneAvail.Count ? laneAvail[ci] : lanePitch;
+
+                            if (tf.Width > avail * 0.85 && tf.Width > 0)
                             {
-                                double cosA = Math.Min(1.0, lanePitch * 0.80 / tf.Width);
+                                double cosA = Math.Min(1.0, avail * 0.80 / tf.Width);
                                 double deg = -Math.Acos(cosA) * 180.0 / Math.PI;
                                 dc.PushTransform(new RotateTransform(deg, cx, curY + condRowH / 2.0));
                                 dc.DrawText(tf, new Point(tx, ty));

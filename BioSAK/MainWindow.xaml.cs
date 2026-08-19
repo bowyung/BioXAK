@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -106,6 +106,16 @@ namespace BioSAK
         private void MWCalculator_Click(object sender, RoutedEventArgs e)
         {
             MainFrame.Navigate(new ConcCal());
+        }
+
+        // ===== Language =====
+        /// <summary>
+        /// 切換介面語言（英文 ↔ 繁體中文）。
+        /// 只改變畫面上的文字，分析結果、匯出檔案、圖表內容均維持原樣。
+        /// </summary>
+        private void Language_Click(object sender, RoutedEventArgs e)
+        {
+            BioSAK.Localization.LocalizationManager.Instance.Toggle();
         }
 
         // ===== Help =====
